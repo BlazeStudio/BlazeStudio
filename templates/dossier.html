@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ profile.name[lang] }} — {{ profile.role[lang] }}</title>
+<link rel="stylesheet" href="/static/css/dossier.css">
+</head>
+<body>
+  <div class="sheet">
+    <div class="no-print toolbar">
+      <a href="/" class="back">← {{ "Назад в офис" if lang == "ru" else "Back to the office" }}</a>
+      <div class="lang-switch">
+        <a href="/dossier?lang=ru" class="{{ 'active' if lang=='ru' else '' }}">RU</a>
+        <a href="/dossier?lang=en" class="{{ 'active' if lang=='en' else '' }}">EN</a>
+      </div>
+      <button onclick="window.print()" class="print-btn">🖨 {{ "Печать / PDF" if lang == "ru" else "Print / Save PDF" }}</button>
+    </div>
+
+    <header class="d-head">
+      <div>
+        <div class="d-name">{{ profile.name[lang] }}</div>
+        <div class="d-role">{{ profile.role[lang] }}</div>
+      </div>
+      <div class="d-mark">VASILIEV<br>INC.</div>
+    </header>
+
+    <div class="d-meta">
+      <span>{{ profile.location[lang] }}</span>
+      <span>·</span>
+      <span>{{ profile.contacts.email }}</span>
+      <span>·</span>
+      <span>{{ profile.contacts.telegram_handle }}</span>
+      <span>·</span>
+      <span>{{ profile.contacts.github }}</span>
+    </div>
+
+    <section class="d-section">
+      <h2>{{ "О кандидате" if lang == "ru" else "Summary" }}</h2>
+      {% for p in profile.about[lang] %}<p>{{ p }}</p>{% endfor %}
+    </section>
+
+    <section class="d-section">
+      <h2>{{ "Опыт работы" if lang == "ru" else "Experience" }}</h2>
+      {% for job in profile.experience %}
+      <div class="d-job">
+        <div class="d-job-head">
+          <b>{{ job.title[lang] }}</b> — {{ job.company[lang] }}
+          <span class="d-period">{{ job.period[lang] }}</span>
+        </div>
+        <p>{{ job.summary[lang] }}</p>
+        {% if job.highlight[lang] %}<p class="d-highlight">{{ job.highlight[lang] }}</p>{% endif %}
+        {% if job.tasks[lang] %}
+        <ul>{% for t in job.tasks[lang] %}<li>{{ t }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="d-section">
+      <h2>{{ "Образование" if lang == "ru" else "Education" }}</h2>
+      <div class="d-job">
+        <div class="d-job-head"><b>{{ profile.education.school[lang] }}</b><span class="d-period">{{ profile.education.year }}</span></div>
+        <p>{{ profile.education.degree[lang] }}</p>
+      </div>
+    </section>
+
+    <section class="d-section">
+      <h2>{{ "Навыки" if lang == "ru" else "Skills" }}</h2>
+      {% for group in profile.skills.values() %}
+      <p><b>{{ group.label[lang] }}:</b> {{ group['items'] | map(attribute='name') | join(', ') }}</p>
+      {% endfor %}
+    </section>
+
+    <section class="d-section">
+      <h2>{{ "Языки" if lang == "ru" else "Languages" }}</h2>
+      <p>{% for l in profile.languages %}{{ l.name[lang] }} — {{ l.level[lang] }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    </section>
+
+    <footer class="d-foot">{{ "Сгенерировано на vasiliev-inc.vercel.app" if lang == "ru" else "Generated at vasiliev-inc.vercel.app" }}</footer>
+  </div>
+</body>
+</html>

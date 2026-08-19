@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ru" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vasiliev Inc. — Anton Vasiliev, Python Backend Developer</title>
+<meta name="description" content="Anton Vasiliev — Python Backend Developer. An interactive company-office portfolio with live GitHub projects and playable mini-games.">
+<meta name="theme-color" content="#090c11">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23090c11%22/><text x=%2250%22 y=%2266%22 font-size=%2254%22 font-family=%22monospace%22 fill=%22%233bffa0%22 text-anchor=%22middle%22>V</text></svg>">
+<link rel="stylesheet" href="/static/css/style.css">
+<meta property="og:title" content="Vasiliev Inc. — Anton Vasiliev">
+<meta property="og:description" content="Python Backend Developer. Interactive portfolio: real projects, real experience, playable mini-games.">
+</head>
+<body class="no-scroll">
+
+<div class="bg-grid"></div>
+<canvas id="bg-canvas"></canvas>
+<div class="bg-scanlines"></div>
+
+<!-- ============ BOOT SCREEN ============ -->
+<div id="boot">
+  <div class="boot-box">
+    <div class="boot-logo">VASILIEV&nbsp;INC.</div>
+    <div class="boot-sub">SOFTWARE ENGINEERING · SYSTEM BOOT v2.6</div>
+    <div id="boot-lines"></div>
+    <button id="boot-enter">
+      <span data-ru="→ ВОЙТИ В ОФИС" data-en="→ ENTER THE OFFICE">→ ВОЙТИ В ОФИС</span>
+    </button>
+    <div id="boot-hint" data-ru="или нажмите любую клавишу" data-en="or press any key">или нажмите любую клавишу</div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+
+  <div id="topbar">
+    <div class="brandmark">
+      <span class="dot"></span>
+      <b>VASILIEV INC.</b>
+      <span class="long" data-ru="· на связи" data-en="· on duty">· на связи</span>
+      <span id="clock" class="long"></span>
+    </div>
+    <div class="controls">
+      <div class="pill-toggle" id="lang-toggle">
+        <button data-lang="ru" class="active">RU</button>
+        <button data-lang="en">EN</button>
+      </div>
+      <button class="icon-btn" id="theme-toggle" title="Day/Night shift">🌙</button>
+    </div>
+  </div>
+
+  <nav id="elevator" aria-label="Floors"></nav>
+
+  <main>
+
+    <!-- FLOOR 0 — RECEPTION -->
+    <section class="floor" id="reception" data-floor="0" data-name-ru="Ресепшн" data-name-en="Reception" data-icon="🛎️">
+      <div class="floor-inner">
+        <div class="hero-kicker">
+          <span data-ru="VASILIEV INC. · ЛОББИ" data-en="VASILIEV INC. · LOBBY">VASILIEV INC. · ЛОББИ</span>
+        </div>
+        <h1 class="hero-title">
+          <span data-ru="Компания одного" data-en="A one-person">Компания одного</span><br>
+          <span class="accent" data-ru="разработчика." data-en="engineering company.">разработчика.</span>
+        </h1>
+        <div class="hero-role" id="hero-role">Python Backend Developer</div>
+        <p class="hero-tagline" id="hero-tagline"></p>
+        <div class="hero-cta">
+          <a href="#hr" class="btn btn-primary" data-nav="hr">
+            <span data-ru="Пройти по этажам ↓" data-en="Take the tour ↓">Пройти по этажам ↓</span>
+          </a>
+          <a href="/dossier" target="_blank" class="btn btn-ghost">
+            <span data-ru="📄 Скачать досье" data-en="📄 Download dossier">📄 Скачать досье</span>
+          </a>
+        </div>
+        <div class="directory" id="directory"></div>
+      </div>
+    </section>
+
+    <!-- FLOOR 1 — HR -->
+    <section class="floor" id="hr" data-floor="1" data-name-ru="Отдел кадров" data-name-en="HR Department" data-icon="🪪">
+      <div class="floor-inner">
+        <div class="eyebrow" data-ru="ЭТАЖ 1 · ОТДЕЛ КАДРОВ" data-en="FLOOR 1 · HR DEPARTMENT">ЭТАЖ 1 · ОТДЕЛ КАДРОВ</div>
+        <h2 class="floor-title" data-ru="Личное дело сотрудника" data-en="Employee file">Личное дело сотрудника</h2>
+        <p class="floor-sub" data-ru="Без фотографий — вместо этого сгенерированный пропуск. Остальное настоящее." data-en="No photos — a generated badge instead. Everything else is real.">Без фотографий — вместо этого сгенерированный пропуск. Остальное настоящее.</p>
+
+        <div class="hr-grid">
+          <div class="id-badge panel">
+            <div class="id-badge-top">
+              <span data-ru="ПРОПУСК СОТРУДНИКА" data-en="EMPLOYEE BADGE">ПРОПУСК СОТРУДНИКА</span>
+              <span>№ 0001</span>
+            </div>
+            <div class="id-avatar">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="4" width="112" height="112" rx="20" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.5"/>
+                <circle cx="60" cy="60" r="42" stroke="var(--accent-3)" stroke-width="1" opacity="0.35"/>
+                <path d="M60 20 L60 100 M20 60 L100 60" stroke="var(--panel-border)" stroke-width="1"/>
+                <text x="60" y="72" font-family="JetBrains Mono, monospace" font-size="38" font-weight="700" fill="var(--accent)" text-anchor="middle">AV</text>
+              </svg>
+            </div>
+            <div class="id-name" id="id-name">Васильев Антон</div>
+            <div class="id-role" id="id-role">Python Backend Developer</div>
+            <div class="id-row"><span data-ru="Возраст" data-en="Age">Возраст</span><b>21</b></div>
+            <div class="id-row"><span data-ru="Локация" data-en="Location">Локация</span><b id="id-location">Москва</b></div>
+            <div class="id-row"><span data-ru="Формат" data-en="Format">Формат</span><b id="id-format">Удалённо / гибрид</b></div>
+            <div class="id-row"><span data-ru="Допуск" data-en="Clearance">Допуск</span><b data-ru="production" data-en="production">production</b></div>
+            <div class="id-barcode"></div>
+          </div>
+
+          <div>
+            <div class="about-text" id="about-text"></div>
+            <div class="trait-chips" id="trait-chips"></div>
+            <div class="lang-bars" id="lang-bars"></div>
+            <div class="hr-stats">
+              <div class="stat-box panel"><div class="k" data-ru="Опыт" data-en="Experience">Опыт</div><div class="v">2 г. 11 мес.</div></div>
+              <div class="stat-box panel"><div class="k" data-ru="Занятость" data-en="Employment">Занятость</div><div class="v" id="stat-employment">—</div></div>
+              <div class="stat-box panel"><div class="k" data-ru="Гражданство" data-en="Citizenship">Гражданство</div><div class="v" data-ru="Россия" data-en="Russia">Россия</div></div>
+              <div class="stat-box panel"><div class="k" data-ru="Статус" data-en="Status">Статус</div><div class="v" data-ru="Открыт к предложениям" data-en="Open to offers">Открыт к предложениям</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FLOOR 2 — ENGINEERING -->
+    <section class="floor" id="engineering" data-floor="2" data-name-ru="Инженерный отдел" data-name-en="Engineering" data-icon="🛠️">
+      <div class="floor-inner">
+        <div class="eyebrow" data-ru="ЭТАЖ 2 · ИНЖЕНЕРНЫЙ ОТДЕЛ" data-en="FLOOR 2 · ENGINEERING DEPARTMENT">ЭТАЖ 2 · ИНЖЕНЕРНЫЙ ОТДЕЛ</div>
+        <h2 class="floor-title" data-ru="Стек и уровень владения" data-en="Stack &amp; proficiency">Стек и уровень владения</h2>
+        <p class="floor-sub" data-ru="Проценты — субъективная самооценка, не сертификат. Проверяется на этаже R&D." data-en="Percentages are self-rated, not certified. Verify on the R&amp;D floor.">Проценты — субъективная самооценка, не сертификат. Проверяется на этаже R&amp;D.</p>
+        <div class="skills-grid" id="skills-grid"></div>
+      </div>
+    </section>
+
+    <!-- FLOOR 3 — LAB -->
+    <section class="floor" id="lab" data-floor="3" data-name-ru="R&D Лаборатория" data-name-en="R&D Lab" data-icon="🧪">
+      <div class="floor-inner">
+        <div class="eyebrow" data-ru="ЭТАЖ 3 · R&D ЛАБОРАТОРИЯ" data-en="FLOOR 3 · R&amp;D LABORATORY">ЭТАЖ 3 · R&amp;D ЛАБОРАТОРИЯ</div>
+        <h2 class="floor-title" data-ru="Проекты" data-en="Projects">Проекты</h2>
+        <p class="floor-sub" data-ru="Каждая карточка — настоящий публичный репозиторий на GitHub." data-en="Every card is a real public GitHub repository.">Каждая карточка — настоящий публичный репозиторий на GitHub.</p>
+        <div class="sync-badge panel" id="sync-badge">
+          <span class="sd"></span>
+          <span id="sync-text" data-ru="Синхронизация с GitHub…" data-en="Syncing with GitHub…">Синхронизация с GitHub…</span>
+        </div>
+        <div class="filters" id="filters"></div>
+        <div class="projects-grid" id="projects-grid"></div>
+      </div>
+    </section>
+
+    <!-- FLOOR 4 — ARCHIVE -->
+    <section class="floor" id="archive" data-floor="4" data-name-ru="Архив" data-name-en="Archive" data-icon="🗄️">
+      <div class="floor-inner">
+        <div class="eyebrow" data-ru="ЭТАЖ 4 · АРХИВ ЛИЧНЫХ ДЕЛ" data-en="FLOOR 4 · PERSONNEL ARCHIVE">ЭТАЖ 4 · АРХИВ ЛИЧНЫХ ДЕЛ</div>
+        <h2 class="floor-title" data-ru="Опыт и образование" data-en="Experience &amp; education">Опыт и образование</h2>
+        <p class="floor-sub" data-ru="Хронология настоящих проектов и мест работы." data-en="A timeline of real jobs and projects.">Хронология настоящих проектов и мест работы.</p>
+        <div class="timeline" id="timeline"></div>
+        <div class="edu-card panel" id="edu-card"></div>
+      </div>
+    </section>
+
+    <!-- FLOOR 5 — ARCADE -->
+    <section class="floor" id="arcade" data-floor="5" data-name-ru="Комната отдыха" data-name-en="Break Room" data-icon="🕹️">
+      <div class="floor-inner">
+        <div class="eyebrow" data-ru="ЭТАЖ 5 · КОМНАТА ОТДЫХА" data-en="FLOOR 5 · BREAK ROOM">ЭТАЖ 5 · КОМНАТА ОТДЫХА</div>
+        <h2 class="floor-title" data-ru="Аркада" data-en="Arcade">Аркада</h2>
+        <p class="floor-sub" data-ru="Пока резюме кипятится — можно поиграть. Рекорды хранятся у вас в браузере." data-en="While the résumé simmers — a few games. High scores live in your browser only.">Пока резюме кипятится — можно поиграть. Рекорды хранятся у вас в браузере.</p>
+
+        <div class="arcade-tabs" id="arcade-tabs">
+          <button class="arcade-tab panel active" data-game="terminal">💻 <span data-ru="Терминал" data-en="Terminal">Терминал</span></button>
+          <button class="arcade-tab panel" data-game="bughunt">🐛 <span data-ru="Охота на баги" data-en="Bug Hunt">Охота на баги</span></button>
+          <button class="arcade-tab panel" data-game="memory">🧠 <span data-ru="Память" data-en="Memory Match">Память</span></button>
+          <button class="arcade-tab panel" data-game="snake">🐍 <span data-ru="Snake_Deploy" data-en="Snake_Deploy">Snake_Deploy</span></button>
+        </div>
+
+        <div class="arcade-stage panel">
+
+          <div class="game-view active" id="game-terminal">
+            <div class="term-window">
+              <div class="term-bar">
+                <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+                <span class="term-title">anton@vasiliev-inc: ~</span>
+              </div>
+              <div id="term-output"></div>
+              <div class="term-input-row">
+                <span class="prompt">$</span>
+                <input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder="help">
+              </div>
+            </div>
+            <p class="game-instructions" data-ru="Наберите help. Настоящий backend-запрос уходит на /api/terminal." data-en="Type help. A real backend request hits /api/terminal.">Наберите help. Настоящий backend-запрос уходит на /api/terminal.</p>
+          </div>
+
+          <div class="game-view" id="game-bughunt">
+            <div class="game-head">
+              <div class="game-score">
+                <span data-ru="Счёт" data-en="Score">Счёт</span>: <b id="bughunt-score">0</b>
+                <span data-ru="Время" data-en="Time">Время</span>: <b id="bughunt-time">20</b>
+                <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="bughunt-best">0</b>
+              </div>
+              <button class="btn btn-ghost" id="bughunt-start" data-ru="▶ Начать" data-en="▶ Start">▶ Начать</button>
+            </div>
+            <div id="bughunt-field">
+              <pre id="bughunt-code"></pre>
+            </div>
+            <p class="game-instructions" data-ru="Кликайте по багам 🐞, пока не кончилось время." data-en="Click the bugs 🐞 before time runs out.">Кликайте по багам 🐞, пока не кончилось время.</p>
+          </div>
+
+          <div class="game-view" id="game-memory">
+            <div class="game-head">
+              <div class="game-score">
+                <span data-ru="Ходы" data-en="Moves">Ходы</span>: <b id="memory-moves">0</b>
+                <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="memory-best">—</b>
+              </div>
+              <button class="btn btn-ghost" id="memory-restart" data-ru="🔄 Заново" data-en="🔄 Restart">🔄 Заново</button>
+            </div>
+            <div class="memory-grid" id="memory-grid"></div>
+          </div>
+
+          <div class="game-view" id="game-snake">
+            <div class="game-head">
+              <div class="game-score">
+                <span data-ru="Обработано запросов" data-en="Requests served">Обработано запросов</span>: <b id="snake-score">0</b>
+                <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="snake-best">0</b>
+              </div>
+              <button class="btn btn-ghost" id="snake-start" data-ru="▶ Деплой" data-en="▶ Deploy">▶ Деплой</button>
+            </div>
+            <canvas id="snake-canvas" width="400" height="400"></canvas>
+            <p class="game-instructions" data-ru="Стрелки / WASD — направление. Собирайте запросы 🟩, не врезайтесь в даунтайм." data-en="Arrows / WASD to steer. Collect requests 🟩, avoid downtime.">Стрелки / WASD — направление. Собирайте запросы 🟩, не врезайтесь в даунтайм.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- FLOOR 6 — CONTACT -->
+    <section class="floor" id="contact" data-floor="6" data-name-ru="Стойка охраны" data-name-en="Security Desk" data-icon="📇">
+      <div class="floor-inner">
+        <div class="eyebrow" data-ru="ЭТАЖ 6 · СТОЙКА ОХРАНЫ" data-en="FLOOR 6 · SECURITY DESK">ЭТАЖ 6 · СТОЙКА ОХРАНЫ</div>
+        <h2 class="floor-title" data-ru="Оформить пропуск на встречу?" data-en="Ready to talk?">Оформить пропуск на встречу?</h2>
+        <p class="floor-sub" data-ru="Самый быстрый способ связаться — телеграм или почта." data-en="The fastest way to reach me is Telegram or email.">Самый быстрый способ связаться — телеграм или почта.</p>
+        <div class="contact-grid" id="contact-grid"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>VASILIEV INC. © <span id="year"></span> ·</span>
+    <span data-ru="собрано на FastAPI, vanilla JS и лёгком недосыпе ·" data-en="built with FastAPI, vanilla JS, and mild sleep deprivation ·"> собрано на FastAPI, vanilla JS и лёгком недосыпе ·</span>
+    <a href="https://github.com/BlazeStudio" target="_blank" rel="noopener">github.com/BlazeStudio</a>
+  </footer>
+</div>
+
+<div id="toast"></div>
+<canvas id="confetti-canvas"></canvas>
+
+<script id="site-data" type="application/json">{{ site_data_json | safe }}</script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/terminal.js"></script>
+<script src="/static/js/games.js"></script>
+</body>
+</html>

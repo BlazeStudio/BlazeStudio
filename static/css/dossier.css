@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #eef1f7;
+  color: #14161c;
+  font-family: 'Space Grotesk', sans-serif;
+  padding: 32px 16px 80px;
+}
+.sheet { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 16px; padding: 48px; box-shadow: 0 20px 50px -20px rgba(20,30,60,0.25); }
+
+.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
+.toolbar a.back { color: #4a5468; }
+.lang-switch a { margin: 0 4px; padding: 5px 10px; border: 1px solid #dde2ec; border-radius: 999px; color: #4a5468; }
+.lang-switch a.active { background: #0f9d58; color: #fff; border-color: #0f9d58; }
+.print-btn { border: 1px solid #dde2ec; padding: 8px 14px; border-radius: 999px; background: #fff; cursor: pointer; }
+.print-btn:hover { border-color: #0f9d58; color: #0f9d58; }
+
+.d-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #14161c; padding-bottom: 18px; margin-bottom: 18px; }
+.d-name { font-size: 1.9rem; font-weight: 700; }
+.d-role { font-family: 'JetBrains Mono', monospace; color: #0f9d58; margin-top: 4px; }
+.d-mark { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.75rem; text-align: right; line-height: 1.3; color: #8994a8; }
+
+.d-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #4a5468; margin-bottom: 30px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.d-section { margin-bottom: 26px; }
+.d-section h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: 'JetBrains Mono', monospace; color: #8994a8; border-bottom: 1px solid #e3e7ef; padding-bottom: 6px; margin-bottom: 12px; }
+.d-section p { margin: 0 0 8px; font-size: 0.92rem; line-height: 1.55; }
+.d-section ul { margin: 6px 0 0; padding-left: 18px; }
+.d-section li { font-size: 0.86rem; margin-bottom: 3px; color: #333c4d; }
+
+.d-job { margin-bottom: 18px; }
+.d-job-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 0.95rem; margin-bottom: 6px; }
+.d-period { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #8994a8; }
+.d-highlight { color: #b96a06; font-size: 0.85rem; }
+
+.d-foot { margin-top: 30px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #b6bdcc; }
+
+@media print {
+  body { background: #fff; padding: 0; }
+  .sheet { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; }
+  .no-print, .toolbar { display: none !important; }
+}
