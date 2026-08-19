@@ -1,32 +1,21 @@
 'use strict';
 
-/* =========================================================
-   Arcade tab switching
-   ========================================================= */
-document.querySelectorAll('.arcade-tab').forEach((tab) => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.arcade-tab').forEach((t) => t.classList.remove('active'));
-    tab.classList.add('active');
-    document.querySelectorAll('.game-view').forEach((v) => v.classList.remove('active'));
-    document.getElementById('game-' + tab.dataset.game).classList.add('active');
-  });
-});
+window.XP.gameCleanup = window.XP.gameCleanup || {};
 
-function lang() {
-  return window.viLang ? window.viLang() : 'ru';
+function t(ru, en) {
+  return window.XP.lang() === 'ru' ? ru : en;
 }
 
 /* =========================================================
    Bug Hunt
    ========================================================= */
-(function bugHunt() {
-  const field = document.getElementById('bughunt-field');
-  const codeEl = document.getElementById('bughunt-code');
-  const scoreEl = document.getElementById('bughunt-score');
-  const timeEl = document.getElementById('bughunt-time');
-  const bestEl = document.getElementById('bughunt-best');
-  const startBtn = document.getElementById('bughunt-start');
-  if (!field) return;
+function initBugHunt(root) {
+  const field = root.querySelector('#bughunt-field');
+  const codeEl = root.querySelector('#bughunt-code');
+  const scoreEl = root.querySelector('#bughunt-score');
+  const timeEl = root.querySelector('#bughunt-time');
+  const bestEl = root.querySelector('#bughunt-best');
+  const startBtn = root.querySelector('#bughunt-start');
 
   const SNIPPET = `def process_payment(amount, account):
     balance = get_balance(account)
@@ -40,15 +29,12 @@ class RequestQueue:
         self.items = []
     def push(self, item):
         self.items.append(item)
-    def pop(self):
-        return self.items.pop(0)
 
 @app.route("/api/v1/deploy")
 def deploy():
     run_migrations()
     restart_workers()
     return {"status": "ok"}`;
-
   codeEl.textContent = SNIPPET;
 
   let score = 0;
@@ -57,7 +43,7 @@ def deploy():
   let countdownTimer = null;
   let running = false;
 
-  const best = Number(localStorage.getItem('vi-bughunt-best') || 0);
+  const best = Number(localStorage.getItem('av-bughunt-best') || 0);
   bestEl.textContent = best;
 
   function spawnBug() {
@@ -65,28 +51,33 @@ def deploy():
     const bug = document.createElement('button');
     bug.className = 'bug';
     bug.textContent = '🐞';
-    bug.style.left = Math.random() * 90 + '%';
-    bug.style.top = Math.random() * 82 + '%';
+    bug.style.left = Math.random() * 88 + '%';
+    bug.style.top = Math.random() * 78 + '%';
     bug.addEventListener('click', () => {
       score += 1;
       scoreEl.textContent = score;
       bug.remove();
     });
     field.appendChild(bug);
-    setTimeout(() => bug.remove(), 1600);
+    setTimeout(() => bug.remove(), 1500);
   }
 
-  function endGame() {
+  function stop() {
     running = false;
     clearInterval(spawnTimer);
     clearInterval(countdownTimer);
+  }
+
+  function endGame() {
+    stop();
     field.querySelectorAll('.bug').forEach((b) => b.remove());
-    if (score > best) {
-      localStorage.setItem('vi-bughunt-best', String(score));
+    const currentBest = Number(localStorage.getItem('av-bughunt-best') || 0);
+    if (score > currentBest) {
+      localStorage.setItem('av-bughunt-best', String(score));
       bestEl.textContent = score;
-      window.showToast(lang() === 'ru' ? `🏆 Новый рекорд: ${score}` : `🏆 New best: ${score}`);
+      window.XP.toast(t(`🏆 Новый рекорд: ${score}`, `🏆 New best: ${score}`));
     } else {
-      window.showToast(lang() === 'ru' ? `Игра окончена. Счёт: ${score}` : `Game over. Score: ${score}`);
+      window.XP.toast(t(`Игра окончена. Счёт: ${score}`, `Game over. Score: ${score}`));
     }
   }
 
@@ -105,32 +96,30 @@ def deploy():
       if (timeLeft <= 0) endGame();
     }, 1000);
   });
-})();
+
+  window.XP.gameCleanup['game-bughunt'] = stop;
+}
 
 /* =========================================================
    Memory Match
    ========================================================= */
-(function memoryMatch() {
-  const grid = document.getElementById('memory-grid');
-  const movesEl = document.getElementById('memory-moves');
-  const bestEl = document.getElementById('memory-best');
-  const restartBtn = document.getElementById('memory-restart');
-  if (!grid) return;
+function initMemory(root) {
+  const grid = root.querySelector('#memory-grid');
+  const movesEl = root.querySelector('#memory-moves');
+  const bestEl = root.querySelector('#memory-best');
+  const restartBtn = root.querySelector('#memory-restart');
 
   const SYMBOLS = ['🐍', '🎯', '⚡', '🐳', '🗄️', '🔴', '☸️', '🔧'];
-  let cards = [];
   let flipped = [];
   let matched = 0;
   let moves = 0;
   let lock = false;
-
-  function bestKey() {
-    return 'vi-memory-best';
-  }
+  let disposed = false;
+  let pendingFlipBack = null;
 
   function refreshBest() {
-    const best = localStorage.getItem(bestKey());
-    bestEl.textContent = best ? best : '—';
+    const best = localStorage.getItem('av-memory-best');
+    bestEl.textContent = best || '—';
   }
 
   function shuffle(arr) {
@@ -142,21 +131,18 @@ def deploy():
   }
 
   function build() {
-    cards = shuffle([...SYMBOLS, ...SYMBOLS]);
+    const cards = shuffle([...SYMBOLS, ...SYMBOLS]);
     flipped = [];
     matched = 0;
     moves = 0;
     lock = false;
     movesEl.textContent = '0';
-    grid.innerHTML = cards
-      .map((sym, idx) => `<div class="memory-card hidden-face" data-idx="${idx}" data-sym="${sym}">?</div>`)
-      .join('');
+    grid.innerHTML = cards.map((sym) => `<div class="memory-card" data-sym="${sym}">?</div>`).join('');
     grid.querySelectorAll('.memory-card').forEach((card) => card.addEventListener('click', () => onFlip(card)));
   }
 
   function onFlip(card) {
     if (lock || card.classList.contains('flipped') || card.classList.contains('matched')) return;
-    card.classList.remove('hidden-face');
     card.classList.add('flipped');
     card.textContent = card.dataset.sym;
     flipped.push(card);
@@ -174,10 +160,10 @@ def deploy():
         matched += 1;
         if (matched === SYMBOLS.length) onWin();
       } else {
-        setTimeout(() => {
+        pendingFlipBack = setTimeout(() => {
+          if (disposed) return;
           [a, b].forEach((c) => {
             c.classList.remove('flipped');
-            c.classList.add('hidden-face');
             c.textContent = '?';
           });
           flipped = [];
@@ -188,12 +174,12 @@ def deploy():
   }
 
   function onWin() {
-    const best = Number(localStorage.getItem(bestKey()) || Infinity);
+    const best = Number(localStorage.getItem('av-memory-best') || Infinity);
     if (moves < best) {
-      localStorage.setItem(bestKey(), String(moves));
-      window.showToast(lang() === 'ru' ? `🏆 Новый рекорд: ${moves} ходов` : `🏆 New best: ${moves} moves`);
+      localStorage.setItem('av-memory-best', String(moves));
+      window.XP.toast(t(`🏆 Новый рекорд: ${moves} ходов`, `🏆 New best: ${moves} moves`));
     } else {
-      window.showToast(lang() === 'ru' ? `Готово за ${moves} ходов` : `Solved in ${moves} moves`);
+      window.XP.toast(t(`Готово за ${moves} ходов`, `Solved in ${moves} moves`));
     }
     refreshBest();
   }
@@ -201,24 +187,28 @@ def deploy():
   restartBtn.addEventListener('click', build);
   refreshBest();
   build();
-})();
+
+  window.XP.gameCleanup['game-memory'] = () => {
+    disposed = true;
+    if (pendingFlipBack) clearTimeout(pendingFlipBack);
+  };
+}
 
 /* =========================================================
    Snake_Deploy.py
    ========================================================= */
-(function snakeDeploy() {
-  const canvas = document.getElementById('snake-canvas');
-  if (!canvas) return;
+function initSnake(root) {
+  const canvas = root.querySelector('#snake-canvas');
   const ctx = canvas.getContext('2d');
-  const scoreEl = document.getElementById('snake-score');
-  const bestEl = document.getElementById('snake-best');
-  const startBtn = document.getElementById('snake-start');
+  const scoreEl = root.querySelector('#snake-score');
+  const bestEl = root.querySelector('#snake-best');
+  const startBtn = root.querySelector('#snake-start');
 
-  const SIZE = 20;
-  const CELLS = canvas.width / SIZE;
+  const SIZE = 18;
+  const CELLS = Math.floor(canvas.width / SIZE);
   let snake, dir, nextDir, food, score, loopId, running;
 
-  const best = Number(localStorage.getItem('vi-snake-best') || 0);
+  const best = Number(localStorage.getItem('av-snake-best') || 0);
   bestEl.textContent = best;
 
   function resetState() {
@@ -237,39 +227,28 @@ def deploy():
   }
 
   function draw() {
-    ctx.fillStyle = '#05070a';
+    ctx.fillStyle = '#06210f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    for (let i = 0; i <= CELLS; i += 1) {
-      ctx.beginPath();
-      ctx.moveTo(i * SIZE, 0);
-      ctx.lineTo(i * SIZE, canvas.height);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, i * SIZE);
-      ctx.lineTo(canvas.width, i * SIZE);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = '#ffb454';
-    ctx.fillRect(food.x * SIZE + 3, food.y * SIZE + 3, SIZE - 6, SIZE - 6);
-
+    ctx.fillStyle = '#ffd25f';
+    ctx.fillRect(food.x * SIZE + 2, food.y * SIZE + 2, SIZE - 4, SIZE - 4);
     snake.forEach((seg, idx) => {
-      ctx.fillStyle = idx === 0 ? '#3bffa0' : 'rgba(59,255,160,0.7)';
+      ctx.fillStyle = idx === 0 ? '#6ee06e' : 'rgba(110,224,110,0.75)';
       ctx.fillRect(seg.x * SIZE + 1, seg.y * SIZE + 1, SIZE - 2, SIZE - 2);
     });
+  }
+
+  function stop() {
+    running = false;
+    clearInterval(loopId);
   }
 
   function tick() {
     dir = nextDir;
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-
     if (head.x < 0 || head.y < 0 || head.x >= CELLS || head.y >= CELLS || snake.some((s) => s.x === head.x && s.y === head.y)) {
       gameOver();
       return;
     }
-
     snake.unshift(head);
     if (head.x === food.x && head.y === food.y) {
       score += 1;
@@ -282,17 +261,14 @@ def deploy():
   }
 
   function gameOver() {
-    running = false;
-    clearInterval(loopId);
-    const currentBest = Number(localStorage.getItem('vi-snake-best') || 0);
+    stop();
+    const currentBest = Number(localStorage.getItem('av-snake-best') || 0);
     if (score > currentBest) {
-      localStorage.setItem('vi-snake-best', String(score));
+      localStorage.setItem('av-snake-best', String(score));
       bestEl.textContent = String(score);
-      window.showToast(lang() === 'ru' ? `🏆 Новый рекорд: ${score}` : `🏆 New best: ${score}`);
+      window.XP.toast(t(`🏆 Новый рекорд: ${score}`, `🏆 New best: ${score}`));
     } else {
-      window.showToast(
-        lang() === 'ru' ? `💥 Downtime! Обработано запросов: ${score}` : `💥 Downtime! Requests served: ${score}`
-      );
+      window.XP.toast(t(`💥 Downtime! Запросов: ${score}`, `💥 Downtime! Requests served: ${score}`));
     }
   }
 
@@ -310,17 +286,28 @@ def deploy():
     ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 }, A: { x: -1, y: 0 },
     ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }, D: { x: 1, y: 0 },
   };
-
-  document.addEventListener('keydown', (e) => {
+  function onKey(e) {
     if (!running) return;
     const next = KEY_MAP[e.key];
     if (!next) return;
     if (next.x === -dir.x && next.y === -dir.y) return;
     nextDir = next;
     e.preventDefault();
-  });
+  }
 
+  document.addEventListener('keydown', onKey);
   startBtn.addEventListener('click', start);
   resetState();
   draw();
-})();
+
+  window.XP.gameCleanup['game-snake'] = () => {
+    stop();
+    document.removeEventListener('keydown', onKey);
+  };
+}
+
+window.XP.initGame = function (kind, root) {
+  if (kind === 'bughunt') initBugHunt(root);
+  else if (kind === 'memory') initMemory(root);
+  else if (kind === 'snake') initSnake(root);
+};

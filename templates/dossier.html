@@ -9,7 +9,7 @@
 <body>
   <div class="sheet">
     <div class="no-print toolbar">
-      <a href="/" class="back">← {{ "Назад в офис" if lang == "ru" else "Back to the office" }}</a>
+      <a href="/" class="back">← {{ "На рабочий стол" if lang == "ru" else "Back to desktop" }}</a>
       <div class="lang-switch">
         <a href="/dossier?lang=ru" class="{{ 'active' if lang=='ru' else '' }}">RU</a>
         <a href="/dossier?lang=en" class="{{ 'active' if lang=='en' else '' }}">EN</a>
@@ -22,7 +22,7 @@
         <div class="d-name">{{ profile.name[lang] }}</div>
         <div class="d-role">{{ profile.role[lang] }}</div>
       </div>
-      <div class="d-mark">VASILIEV<br>INC.</div>
+      <div class="d-mark">resume-source:<br>{{ resume_source }}</div>
     </header>
 
     <div class="d-meta">
@@ -77,7 +77,7 @@
       <p>{% for l in profile.languages %}{{ l.name[lang] }} — {{ l.level[lang] }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     </section>
 
-    <footer class="d-foot">{{ "Сгенерировано на vasiliev-inc.vercel.app" if lang == "ru" else "Generated at vasiliev-inc.vercel.app" }}</footer>
+    <footer class="d-foot">{{ "Сгенерировано автоматически" if lang == "ru" else "Auto-generated" }}</footer>
   </div>
 </body>
 </html>

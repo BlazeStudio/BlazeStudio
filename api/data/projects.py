@@ -60,8 +60,8 @@ PROJECTS = [
         "github": "https://github.com/BlazeStudio/Detecitve-Board",
         "homepage": None,
         "note": {
-            "ru": "Да, именно этот проект и вдохновил эту доску на стене отдела кадров.",
-            "en": "Yes — this is the exact project that inspired the corkboard on this page.",
+            "ru": "Да, эта штука реально существует и не является метафорой.",
+            "en": "Yes, this thing genuinely exists and is not a metaphor.",
         },
     },
     {

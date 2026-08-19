@@ -1,7 +1,6 @@
-"""FastAPI backend for Vasiliev Inc. — a one-person software company's intranet,
-doubling as Anton Vasiliev's portfolio. Deliberately stateless: every route reads
-from the Python modules in api/data/ or from GitHub's public API, so the whole
-thing runs on Vercel's free tier without a database.
+"""FastAPI backend for Anton Vasiliev's portfolio — a fake desktop OS. Deliberately
+stateless: every route reads from the Python modules in api/data/ or from GitHub's
+public API, so the whole thing runs on Vercel's free tier without a database.
 """
 
 from __future__ import annotations
@@ -22,13 +21,14 @@ from pydantic import BaseModel
 
 import github_sync
 import terminal
+from config import RESUME_SOURCE
 from data.profile import PROFILE
 from data.projects import CATEGORIES, PROJECTS
 
 ROOT = Path(__file__).resolve().parent.parent
 START_TIME = time.time()
 
-app = FastAPI(title="Vasiliev Inc.", docs_url=None, redoc_url=None)
+app = FastAPI(title="Anton Vasiliev", docs_url=None, redoc_url=None)
 
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 
@@ -55,7 +55,7 @@ STATUS_MESSAGES = {
 
 
 def _site_data_json() -> str:
-    payload = {"profile": PROFILE, "projects": PROJECTS, "categories": CATEGORIES}
+    payload = {"profile": PROFILE, "projects": PROJECTS, "categories": CATEGORIES, "resume_source": RESUME_SOURCE}
     return json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
 
@@ -68,6 +68,7 @@ def index(request: Request):
             "profile": PROFILE,
             "projects": PROJECTS,
             "categories": CATEGORIES,
+            "resume_source": RESUME_SOURCE,
             "site_data_json": _site_data_json(),
         },
     )
@@ -76,7 +77,7 @@ def index(request: Request):
 @app.get("/dossier")
 def dossier(request: Request, lang: str = "ru"):
     lang = lang if lang in ("ru", "en") else "ru"
-    return templates.TemplateResponse(request, "dossier.html", {"profile": PROFILE, "lang": lang})
+    return templates.TemplateResponse(request, "dossier.html", {"profile": PROFILE, "lang": lang, "resume_source": RESUME_SOURCE})
 
 
 @app.get("/api/health")

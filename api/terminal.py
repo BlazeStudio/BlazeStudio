@@ -1,46 +1,32 @@
-"""A small, deliberately-safe fake shell for the Arcade department's terminal game.
-
-Everything here is pattern matching over a fixed whitelist — no eval(), no subprocess,
-no filesystem access. It exists to let a recruiter "poke around" the candidate through
-a familiar CLI metaphor, backed by the same profile/projects data as the rest of the
-site so answers can never drift out of sync with the page content.
+"""The Command Prompt's command set. Exactly ten, as requested — placeholders for
+now, will grow later. Pattern matching only: no eval(), no subprocess, nothing that
+touches a real filesystem or shell. Effects are instructions the frontend interprets
+(open a window, run a screen effect); this module never renders anything itself.
 """
 
 from __future__ import annotations
 
 from data.profile import PROFILE
+from data.projects import PROJECTS
 
-FILES = {
-    "about.txt": lambda lang: "\n".join(PROFILE["about"][lang]),
-    "skills.txt": lambda lang: _skills_txt(lang),
-    "experience.log": lambda lang: _experience_txt(lang),
-    "contact.card": lambda lang: _contact_txt(lang),
-}
-
-DEPARTMENTS = ["reception", "hr", "engineering", "lab", "archive", "arcade", "contact"]
+COMMANDS = ["help", "whoami", "cv", "projects", "contact", "sudo hire-anton", "matrix", "party", "bsod", "shutdown"]
 
 
-def _skills_txt(lang: str) -> str:
-    lines = []
-    for group in PROFILE["skills"].values():
-        names = ", ".join(item["name"] for item in group["items"])
-        lines.append(f"{group['label'][lang]}: {names}")
+def _cv_txt(lang: str) -> str:
+    lines = [f"{PROFILE['name'][lang]} — {PROFILE['role'][lang]}"]
+    lines += [f"  {p}" for p in PROFILE["about"][lang]]
     return "\n".join(lines)
 
 
-def _experience_txt(lang: str) -> str:
-    lines = []
-    for job in PROFILE["experience"]:
-        company = job["company"][lang]
-        title = job["title"][lang]
-        period = job["period"][lang]
-        lines.append(f"[{period}] {title} @ {company}")
+def _projects_txt(lang: str) -> str:
+    lines = [f"{len(PROJECTS)} public repos worth showing:" if lang == "en" else f"{len(PROJECTS)} репозиториев, которые не стыдно показать:"]
+    lines += [f"  - {p['name']} ({', '.join(p['stack'][:2])})" for p in PROJECTS]
     return "\n".join(lines)
 
 
 def _contact_txt(lang: str) -> str:
     c = PROFILE["contacts"]
-    return "\n".join([f"email : {c['email']}", f"telegram : {c['telegram_handle']}", f"github : {c['github']}", f"linkedin : {c['linkedin']}"])
+    return "\n".join([f"email     {c['email']}", f"telegram  {c['telegram_handle']}", f"github    {c['github']}", f"linkedin  {c['linkedin']}"])
 
 
 def run_command(raw: str, lang: str = "ru") -> dict:
@@ -51,90 +37,84 @@ def run_command(raw: str, lang: str = "ru") -> dict:
 
     parts = cmd.split(maxsplit=1)
     name = parts[0].lower()
-    arg = parts[1].strip() if len(parts) > 1 else ""
+    arg = parts[1].strip().lower() if len(parts) > 1 else ""
+    full = f"{name} {arg}".strip()
 
     if name in ("help", "?"):
         return {"output": _help(lang), "effect": None}
 
     if name == "whoami":
-        return {"output": f"{PROFILE['name'][lang]} — {PROFILE['role'][lang]}", "effect": None}
-
-    if name in ("ls", "dir"):
-        target = arg.strip("/") or "."
-        if target in ("departments", "."):
-            listing = "  ".join(DEPARTMENTS)
-        elif target == "files":
-            listing = "  ".join(FILES.keys())
-        else:
-            listing = "departments/  files/"
-        return {"output": listing, "effect": None}
-
-    if name == "cat":
-        key = arg.strip().lower()
-        if key in FILES:
-            return {"output": FILES[key](lang), "effect": None}
-        msg = f"cat: {arg}: {'файл не найден' if lang == 'ru' else 'no such file'}"
-        return {"output": msg, "effect": None}
-
-    if name == "cd":
-        target = arg.strip("/ ").lower()
-        if target in DEPARTMENTS:
-            return {"output": f"→ {target}", "effect": {"type": "navigate", "target": target}}
-        msg = f"cd: {arg}: {'нет такого отдела' if lang == 'ru' else 'no such department'}"
-        return {"output": msg, "effect": None}
-
-    if name in ("contact", "hire"):
-        return {"output": _contact_txt(lang), "effect": {"type": "navigate", "target": "contact"}}
-
-    if name == "sudo" and arg.lower() in ("hire anton", "hire-anton", "hire_anton"):
         msg = (
-            "Permission granted. Anton has been added to your team.\n[sudo] чувство юмора не помешает и в проде."
+            f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(на самом деле просто человек, который слишком долго настраивал этот терминал)"
             if lang == "ru"
-            else "Permission granted. Anton has been added to your team.\n[sudo] a sense of humor never hurt production either."
+            else f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(actually just a guy who spent too long styling this terminal)"
+        )
+        return {"output": msg, "effect": None}
+
+    if name == "cv":
+        return {"output": _cv_txt(lang), "effect": {"type": "open", "target": "resume"}}
+
+    if name == "projects":
+        return {"output": _projects_txt(lang), "effect": {"type": "open", "target": "projects"}}
+
+    if name == "contact":
+        return {"output": _contact_txt(lang), "effect": {"type": "open", "target": "contact"}}
+
+    if full == "sudo hire-anton":
+        msg = (
+            "[sudo] пароль для recruiter: ********\nдоступ разрешён. Антон добавлен в команду."
+            if lang == "ru"
+            else "[sudo] password for recruiter: ********\naccess granted. Anton has been added to the team."
         )
         return {"output": msg, "effect": {"type": "confetti"}}
 
     if name == "sudo":
-        msg = "Permission denied: nice try." if lang == "en" else "Permission denied: хорошая попытка."
-        return {"output": msg, "effect": None}
-
-    if name == "ping":
-        target = arg or ("рекрутера" if lang == "ru" else "recruiter")
-        msg = f"64 bytes from {target}: time=0.9ms — {'на связи' if lang == 'ru' else 'reachable'}"
-        return {"output": msg, "effect": None}
-
-    if name == "coffee":
-        msg = "☕ заварено. Продуктивность +100%." if lang == "ru" else "☕ brewed. Productivity +100%."
+        msg = "Permission denied. (тоже неплохой навык)" if lang == "ru" else "Permission denied. (also a valid life skill)"
         return {"output": msg, "effect": None}
 
     if name == "matrix":
-        return {"output": "Wake up, recruiter...", "effect": {"type": "matrix"}}
+        msg = "Открой глаза, рекрутер..." if lang == "ru" else "Wake up, recruiter..."
+        return {"output": msg, "effect": {"type": "matrix"}}
 
-    if name in ("clear", "cls"):
-        return {"output": "", "effect": {"type": "clear"}}
+    if name == "party":
+        msg = "party mode: ON" if lang == "en" else "режим вечеринки: ВКЛ"
+        return {"output": msg, "effect": {"type": "party"}}
 
-    if name in ("exit", "quit"):
-        return {"output": "logout" , "effect": {"type": "close"}}
+    if name == "bsod":
+        return {"output": "", "effect": {"type": "bsod"}}
 
-    suggestion = "help" if lang == "en" else "help"
-    msg = (
-        f"bash: {name}: команда не найдена (попробуйте '{suggestion}')"
-        if lang == "ru"
-        else f"bash: {name}: command not found (try '{suggestion}')"
-    )
-    return {"output": msg, "effect": None}
+    if name == "shutdown":
+        return {"output": "", "effect": {"type": "shutdown"}}
+
+    msg = f"'{name}' is not recognized as an internal or external command." if lang == "en" else f"«{name}» не является внутренней или внешней командой."
+    return {"output": msg + ("\ntype 'help'" if lang == "en" else "\nнаберите 'help'"), "effect": None}
 
 
 def _help(lang: str) -> str:
-    rows = [
-        ("whoami", "кто это" if lang == "ru" else "who this is"),
-        ("ls departments", "список отделов" if lang == "ru" else "list departments"),
-        ("cat about.txt", "о кандидате" if lang == "ru" else "about the candidate"),
-        ("cat skills.txt", "стек технологий" if lang == "ru" else "tech stack"),
-        ("cat experience.log", "опыт работы" if lang == "ru" else "work history"),
-        ("cat contact.card", "контакты" if lang == "ru" else "contacts"),
-        ("cd <department>", "перейти в отдел" if lang == "ru" else "jump to a department"),
-        ("sudo hire anton", "???", ),
-        ("clear", "очистить экран" if lang == "ru" else "clear the screen"),
-    ]
-    return "\n".join(f"{cmd:<20}{desc}" for cmd, desc in rows)
+    if lang == "en":
+        rows = [
+            ("help", "this list"),
+            ("whoami", "who's typing this"),
+            ("cv", "opens the résumé window"),
+            ("projects", "opens the projects window"),
+            ("contact", "opens the contact window"),
+            ("sudo hire-anton", "???"),
+            ("matrix", "green rain, obviously"),
+            ("party", "shakes the desktop icons"),
+            ("bsod", "a scare, nothing more"),
+            ("shutdown", "does what it says"),
+        ]
+    else:
+        rows = [
+            ("help", "этот список"),
+            ("whoami", "кто это печатает"),
+            ("cv", "открывает окно резюме"),
+            ("projects", "открывает окно проектов"),
+            ("contact", "открывает окно контактов"),
+            ("sudo hire-anton", "???"),
+            ("matrix", "зелёный дождь, а как же без него"),
+            ("party", "трясёт иконки на столе"),
+            ("bsod", "просто пугалка"),
+            ("shutdown", "делает ровно то, что написано"),
+        ]
+    return "\n".join(f"{c:<18}{d}" for c, d in rows)
