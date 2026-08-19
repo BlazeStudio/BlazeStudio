@@ -82,7 +82,10 @@ def xp(request: Request):
 @app.get("/dossier")
 def dossier(request: Request, lang: str = "ru"):
     lang = lang if lang in ("ru", "en") else "ru"
-    return templates.TemplateResponse(request, "dossier.html", {"profile": PROFILE, "lang": lang, "resume_source": RESUME_SOURCE})
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.hostname
+    return templates.TemplateResponse(
+        request, "dossier.html", {"profile": PROFILE, "lang": lang, "resume_source": RESUME_SOURCE, "site_host": host}
+    )
 
 
 @app.get("/api/health")

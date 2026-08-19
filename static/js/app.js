@@ -5,8 +5,15 @@
    ========================================================= */
 const SITE_DATA = JSON.parse(document.getElementById('site-data').textContent);
 
+function detectLang() {
+  const saved = localStorage.getItem('av-lang');
+  if (saved) return saved;
+  const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
+  return nav.startsWith('ru') ? 'ru' : 'en'; // unclear/unsupported system locale → English
+}
+
 const state = {
-  lang: localStorage.getItem('av-lang') || 'ru',
+  lang: detectLang(),
 };
 
 window.XP = {
@@ -56,17 +63,8 @@ function runBoot() {
     desktop.hidden = false;
     setTimeout(() => {
       boot.hidden = true;
-      showBalloon();
     }, 550);
   }, 1750);
-}
-
-function showBalloon() {
-  const balloon = document.getElementById('balloon');
-  balloon.hidden = false;
-  const dismiss = () => (balloon.hidden = true);
-  document.getElementById('balloon-close').addEventListener('click', dismiss);
-  setTimeout(dismiss, 8000);
 }
 
 /* =========================================================

@@ -77,7 +77,7 @@
       <p>{% for l in profile.languages %}{{ l.name[lang] }} — {{ l.level[lang] }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     </section>
 
-    <footer class="d-foot">{{ "Сгенерировано автоматически" if lang == "ru" else "Auto-generated" }}</footer>
+    <footer class="d-foot">{{ "Сгенерировано на " if lang == "ru" else "Generated at " }}{{ site_host }}</footer>
   </div>
 </body>
 </html>

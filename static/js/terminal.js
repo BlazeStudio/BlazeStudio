@@ -56,7 +56,7 @@
     }
   }
 
-  window.XP.initConsole = function (root) {
+  window.XP.initConsole = function (root, autofocus) {
     const output = root.querySelector('#term-output');
     const input = root.querySelector('#term-input');
     printLine(output, WELCOME[window.XP.lang()]);
@@ -84,6 +84,6 @@
       }
     });
 
-    setTimeout(() => input.focus(), 30);
+    if (autofocus) setTimeout(() => input.focus(), 30);
   };
 })();

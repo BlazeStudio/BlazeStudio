@@ -15,8 +15,14 @@
   }
 
   /* ---------- theme ---------- */
+  function detectTheme() {
+    const saved = localStorage.getItem('av-classic-theme');
+    if (saved) return saved;
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'day';
+    return 'night'; // unclear system preference → dark by default
+  }
   function applyTheme() {
-    const theme = localStorage.getItem('av-classic-theme') || 'night';
+    const theme = detectTheme();
     document.getElementById('classic').dataset.theme = theme;
     const btn = document.getElementById('c-theme-btn');
     if (btn) btn.textContent = theme === 'day' ? '☀️' : '🌙';
@@ -292,8 +298,64 @@
     });
   }
 
+  /* ---------- side quick-nav ---------- */
+  const SIDENAV_SECTIONS = [
+    { id: 'c-about-section', ic: '👤', ru: 'О себе', en: 'About' },
+    { id: 'c-skills-section', ic: '🛠️', ru: 'Стек', en: 'Stack' },
+    { id: 'c-experience-section', ic: '💼', ru: 'Опыт', en: 'Experience' },
+    { id: 'c-projects-section', ic: '📁', ru: 'Проекты', en: 'Projects' },
+    { id: 'c-fun-section', ic: '🎮', ru: 'Развлечения', en: 'Fun' },
+    { id: 'c-contact-section', ic: '✉️', ru: 'Контакты', en: 'Contact' },
+  ];
+
+  function buildSidenav() {
+    const nav = document.createElement('nav');
+    nav.id = 'c-sidenav';
+    nav.innerHTML = SIDENAV_SECTIONS.map(
+      (s) => `<a class="c-sidenav-item" href="#${s.id}" data-target="${s.id}">${s.ic}<span class="tip" data-ru="${s.ru}" data-en="${s.en}">${s.ru}</span></a>`
+    ).join('');
+    document.getElementById('classic').appendChild(nav);
+    window.XP.applyStaticI18n(nav);
+
+    nav.querySelectorAll('.c-sidenav-item').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById(a.dataset.target);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    const scroller = document.getElementById('classic');
+    function updateActive() {
+      const items = SIDENAV_SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean);
+      const centerY = scroller.getBoundingClientRect().top + scroller.clientHeight / 2;
+      let current = items[0];
+      items.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= centerY && rect.bottom >= centerY) current = el;
+      });
+      nav.querySelectorAll('.c-sidenav-item').forEach((a) => a.classList.toggle('active', current && a.dataset.target === current.id));
+    }
+    let ticking = false;
+    scroller.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          updateActive();
+        });
+      },
+      { passive: true }
+    );
+    updateActive();
+  }
+
   /* ---------- init ---------- */
   window.XP.renderClassic = function () {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
     applyTheme();
     document.getElementById('c-theme-btn').addEventListener('click', toggleTheme);
 
@@ -314,8 +376,19 @@
     renderProjectsSection();
     renderFunSection();
     renderContactSection();
-    document.getElementById('c-footer').innerHTML = `Anton Vasiliev © <span id="c-year"></span> · <a href="https://github.com/BlazeStudio" target="_blank" rel="noopener">github.com/BlazeStudio</a>`;
+    document.getElementById('c-footer').innerHTML = `
+      Anton Vasiliev © <span id="c-year"></span> · <a href="https://github.com/BlazeStudio" target="_blank" rel="noopener">github.com/BlazeStudio</a>
+      <br>
+      <button class="c-btn" id="c-to-top" data-ru="↑ Наверх" data-en="↑ Back to top">↑ Наверх</button>
+    `;
     document.getElementById('c-year').textContent = new Date().getFullYear();
+    window.XP.applyStaticI18n(document.getElementById('c-footer'));
+    document.getElementById('c-to-top').addEventListener('click', () => {
+      document.getElementById('classic').scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    buildSidenav();
+    document.getElementById('classic').scrollTop = 0;
 
     syncGithub();
 

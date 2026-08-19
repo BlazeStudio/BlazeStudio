@@ -509,7 +509,7 @@ function renderConsole(root) {
       <input id="term-input" type="text" autocomplete="off" spellcheck="false">
     </div>
   `;
-  window.XP.initConsole(root);
+  window.XP.initConsole(root, true);
 }
 
 function renderGame(kind) {
