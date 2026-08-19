@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#0a246a">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%2246%22 height=%2246%22 fill=%22%23ff5f5f%22/><rect x=%2254%22 width=%2246%22 height=%2246%22 fill=%22%236ee06e%22/><rect y=%2254%22 width=%2246%22 height=%2246%22 fill=%22%235fa8ff%22/><rect x=%2254%22 y=%2254%22 width=%2246%22 height=%2246%22 fill=%22%23ffd25f%22/></svg>">
 <link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="/static/css/classic.css">
 </head>
 <body>
 
@@ -90,10 +91,29 @@
     <button id="start-btn"><span class="start-logo">⊞</span><span data-ru="Пуск" data-en="start">Пуск</span></button>
     <div id="taskbar-open"></div>
     <div id="tray">
+      <button id="mode-btn" class="tray-btn" data-ru="📄 Обычная версия" data-en="📄 Plain version" title="Switch to a plain scrolling résumé">📄 Обычная версия</button>
       <button id="lang-btn" class="tray-btn">RU</button>
       <span id="clock" class="tray-clock"></span>
     </div>
   </div>
+</div>
+
+<!-- ============ CLASSIC (plain scrolling résumé) ============ -->
+<div id="classic" hidden data-theme="night">
+  <header id="c-topbar">
+    <div id="c-brand">
+      <span id="c-brand-name">Anton Vasiliev</span>
+      <span id="c-brand-role">Python Backend Developer</span>
+    </div>
+    <div id="c-controls">
+      <a class="c-btn" id="c-pdf" href="/dossier" target="_blank" data-ru="PDF" data-en="PDF">PDF</a>
+      <button class="c-btn" id="c-theme-btn" title="Night/day">🌙</button>
+      <button class="c-btn" id="c-lang-btn">RU</button>
+      <button class="c-btn c-btn-accent" id="c-mode-btn" data-ru="🖥 XP-версия" data-en="🖥 XP version">🖥 XP-версия</button>
+    </div>
+  </header>
+  <main id="c-main"></main>
+  <footer id="c-footer"></footer>
 </div>
 
 <div id="bsod" hidden>
@@ -117,5 +137,6 @@
 <script src="/static/js/windows.js"></script>
 <script src="/static/js/terminal.js"></script>
 <script src="/static/js/games.js"></script>
+<script src="/static/js/classic.js"></script>
 </body>
 </html>

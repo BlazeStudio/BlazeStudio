@@ -31,6 +31,8 @@ function setLang(lang) {
   localStorage.setItem('av-lang', lang);
   document.documentElement.lang = lang;
   document.getElementById('lang-btn').textContent = lang.toUpperCase();
+  const cLangBtn = document.getElementById('c-lang-btn');
+  if (cLangBtn) cLangBtn.textContent = lang.toUpperCase();
   applyStaticI18n();
   window.XP.onLangChange.forEach((fn) => {
     try {
@@ -65,6 +67,32 @@ function showBalloon() {
   document.getElementById('balloon-close').addEventListener('click', dismiss);
   setTimeout(dismiss, 8000);
 }
+
+/* =========================================================
+   Mode: the XP desktop vs. the plain scrolling résumé
+   ========================================================= */
+function setMode(mode) {
+  localStorage.setItem('av-mode', mode);
+  const desktop = document.getElementById('desktop');
+  const boot = document.getElementById('boot');
+  const classic = document.getElementById('classic');
+
+  if (mode === 'classic') {
+    desktop.hidden = true;
+    boot.hidden = true;
+    classic.hidden = false;
+    if (window.XP.renderClassic && !window.XP.classicRendered) {
+      window.XP.renderClassic();
+      window.XP.classicRendered = true;
+    }
+  } else {
+    if (window.XP.teardownClassicGames) window.XP.teardownClassicGames();
+    classic.hidden = true;
+    boot.hidden = true;
+    desktop.hidden = false;
+  }
+}
+window.XP.setMode = setMode;
 
 /* =========================================================
    Clock
@@ -236,13 +264,25 @@ function initKonami() {
 document.addEventListener('DOMContentLoaded', () => {
   document.documentElement.lang = state.lang;
   document.getElementById('lang-btn').textContent = state.lang.toUpperCase();
+  const cLangBtn = document.getElementById('c-lang-btn');
+  if (cLangBtn) cLangBtn.textContent = state.lang.toUpperCase();
   applyStaticI18n();
   initKonami();
 
   document.getElementById('lang-btn').addEventListener('click', () => setLang(state.lang === 'ru' ? 'en' : 'ru'));
+  if (cLangBtn) cLangBtn.addEventListener('click', () => setLang(state.lang === 'ru' ? 'en' : 'ru'));
+  document.getElementById('mode-btn').addEventListener('click', () => setMode('classic'));
+  const cModeBtn = document.getElementById('c-mode-btn');
+  if (cModeBtn) cModeBtn.addEventListener('click', () => setMode('xp'));
 
   tickClock();
   setInterval(tickClock, 1000 * 15);
 
-  runBoot();
+  const savedMode = localStorage.getItem('av-mode');
+  if (savedMode === 'classic') {
+    document.getElementById('boot').hidden = true;
+    setMode('classic');
+  } else {
+    runBoot();
+  }
 });

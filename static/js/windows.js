@@ -36,7 +36,7 @@ function makeWindowShell(id) {
       <button class="t-btn min" title="minimize">_</button>
       <button class="t-btn close" title="close">✕</button>
     </div>
-    <div class="xp-body-wrap" style="flex:1;display:flex;flex-direction:column;overflow:hidden;"></div>
+    <div class="xp-shell"></div>
   `;
   return el;
 }
@@ -50,7 +50,7 @@ function openWindow(id) {
   const el = makeWindowShell(id);
   document.getElementById('windows-layer').appendChild(el);
 
-  const wrap = el.querySelector('.xp-body-wrap');
+  const wrap = el.querySelector('.xp-shell');
   const def = WINDOW_DEFS[id];
   def.render(wrap);
   window.XP.applyStaticI18n(el);
@@ -183,6 +183,67 @@ function makeDraggable(el, handle) {
   handle.addEventListener('touchstart', onDown, { passive: true });
 }
 
+/* =========================================================
+   Desktop icons — draggable, positions are not persisted
+   (a fresh visit always starts from the same tidy grid).
+   ========================================================= */
+function layoutDesktopIcons() {
+  const container = document.getElementById('icons');
+  const icons = Array.from(container.querySelectorAll('.desktop-icon'));
+  const colWidth = 92;
+  const rowHeight = 88;
+  const perCol = 7;
+
+  icons.forEach((icon, i) => {
+    icon.style.left = Math.floor(i / perCol) * colWidth + 4 + 'px';
+    icon.style.top = (i % perCol) * rowHeight + 4 + 'px';
+
+    let dragging = false;
+    let moved = false;
+    let startX = 0;
+    let startY = 0;
+    let origX = 0;
+    let origY = 0;
+
+    function onDown(e) {
+      dragging = true;
+      moved = false;
+      icon.classList.add('dragging');
+      const point = e.touches ? e.touches[0] : e;
+      startX = point.clientX;
+      startY = point.clientY;
+      origX = icon.offsetLeft;
+      origY = icon.offsetTop;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onUp);
+    }
+    function onMove(e) {
+      if (!dragging) return;
+      if (e.cancelable) e.preventDefault();
+      const point = e.touches ? e.touches[0] : e;
+      const dx = point.clientX - startX;
+      const dy = point.clientY - startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+      const bounds = container.getBoundingClientRect();
+      icon.style.left = Math.min(Math.max(0, origX + dx), bounds.width - icon.offsetWidth) + 'px';
+      icon.style.top = Math.min(Math.max(0, origY + dy), bounds.height - icon.offsetHeight) + 'px';
+    }
+    function onUp() {
+      dragging = false;
+      icon.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      if (!moved) openWindow(icon.dataset.window);
+    }
+    icon.addEventListener('mousedown', onDown);
+    icon.addEventListener('touchstart', onDown, { passive: true });
+  });
+}
+
 window.XP.open = openWindow;
 window.XP.close = closeWindow;
 
@@ -295,7 +356,6 @@ function renderMyPC(root) {
 function renderProjects(root) {
   const lang = window.XP.lang();
   const t = window.XP.t;
-  root.classList.add('no-pad');
   root.innerHTML = `
     <div class="explorer">
       <div class="explorer-side" id="proj-side"></div>
@@ -369,29 +429,31 @@ function renderResume(root) {
   const t = window.XP.t;
   const edu = PROFILE.education;
   root.innerHTML = `
-    <div class="doc-page">
-      <div class="doc-h1">${PROFILE.name[lang]}</div>
-      <div style="color:var(--xp-accent);font-size:12.5px;">${PROFILE.role[lang]}</div>
-      <div class="doc-h2">${t('О себе', 'Summary')}</div>
-      ${PROFILE.about[lang].map((p) => `<p style="font-size:12.5px;color:var(--xp-text-dim);">${p}</p>`).join('')}
-      <div class="doc-h2">${t('Опыт работы', 'Experience')}</div>
-      ${PROFILE.experience
-        .map(
-          (job) => `<div class="doc-job">
-            <div class="doc-job-head"><span>${job.title[lang]} — ${job.company[lang]}</span><span class="doc-period">${job.period[lang]}</span></div>
-            <p>${job.summary[lang]}</p>
-            ${job.highlight[lang] ? `<p class="highlight">◆ ${job.highlight[lang]}</p>` : ''}
-            ${job.tasks[lang] && job.tasks[lang].length ? `<ul>${job.tasks[lang].map((tk) => `<li>${tk}</li>`).join('')}</ul>` : ''}
-          </div>`
-        )
-        .join('')}
-      <div class="doc-h2">${t('Образование', 'Education')}</div>
-      <div class="doc-job">
-        <div class="doc-job-head"><span>${edu.school[lang]}</span><span class="doc-period">${edu.year}</span></div>
-        <p>${edu.degree[lang]}</p>
+    <div class="xp-body">
+      <div class="doc-page">
+        <div class="doc-h1">${PROFILE.name[lang]}</div>
+        <div style="color:var(--xp-accent);font-size:12.5px;">${PROFILE.role[lang]}</div>
+        <div class="doc-h2">${t('О себе', 'Summary')}</div>
+        ${PROFILE.about[lang].map((p) => `<p style="font-size:12.5px;color:var(--xp-text-dim);">${p}</p>`).join('')}
+        <div class="doc-h2">${t('Опыт работы', 'Experience')}</div>
+        ${PROFILE.experience
+          .map(
+            (job) => `<div class="doc-job">
+              <div class="doc-job-head"><span>${job.title[lang]} — ${job.company[lang]}</span><span class="doc-period">${job.period[lang]}</span></div>
+              <p>${job.summary[lang]}</p>
+              ${job.highlight[lang] ? `<p class="highlight">◆ ${job.highlight[lang]}</p>` : ''}
+              ${job.tasks[lang] && job.tasks[lang].length ? `<ul>${job.tasks[lang].map((tk) => `<li>${tk}</li>`).join('')}</ul>` : ''}
+            </div>`
+          )
+          .join('')}
+        <div class="doc-h2">${t('Образование', 'Education')}</div>
+        <div class="doc-job">
+          <div class="doc-job-head"><span>${edu.school[lang]}</span><span class="doc-period">${edu.year}</span></div>
+          <p>${edu.degree[lang]}</p>
+        </div>
       </div>
+      <a class="xp-btn" href="/dossier?lang=${lang}" target="_blank">${t('🖨 Печать / PDF', '🖨 Print / PDF')}</a>
     </div>
-    <a class="xp-btn" href="/dossier?lang=${lang}" target="_blank">${t('🖨 Печать / PDF', '🖨 Print / PDF')}</a>
   `;
 }
 
@@ -406,9 +468,9 @@ function renderContact(root) {
     { ic: '💼', label: 'LinkedIn', value: t('Профиль', 'Profile'), href: c.linkedin },
     { ic: '📋', label: 'hh.ru', value: t('Резюме', 'Résumé'), href: c.hh },
   ];
-  root.innerHTML = `<div class="addr-list">${items
+  root.innerHTML = `<div class="xp-body"><div class="addr-list">${items
     .map((i) => `<a class="addr-row" href="${i.href}" target="_blank" rel="noopener"><span class="a-ic">${i.ic}</span><span><span class="a-label">${i.label}</span><br><span class="a-value">${i.value}</span></span></a>`)
-    .join('')}</div>`;
+    .join('')}</div></div>`;
 }
 
 function renderBin(root) {
@@ -419,8 +481,10 @@ function renderBin(root) {
     { ic: '📄', name: t('план_Б.docx', 'plan_B.docx'), note: t('пока не понадобился', 'not needed yet') },
   ];
   root.innerHTML = `
-    <div class="bin-empty-note">${t('3 объекта, 0 надежд на восстановление', '3 items, 0 hope of recovery')}</div>
-    ${items.map((i) => `<div class="bin-item"><span class="b-ic">${i.ic}</span><span class="b-name">${i.name}</span><span class="b-note">${i.note}</span></div>`).join('')}
+    <div class="xp-body">
+      <div class="bin-empty-note">${t('3 объекта, 0 надежд на восстановление', '3 items, 0 hope of recovery')}</div>
+      ${items.map((i) => `<div class="bin-item"><span class="b-ic">${i.ic}</span><span class="b-name">${i.name}</span><span class="b-note">${i.note}</span></div>`).join('')}
+    </div>
   `;
 }
 
@@ -431,14 +495,13 @@ function renderGamesFolder(root) {
     { id: 'game-memory', ic: '🧠', name: t('Память', 'Memory Match'), best: localStorage.getItem('av-memory-best') || '—' },
     { id: 'game-snake', ic: '🐍', name: 'Snake_Deploy', best: localStorage.getItem('av-snake-best') || '0' },
   ];
-  root.innerHTML = `<div class="games-list">${games
+  root.innerHTML = `<div class="xp-body"><div class="games-list">${games
     .map((g) => `<div class="game-shortcut" data-id="${g.id}"><span class="g-ic">${g.ic}</span><span class="g-name">${g.name}</span><span class="g-best">${t('рекорд', 'best')}: ${g.best}</span></div>`)
-    .join('')}</div>`;
+    .join('')}</div></div>`;
   root.querySelectorAll('.game-shortcut').forEach((el) => el.addEventListener('click', () => window.XP.open(el.dataset.id)));
 }
 
 function renderConsole(root) {
-  root.classList.add('no-pad');
   root.innerHTML = `
     <div id="term-output"></div>
     <div class="term-input-row">
@@ -451,12 +514,10 @@ function renderConsole(root) {
 
 function renderGame(kind) {
   return function (root) {
-    root.classList.add('no-pad');
-    root.style.padding = '12px';
-    root.classList.remove('no-pad');
+    const t = window.XP.t;
+    let inner = '';
     if (kind === 'bughunt') {
-      const t = window.XP.t;
-      root.innerHTML = `
+      inner = `
         <div class="game-toolbar">
           <div class="game-stats"><span>${t('Счёт', 'Score')}: <b id="bughunt-score">0</b></span><span>${t('Время', 'Time')}: <b id="bughunt-time">20</b></span><span>${t('Рекорд', 'Best')}: <b id="bughunt-best">0</b></span></div>
           <button class="xp-btn" id="bughunt-start">${t('▶ Начать', '▶ Start')}</button>
@@ -464,8 +525,7 @@ function renderGame(kind) {
         <div id="bughunt-field"><pre id="bughunt-code"></pre></div>
       `;
     } else if (kind === 'memory') {
-      const t = window.XP.t;
-      root.innerHTML = `
+      inner = `
         <div class="game-toolbar">
           <div class="game-stats"><span>${t('Ходы', 'Moves')}: <b id="memory-moves">0</b></span><span>${t('Рекорд', 'Best')}: <b id="memory-best">—</b></span></div>
           <button class="xp-btn" id="memory-restart">${t('🔄 Заново', '🔄 Restart')}</button>
@@ -473,8 +533,7 @@ function renderGame(kind) {
         <div class="memory-grid" id="memory-grid"></div>
       `;
     } else if (kind === 'snake') {
-      const t = window.XP.t;
-      root.innerHTML = `
+      inner = `
         <div class="game-toolbar">
           <div class="game-stats"><span>${t('Запросов', 'Requests')}: <b id="snake-score">0</b></span><span>${t('Рекорд', 'Best')}: <b id="snake-best">0</b></span></div>
           <button class="xp-btn" id="snake-start">${t('▶ Деплой', '▶ Deploy')}</button>
@@ -482,6 +541,7 @@ function renderGame(kind) {
         <canvas id="snake-canvas" width="360" height="360"></canvas>
       `;
     }
+    root.innerHTML = `<div class="xp-body">${inner}</div>`;
     window.XP.initGame(kind, root);
   };
 }
@@ -506,9 +566,7 @@ const WINDOW_DEFS = {
    Desktop icons / start menu / taskbar wiring
    ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.desktop-icon[data-window]').forEach((btn) => {
-    btn.addEventListener('click', () => openWindow(btn.dataset.window));
-  });
+  layoutDesktopIcons();
 
   const startBtn = document.getElementById('start-btn');
   const startMenu = document.getElementById('start-menu');

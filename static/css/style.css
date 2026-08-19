@@ -81,48 +81,24 @@ h1, h2, h3, p { margin: 0; }
    ========================================================= */
 #desktop { position: fixed; inset: 0; overflow: hidden; }
 
+/* A dusk skyline, not a Bliss knockoff — drawn as one inline SVG so it stays
+   crisp at any resolution and needs no separate image asset. */
 #wallpaper {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, #3f7fe0 0%, #79b3f4 38%, #bfe0ff 55%, #cdeaff 60%),
-    linear-gradient(180deg, transparent 60%, #2f8f3e 62%, #1f6b2c 100%);
-}
-#wallpaper::before {
-  content: '';
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  bottom: 30%;
-  height: 40%;
-  background: radial-gradient(ellipse 60% 100% at 30% 100%, #3ba24a 0%, #2f8f3e 55%, transparent 75%);
-  border-radius: 50%;
-}
-#wallpaper::after {
-  content: '';
-  position: absolute;
-  left: 6%;
-  top: 8%;
-  width: 120px;
-  height: 70px;
-  background: #fff;
-  opacity: 0.9;
-  border-radius: 50px;
-  box-shadow: 90px 20px 0 -10px #fff, 170px -6px 0 -16px #fff;
-  filter: blur(0.5px);
+  background-color: #101c3f;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23101c3f'/%3E%3Cstop offset='45%25' stop-color='%232a3f7a'/%3E%3Cstop offset='72%25' stop-color='%23e0703f'/%3E%3Cstop offset='89%25' stop-color='%23ffcf6b'/%3E%3Cstop offset='100%25' stop-color='%23ffe9a8'/%3E%3C/linearGradient%3E%3CradialGradient id='sun' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23fff3c4'/%3E%3Cstop offset='40%25' stop-color='%23ffd25f'/%3E%3Cstop offset='100%25' stop-color='%23ffd25f' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='1600' height='900' fill='url(%23sky)'/%3E%3Ccircle cx='1180' cy='620' r='260' fill='url(%23sun)'/%3E%3Ccircle cx='1180' cy='620' r='68' fill='%23fff6da'/%3E%3Cg fill='%230c1430'%3E%3Crect x='0' y='760' width='1600' height='140'/%3E%3Crect x='40' y='640' width='70' height='260'/%3E%3Crect x='130' y='700' width='50' height='200'/%3E%3Crect x='210' y='600' width='90' height='300'/%3E%3Crect x='330' y='680' width='60' height='220'/%3E%3Crect x='420' y='640' width='40' height='260'/%3E%3Crect x='500' y='710' width='80' height='190'/%3E%3Crect x='620' y='590' width='55' height='310'/%3E%3Crect x='710' y='660' width='45' height='240'/%3E%3Crect x='790' y='630' width='75' height='270'/%3E%3Crect x='900' y='700' width='60' height='200'/%3E%3Crect x='990' y='650' width='40' height='250'/%3E%3Crect x='1060' y='690' width='90' height='210'/%3E%3Crect x='1330' y='670' width='55' height='230'/%3E%3Crect x='1410' y='620' width='70' height='280'/%3E%3Crect x='1500' y='700' width='60' height='200'/%3E%3C/g%3E%3Cg fill='%23ffd25f' opacity='0.85'%3E%3Crect x='55' y='670' width='8' height='8'/%3E%3Crect x='55' y='700' width='8' height='8'/%3E%3Crect x='75' y='690' width='8' height='8'/%3E%3Crect x='225' y='630' width='8' height='8'/%3E%3Crect x='225' y='670' width='8' height='8'/%3E%3Crect x='260' y='650' width='8' height='8'/%3E%3Crect x='635' y='620' width='8' height='8'/%3E%3Crect x='635' y='660' width='8' height='8'/%3E%3Crect x='655' y='700' width='8' height='8'/%3E%3Crect x='805' y='660' width='8' height='8'/%3E%3Crect x='830' y='690' width='8' height='8'/%3E%3Crect x='1075' y='720' width='8' height='8'/%3E%3Crect x='1100' y='750' width='8' height='8'/%3E%3Crect x='1425' y='650' width='8' height='8'/%3E%3Crect x='1450' y='690' width='8' height='8'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: bottom center;
 }
 
 #icons {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  display: grid;
-  grid-auto-flow: row;
-  grid-template-rows: repeat(7, 84px);
-  gap: 2px;
+  inset: 0;
   z-index: 5;
 }
 .desktop-icon {
+  position: absolute;
   width: 84px;
   height: 80px;
   display: flex;
@@ -132,7 +108,9 @@ h1, h2, h3, p { margin: 0; }
   padding: 6px 4px;
   border-radius: 4px;
   text-align: center;
+  touch-action: none;
 }
+.desktop-icon.dragging { background: rgba(255, 255, 255, 0.16); z-index: 6; }
 .desktop-icon:hover { background: rgba(255, 255, 255, 0.12); }
 .desktop-icon.selected { background: rgba(60, 120, 220, 0.35); outline: 1px dotted rgba(255, 255, 255, 0.6); }
 .desktop-icon .icon-glyph { font-size: 34px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
@@ -203,7 +181,8 @@ h1, h2, h3, p { margin: 0; }
 .xp-tab { padding: 6px 14px; font-size: 12px; border: 1px solid #a8a48f; border-bottom: none; border-radius: 4px 4px 0 0; background: #ddd9c6; color: var(--xp-text-dim); }
 .xp-tab.active { background: var(--xp-panel); color: var(--xp-text); font-weight: 700; }
 
-.xp-body { flex: 1; overflow-y: auto; background: var(--xp-panel); padding: 14px 16px; font-size: 13px; line-height: 1.55; }
+.xp-shell { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--xp-panel); }
+.xp-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; font-size: 13px; line-height: 1.55; }
 .xp-body.no-pad { padding: 0; }
 .xp-statusbar { flex-shrink: 0; padding: 3px 10px; font-size: 11px; color: var(--xp-text-dim); background: var(--xp-window-bg); border-top: 1px solid #cfcab6; }
 
@@ -234,7 +213,7 @@ h1, h2, h3, p { margin: 0; }
 .hw-row .pct { width: 34px; text-align: right; color: var(--xp-text-dim); font-family: var(--font-mono); font-size: 11px; }
 
 /* explorer (projects) */
-.explorer { display: flex; height: 100%; }
+.explorer { flex: 1; min-height: 0; display: flex; overflow: hidden; }
 .explorer-side { width: 130px; flex-shrink: 0; background: var(--xp-window-bg); border-right: 1px solid #b9b6a5; padding: 10px 6px; font-size: 11.5px; color: var(--xp-text-dim); }
 .explorer-side .side-item { padding: 4px 6px; border-radius: 3px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .explorer-side .side-item.active, .explorer-side .side-item:hover { background: #d3e4fb; }
@@ -244,7 +223,7 @@ h1, h2, h3, p { margin: 0; }
 .file-item:hover { background: #d3e4fb; }
 .file-item.selected { background: #b6d3f7; outline: 1px dotted #6a9edb; }
 .file-item .f-icon { font-size: 30px; }
-.file-detail { border-top: 1px solid #b9b6a5; padding: 10px 12px; font-size: 12px; background: var(--xp-window-bg); min-height: 70px; }
+.file-detail { flex-shrink: 0; max-height: 40%; overflow-y: auto; border-top: 1px solid #b9b6a5; padding: 10px 12px; font-size: 12px; background: var(--xp-window-bg); min-height: 70px; }
 .file-detail .f-name { font-weight: 700; margin-bottom: 4px; }
 .file-detail .f-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
 .file-detail .f-tag { font-family: var(--font-mono); font-size: 10.5px; padding: 2px 7px; background: #dde6f7; border-radius: 3px; }
@@ -301,13 +280,13 @@ h1, h2, h3, p { margin: 0; }
 #snake-canvas { background: #06210f; border: 2px inset #a8a48f; display: block; margin: 0 auto; max-width: 100%; }
 
 /* command prompt */
-.cmd-window .xp-body { background: #000c00; padding: 0; }
+.cmd-window .xp-shell { background: #000c00; }
 .cmd-window .xp-titlebar { background: linear-gradient(180deg, #4c4c4c, #262626 55%, #101010); }
 .cmd-window .xp-titlebar .t-btn { background: linear-gradient(180deg, #6a6a6a, #3a3a3a); }
-#term-output { font-family: var(--font-mono); font-size: 12.5px; color: #d4d4d4; padding: 10px 12px; height: 100%; overflow-y: auto; white-space: pre-wrap; }
+#term-output { flex: 1; min-height: 0; font-family: var(--font-mono); font-size: 12.5px; color: #d4d4d4; padding: 10px 12px; overflow-y: auto; white-space: pre-wrap; }
 #term-output .cmd-line { color: #7fe07f; }
 #term-output .cmd-line::before { content: 'C:\\anton> '; color: #cfd6cf; }
-.term-input-row { display: flex; align-items: center; padding: 4px 12px 10px; font-family: var(--font-mono); font-size: 12.5px; }
+.term-input-row { flex-shrink: 0; display: flex; align-items: center; padding: 8px 12px; font-family: var(--font-mono); font-size: 12.5px; border-top: 1px solid #1c2e1c; }
 .term-input-row .prompt { color: #cfd6cf; margin-right: 4px; white-space: nowrap; }
 #term-input { flex: 1; background: transparent; border: none; outline: none; color: #d4d4d4; font-family: var(--font-mono); font-size: 12.5px; }
 

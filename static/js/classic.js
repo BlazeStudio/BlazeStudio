@@ -1,0 +1,332 @@
+'use strict';
+
+(function () {
+  const PROFILE = window.XP.data.profile;
+  const CATEGORIES = window.XP.data.categories;
+  const STATIC_PROJECTS = window.XP.data.projects;
+  const CATEGORY_ICON = { web: '🌐', tools: '🛠️', security: '🔐', games: '🎮', practice: '📘' };
+
+  let liveProjects = STATIC_PROJECTS.map((p) => ({ ...p, live: { synced: false } }));
+  let activeCat = 'all';
+  let activeGame = null;
+
+  function t(ru, en) {
+    return window.XP.t(ru, en);
+  }
+
+  /* ---------- theme ---------- */
+  function applyTheme() {
+    const theme = localStorage.getItem('av-classic-theme') || 'night';
+    document.getElementById('classic').dataset.theme = theme;
+    const btn = document.getElementById('c-theme-btn');
+    if (btn) btn.textContent = theme === 'day' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const cur = document.getElementById('classic').dataset.theme;
+    localStorage.setItem('av-classic-theme', cur === 'day' ? 'night' : 'day');
+    applyTheme();
+  }
+
+  /* ---------- sections ---------- */
+  function renderHero() {
+    const lang = window.XP.lang();
+    document.getElementById('c-brand-name').textContent = PROFILE.name[lang];
+    document.getElementById('c-brand-role').textContent = PROFILE.role[lang];
+    document.getElementById('c-pdf').href = `/dossier?lang=${lang}`;
+
+    document.getElementById('c-hero').innerHTML = `
+      <div class="c-hero-kicker">${t('РЕЗЮМЕ · ОБЫЧНАЯ ВЕРСИЯ', 'RÉSUMÉ · PLAIN VERSION')}</div>
+      <h1 class="c-hero-title">${PROFILE.name[lang]} <mark>${PROFILE.role[lang]}</mark></h1>
+      <p class="c-hero-tagline">${PROFILE.tagline[lang]}</p>
+      <div class="c-hero-cta">
+        <a class="c-btn c-btn-accent" href="/dossier?lang=${lang}" target="_blank">📄 ${t('Скачать PDF', 'Download PDF')}</a>
+        <a class="c-btn" href="#c-contact-section">✉️ ${t('Связаться', 'Get in touch')}</a>
+      </div>
+      <div class="c-hero-stats">
+        <div class="c-stat"><div class="k">${t('Локация', 'Location')}</div><div class="v">${PROFILE.location[lang]}</div></div>
+        <div class="c-stat"><div class="k">${t('Формат', 'Format')}</div><div class="v">${PROFILE.format[lang]}</div></div>
+        <div class="c-stat"><div class="k">${t('Занятость', 'Employment')}</div><div class="v">${PROFILE.employment[lang]}</div></div>
+      </div>
+    `;
+  }
+
+  function renderAbout() {
+    const lang = window.XP.lang();
+    document.getElementById('c-about-section').innerHTML = `
+      <div class="c-section-title">${t('О себе', 'About')}</div>
+      <div class="c-card c-about">
+        ${PROFILE.about[lang].map((p) => `<p>${p}</p>`).join('')}
+        <div class="c-chips">${PROFILE.traits.map((tr) => `<span class="c-chip">${tr[lang]}</span>`).join('')}</div>
+        <div class="c-lang-bars">
+          ${PROFILE.languages
+            .map(
+              (l) => `<div class="c-lang-row">
+                <div class="lbl">${l.name[lang]}<small>${l.level[lang]}</small></div>
+                <div class="c-track"><div class="c-fill" data-v="${l.value}"></div></div>
+              </div>`
+            )
+            .join('')}
+        </div>
+      </div>
+    `;
+    animateFills(document.getElementById('c-about-section'));
+  }
+
+  function renderSkills() {
+    const lang = window.XP.lang();
+    const icons = { backend: '⚙️', data: '📊', infra: '🧱', practice: '✅' };
+    document.getElementById('c-skills-section').innerHTML = `
+      <div class="c-section-title">${t('Стек', 'Stack')}</div>
+      <div class="c-section-sub">${t('Проценты — самооценка, не сертификат', 'Percentages are self-rated, not certified')}</div>
+      <div class="c-skills-grid">
+        ${Object.entries(PROFILE.skills)
+          .map(
+            ([key, group]) => `<div class="c-card c-skill-card">
+              <h3>${icons[key] || '▸'} ${group.label[lang]}</h3>
+              ${group.items
+                .map(
+                  (item) => `<div class="c-skill-row">
+                    <div class="top"><span>${item.name}</span><span>${item.level}%</span></div>
+                    <div class="c-track"><div class="c-fill" data-v="${item.level}"></div></div>
+                  </div>`
+                )
+                .join('')}
+            </div>`
+          )
+          .join('')}
+      </div>
+    `;
+    animateFills(document.getElementById('c-skills-section'));
+  }
+
+  function renderExperience() {
+    const lang = window.XP.lang();
+    const edu = PROFILE.education;
+    document.getElementById('c-experience-section').innerHTML = `
+      <div class="c-section-title">${t('Опыт и образование', 'Experience & education')}</div>
+      <div class="c-timeline">
+        ${PROFILE.experience
+          .map(
+            (job) => `<div class="c-card">
+              <div class="c-job-head"><span class="c-job-title">${job.title[lang]}</span><span class="c-job-company">— ${job.company[lang]}</span><span class="c-job-period">${job.period[lang]}</span></div>
+              <p class="c-job-summary">${job.summary[lang]}</p>
+              ${job.highlight[lang] ? `<p class="c-job-highlight">◆ ${job.highlight[lang]}</p>` : ''}
+              ${job.tasks[lang] && job.tasks[lang].length ? `<ul class="c-job-tasks">${job.tasks[lang].map((tk) => `<li>${tk}</li>`).join('')}</ul>` : ''}
+              <div class="c-tags">${job.tags.map((tg) => `<span class="c-tag">${tg}</span>`).join('')}</div>
+            </div>`
+          )
+          .join('')}
+        <div class="c-card c-edu">
+          <div class="c-job-head"><span class="c-job-title">${edu.school[lang]}</span><span class="c-job-period">${edu.year}</span></div>
+          <p class="c-job-summary">${edu.degree[lang]}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderProjectsSection() {
+    document.getElementById('c-projects-section').innerHTML = `
+      <div class="c-section-title">${t('Проекты', 'Projects')}</div>
+      <div class="c-sync" id="c-sync"><span class="dot"></span><span id="c-sync-text">${t('Синхронизация с GitHub…', 'Syncing with GitHub…')}</span></div>
+      <div class="c-filters" id="c-filters"></div>
+      <div class="c-projects-grid" id="c-projects-grid"></div>
+    `;
+    paintFilters();
+    paintProjectsGrid();
+  }
+
+  function paintFilters() {
+    const lang = window.XP.lang();
+    const el = document.getElementById('c-filters');
+    el.innerHTML = CATEGORIES.map((c) => `<button class="c-filter${c.id === activeCat ? ' active' : ''}" data-cat="${c.id}">${c.label[lang]}</button>`).join('');
+    el.querySelectorAll('.c-filter').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeCat = btn.dataset.cat;
+        paintFilters();
+        paintProjectsGrid();
+      });
+    });
+  }
+
+  function paintProjectsGrid() {
+    const lang = window.XP.lang();
+    const grid = document.getElementById('c-projects-grid');
+    if (!grid) return;
+    const list = liveProjects.filter((p) => activeCat === 'all' || p.category === activeCat);
+    grid.innerHTML = list
+      .map((p) => {
+        const stars = p.live && p.live.synced ? `★ ${p.live.stars}` : '';
+        const homepageLabel = p.homepage_label ? p.homepage_label[lang] : t('Демо', 'Demo');
+        return `<article class="c-card c-project-card">
+          <div class="c-project-top"><h3>${CATEGORY_ICON[p.category] || '📦'} ${p.name}</h3>${stars ? `<span class="c-project-stars">${stars}</span>` : ''}</div>
+          <div class="c-project-role">${p.role[lang]}</div>
+          <p class="c-project-desc">${p.description[lang]}</p>
+          ${p.note ? `<div class="c-project-note">${p.note[lang]}</div>` : ''}
+          <div class="c-tags">${p.stack.map((s) => `<span class="c-tag">${s}</span>`).join('')}</div>
+          <div class="c-project-links">
+            <a href="${p.github}" target="_blank" rel="noopener">GitHub ↗</a>
+            ${p.homepage ? `<a href="${p.homepage}" target="_blank" rel="noopener">${homepageLabel} ↗</a>` : ''}
+          </div>
+        </article>`;
+      })
+      .join('');
+  }
+
+  async function syncGithub() {
+    try {
+      const res = await fetch('/api/projects');
+      if (!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      liveProjects = data.projects;
+      const text = document.getElementById('c-sync-text');
+      if (text) text.textContent = t(`Синхронизировано · ${liveProjects.length} проектов`, `Synced · ${liveProjects.length} projects`);
+    } catch (e) {
+      const text = document.getElementById('c-sync-text');
+      if (text) text.textContent = t('Офлайн-режим (кэш)', 'Offline mode (cache)');
+    }
+    paintProjectsGrid();
+  }
+
+  function renderContactSection() {
+    const lang = window.XP.lang();
+    const c = PROFILE.contacts;
+    const items = [
+      { ic: '✉️', label: 'Email', value: c.email, href: `mailto:${c.email}` },
+      { ic: '💬', label: 'Telegram', value: c.telegram_handle, href: c.telegram },
+      { ic: '📂', label: 'GitHub', value: 'BlazeStudio', href: c.github },
+      { ic: '💼', label: 'LinkedIn', value: t('Профиль', 'Profile'), href: c.linkedin },
+      { ic: '📋', label: 'hh.ru', value: t('Резюме', 'Résumé'), href: c.hh },
+    ];
+    document.getElementById('c-contact-section').innerHTML = `
+      <div class="c-section-title">${t('Связаться', 'Get in touch')}</div>
+      <div class="c-contact-grid">
+        ${items.map((i) => `<a class="c-card c-contact-card" href="${i.href}" target="_blank" rel="noopener"><span class="ic">${i.ic}</span><span><span class="lbl">${i.label}</span><br><span class="val">${i.value}</span></span></a>`).join('')}
+      </div>
+    `;
+  }
+
+  /* ---------- fun zone (built once — never rebuilt on lang toggle) ---------- */
+  function renderFunSection() {
+    document.getElementById('c-fun-section').innerHTML = `
+      <div class="c-section-title" data-ru="Развлечения" data-en="Fun stuff">Развлечения</div>
+      <div class="c-section-sub" data-ru="Тот же терминал и те же игры, что и в XP-версии" data-en="The same terminal and games as the XP version">Тот же терминал и те же игры, что и в XP-версии</div>
+      <div class="c-fun-grid">
+        <div class="c-term">
+          <div id="term-output"></div>
+          <div class="term-input-row"><span class="prompt">C:\\ANTON&gt;</span><input id="term-input" type="text" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <div class="c-fun-games">
+          <div class="c-games-tabs">
+            <button data-game="bughunt" class="active" data-ru="🐛 Охота на баги" data-en="🐛 Bug Hunt">🐛 Охота на баги</button>
+            <button data-game="memory" data-ru="🧠 Память" data-en="🧠 Memory Match">🧠 Память</button>
+            <button data-game="snake" data-ru="🐍 Snake_Deploy" data-en="🐍 Snake_Deploy">🐍 Snake_Deploy</button>
+          </div>
+          <div class="c-game-view active" data-game="bughunt">
+            <div class="c-game-toolbar">
+              <div class="c-game-stats"><span data-ru="Счёт" data-en="Score">Счёт</span>: <b id="bughunt-score">0</b> <span data-ru="Время" data-en="Time">Время</span>: <b id="bughunt-time">20</b> <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="bughunt-best">0</b></div>
+              <button class="c-btn" id="bughunt-start" data-ru="▶ Начать" data-en="▶ Start">▶ Начать</button>
+            </div>
+            <div id="bughunt-field"><pre id="bughunt-code"></pre></div>
+          </div>
+          <div class="c-game-view" data-game="memory">
+            <div class="c-game-toolbar">
+              <div class="c-game-stats"><span data-ru="Ходы" data-en="Moves">Ходы</span>: <b id="memory-moves">0</b> <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="memory-best">—</b></div>
+              <button class="c-btn" id="memory-restart" data-ru="🔄 Заново" data-en="🔄 Restart">🔄 Заново</button>
+            </div>
+            <div class="c-memory-grid" id="memory-grid"></div>
+          </div>
+          <div class="c-game-view" data-game="snake">
+            <div class="c-game-toolbar">
+              <div class="c-game-stats"><span data-ru="Запросов" data-en="Requests">Запросов</span>: <b id="snake-score">0</b> <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="snake-best">0</b></div>
+              <button class="c-btn" id="snake-start" data-ru="▶ Деплой" data-en="▶ Deploy">▶ Деплой</button>
+            </div>
+            <canvas id="snake-canvas" width="300" height="300"></canvas>
+          </div>
+        </div>
+      </div>
+    `;
+    window.XP.applyStaticI18n(document.getElementById('c-fun-section'));
+    window.XP.initConsole(document.getElementById('c-fun-section'));
+
+    document.querySelectorAll('.c-games-tabs button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.c-games-tabs button').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.c-game-view').forEach((v) => v.classList.remove('active'));
+        const view = document.querySelector(`.c-game-view[data-game="${btn.dataset.game}"]`);
+        view.classList.add('active');
+        mountGame(btn.dataset.game);
+      });
+    });
+    mountGame('bughunt');
+  }
+
+  function mountGame(kind) {
+    if (activeGame) {
+      const prevKey = 'classic-' + activeGame;
+      if (window.XP.gameCleanup[prevKey]) {
+        window.XP.gameCleanup[prevKey]();
+        delete window.XP.gameCleanup[prevKey];
+      }
+    }
+    activeGame = kind;
+    const root = document.querySelector(`.c-game-view[data-game="${kind}"]`);
+    window.XP.initGame(kind, root, 'classic-' + kind);
+  }
+
+  window.XP.teardownClassicGames = function () {
+    if (activeGame) {
+      const key = 'classic-' + activeGame;
+      if (window.XP.gameCleanup[key]) {
+        window.XP.gameCleanup[key]();
+        delete window.XP.gameCleanup[key];
+      }
+    }
+  };
+
+  function animateFills(scope) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scope.querySelectorAll('.c-fill').forEach((el) => (el.style.width = el.dataset.v + '%'));
+      });
+    });
+  }
+
+  /* ---------- init ---------- */
+  window.XP.renderClassic = function () {
+    applyTheme();
+    document.getElementById('c-theme-btn').addEventListener('click', toggleTheme);
+
+    document.getElementById('c-main').innerHTML = `
+      <section class="c-hero" id="c-hero"></section>
+      <section class="c-section" id="c-about-section"></section>
+      <section class="c-section" id="c-skills-section"></section>
+      <section class="c-section" id="c-experience-section"></section>
+      <section class="c-section" id="c-projects-section"></section>
+      <section class="c-section" id="c-fun-section"></section>
+      <section class="c-section" id="c-contact-section"></section>
+    `;
+
+    renderHero();
+    renderAbout();
+    renderSkills();
+    renderExperience();
+    renderProjectsSection();
+    renderFunSection();
+    renderContactSection();
+    document.getElementById('c-footer').innerHTML = `Anton Vasiliev © <span id="c-year"></span> · <a href="https://github.com/BlazeStudio" target="_blank" rel="noopener">github.com/BlazeStudio</a>`;
+    document.getElementById('c-year').textContent = new Date().getFullYear();
+
+    syncGithub();
+
+    window.XP.onLangChange.push(() => {
+      renderHero();
+      renderAbout();
+      renderSkills();
+      renderExperience();
+      paintFilters();
+      paintProjectsGrid();
+      renderContactSection();
+    });
+  };
+})();

@@ -9,7 +9,7 @@ function t(ru, en) {
 /* =========================================================
    Bug Hunt
    ========================================================= */
-function initBugHunt(root) {
+function initBugHunt(root, key) {
   const field = root.querySelector('#bughunt-field');
   const codeEl = root.querySelector('#bughunt-code');
   const scoreEl = root.querySelector('#bughunt-score');
@@ -97,13 +97,13 @@ def deploy():
     }, 1000);
   });
 
-  window.XP.gameCleanup['game-bughunt'] = stop;
+  window.XP.gameCleanup[key] = stop;
 }
 
 /* =========================================================
    Memory Match
    ========================================================= */
-function initMemory(root) {
+function initMemory(root, key) {
   const grid = root.querySelector('#memory-grid');
   const movesEl = root.querySelector('#memory-moves');
   const bestEl = root.querySelector('#memory-best');
@@ -188,7 +188,7 @@ function initMemory(root) {
   refreshBest();
   build();
 
-  window.XP.gameCleanup['game-memory'] = () => {
+  window.XP.gameCleanup[key] = () => {
     disposed = true;
     if (pendingFlipBack) clearTimeout(pendingFlipBack);
   };
@@ -197,7 +197,7 @@ function initMemory(root) {
 /* =========================================================
    Snake_Deploy.py
    ========================================================= */
-function initSnake(root) {
+function initSnake(root, key) {
   const canvas = root.querySelector('#snake-canvas');
   const ctx = canvas.getContext('2d');
   const scoreEl = root.querySelector('#snake-score');
@@ -300,14 +300,15 @@ function initSnake(root) {
   resetState();
   draw();
 
-  window.XP.gameCleanup['game-snake'] = () => {
+  window.XP.gameCleanup[key] = () => {
     stop();
     document.removeEventListener('keydown', onKey);
   };
 }
 
-window.XP.initGame = function (kind, root) {
-  if (kind === 'bughunt') initBugHunt(root);
-  else if (kind === 'memory') initMemory(root);
-  else if (kind === 'snake') initSnake(root);
+window.XP.initGame = function (kind, root, key) {
+  key = key || 'game-' + kind;
+  if (kind === 'bughunt') initBugHunt(root, key);
+  else if (kind === 'memory') initMemory(root, key);
+  else if (kind === 'snake') initSnake(root, key);
 };
