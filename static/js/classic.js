@@ -41,6 +41,16 @@
     document.getElementById('c-pdf').href = `/dossier?lang=${lang}`;
 
     document.getElementById('c-hero').innerHTML = `
+      <svg class="c-motif" viewBox="0 0 100 80" aria-hidden="true">
+        <path d="M62 14 A22 22 0 1 0 62 64 A17 17 0 1 1 62 14 Z" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"/>
+        <path d="M18 18 L21 25 L28 28 L21 31 L18 38 L15 31 L8 28 L15 25 Z" style="fill:currentColor;opacity:0.7"/>
+        <circle cx="10" cy="54" r="2.4" style="fill:currentColor;opacity:0.5"/>
+      </svg>
+      <svg class="c-seal" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="42" style="fill:none;stroke:var(--cb-accent);stroke-width:5"/>
+        <text x="50" y="45" text-anchor="middle" style="font-family:var(--font-display);font-size:25px;font-weight:700;fill:var(--cb-accent)">А</text>
+        <text x="50" y="74" text-anchor="middle" style="font-family:var(--font-display);font-size:25px;font-weight:700;fill:var(--cb-accent)">В</text>
+      </svg>
       <div class="c-hero-kicker">${t('РЕЗЮМЕ · ОБЫЧНАЯ ВЕРСИЯ', 'RÉSUMÉ · PLAIN VERSION')}</div>
       <h1 class="c-hero-title">${PROFILE.name[lang]} <mark>${PROFILE.role[lang]}</mark></h1>
       <p class="c-hero-tagline">${PROFILE.tagline[lang]}</p>
