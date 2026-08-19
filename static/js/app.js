@@ -30,7 +30,8 @@ function setLang(lang) {
   state.lang = lang;
   localStorage.setItem('av-lang', lang);
   document.documentElement.lang = lang;
-  document.getElementById('lang-btn').textContent = lang.toUpperCase();
+  const langBtn = document.getElementById('lang-btn');
+  if (langBtn) langBtn.textContent = lang.toUpperCase();
   const cLangBtn = document.getElementById('c-lang-btn');
   if (cLangBtn) cLangBtn.textContent = lang.toUpperCase();
   applyStaticI18n();
@@ -67,32 +68,6 @@ function showBalloon() {
   document.getElementById('balloon-close').addEventListener('click', dismiss);
   setTimeout(dismiss, 8000);
 }
-
-/* =========================================================
-   Mode: the XP desktop vs. the plain scrolling résumé
-   ========================================================= */
-function setMode(mode) {
-  localStorage.setItem('av-mode', mode);
-  const desktop = document.getElementById('desktop');
-  const boot = document.getElementById('boot');
-  const classic = document.getElementById('classic');
-
-  if (mode === 'classic') {
-    desktop.hidden = true;
-    boot.hidden = true;
-    classic.hidden = false;
-    if (window.XP.renderClassic && !window.XP.classicRendered) {
-      window.XP.renderClassic();
-      window.XP.classicRendered = true;
-    }
-  } else {
-    if (window.XP.teardownClassicGames) window.XP.teardownClassicGames();
-    classic.hidden = true;
-    boot.hidden = true;
-    desktop.hidden = false;
-  }
-}
-window.XP.setMode = setMode;
 
 /* =========================================================
    Clock
@@ -199,8 +174,9 @@ function matrixToggle(durationMs) {
 }
 
 function partyMode(durationMs) {
-  document.body.classList.add('party');
-  setTimeout(() => document.body.classList.remove('party'), durationMs || 3000);
+  const targets = document.querySelectorAll('.desktop-icon, .c-card');
+  targets.forEach((el) => el.classList.add('party-shake'));
+  setTimeout(() => targets.forEach((el) => el.classList.remove('party-shake')), durationMs || 3000);
 }
 
 function bsodShow() {
@@ -219,12 +195,17 @@ function bsodShow() {
 
 function shutdownSequence() {
   const screen = document.getElementById('shutdown-screen');
+  const boot = document.getElementById('boot');
   applyStaticI18n(screen);
   screen.hidden = false;
   setTimeout(() => {
+    if (!boot) {
+      // no desktop to reboot into on this page — the joke is rebooting into the XP version instead
+      window.location.href = '/xp';
+      return;
+    }
     screen.hidden = true;
     document.getElementById('desktop').hidden = true;
-    const boot = document.getElementById('boot');
     boot.hidden = false;
     boot.classList.remove('fade-out');
     boot.querySelector('.boot-bar-fill').style.animation = 'none';
@@ -263,26 +244,22 @@ function initKonami() {
    ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
   document.documentElement.lang = state.lang;
-  document.getElementById('lang-btn').textContent = state.lang.toUpperCase();
+  const langBtn = document.getElementById('lang-btn');
   const cLangBtn = document.getElementById('c-lang-btn');
+  if (langBtn) langBtn.textContent = state.lang.toUpperCase();
   if (cLangBtn) cLangBtn.textContent = state.lang.toUpperCase();
   applyStaticI18n();
   initKonami();
 
-  document.getElementById('lang-btn').addEventListener('click', () => setLang(state.lang === 'ru' ? 'en' : 'ru'));
+  if (langBtn) langBtn.addEventListener('click', () => setLang(state.lang === 'ru' ? 'en' : 'ru'));
   if (cLangBtn) cLangBtn.addEventListener('click', () => setLang(state.lang === 'ru' ? 'en' : 'ru'));
-  document.getElementById('mode-btn').addEventListener('click', () => setMode('classic'));
-  const cModeBtn = document.getElementById('c-mode-btn');
-  if (cModeBtn) cModeBtn.addEventListener('click', () => setMode('xp'));
 
   tickClock();
   setInterval(tickClock, 1000 * 15);
 
-  const savedMode = localStorage.getItem('av-mode');
-  if (savedMode === 'classic') {
-    document.getElementById('boot').hidden = true;
-    setMode('classic');
-  } else {
+  if (document.getElementById('boot')) {
     runBoot();
+  } else if (window.XP.renderClassic) {
+    window.XP.renderClassic();
   }
 });

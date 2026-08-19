@@ -29,6 +29,7 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --radius: 8px;
   --taskbar-h: 38px;
+  --overlay-bottom-offset: calc(var(--taskbar-h) + 16px);
 }
 
 * { box-sizing: border-box; }
@@ -405,71 +406,6 @@ h1, h2, h3, p { margin: 0; }
 .tray-balloon[hidden] { display: none; }
 .tray-balloon .bl-title { font-weight: 700; margin-bottom: 4px; display: flex; justify-content: space-between; }
 .tray-balloon .bl-close { font-size: 12px; color: #888; }
-
-/* =========================================================
-   BSOD / Shutdown / Matrix overlays
-   ========================================================= */
-#bsod {
-  position: fixed;
-  inset: 0;
-  z-index: 400;
-  background: #0000aa;
-  color: #fff;
-  font-family: var(--font-mono);
-  padding: 40px;
-  font-size: 14px;
-  line-height: 1.7;
-}
-#bsod[hidden] { display: none; }
-#bsod .bsod-hint { margin-top: 24px; opacity: 0.85; }
-
-#shutdown-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 410;
-  background: #000;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  font-size: 15px;
-}
-#shutdown-screen[hidden] { display: none; }
-.shutdown-spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #2a5db0; border-top-color: #7fb4ff; animation: spin 0.9s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-#matrix-canvas { position: fixed; inset: 0; z-index: 300; pointer-events: none; }
-#matrix-canvas[hidden] { display: none; }
-
-#confetti-canvas { position: fixed; inset: 0; z-index: 350; pointer-events: none; }
-
-@keyframes icon-party {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-6px) rotate(-6deg); }
-  75% { transform: translateY(4px) rotate(6deg); }
-}
-body.party .desktop-icon { animation: icon-party 0.35s ease-in-out infinite; }
-body.party .desktop-icon:nth-child(2n) { animation-delay: 0.08s; }
-body.party .desktop-icon:nth-child(3n) { animation-delay: 0.15s; }
-
-#toast {
-  position: fixed;
-  bottom: calc(var(--taskbar-h) + 16px);
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  background: #ffffe6;
-  border: 1px solid #c9c07a;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 12.5px;
-  z-index: 200;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* =========================================================
    Responsive

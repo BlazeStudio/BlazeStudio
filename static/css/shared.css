@@ -1,0 +1,83 @@
+/* =========================================================
+   Loaded by both / (classic) and /xp — overlays and effects that
+   the terminal's commands trigger regardless of which page it runs
+   on: confetti, the matrix rain, the BSOD prank, the shutdown
+   screen, toasts, and the "party" icon/card shake.
+   ========================================================= */
+
+:root {
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --overlay-bottom-offset: 20px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+
+#bsod {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: #0000aa;
+  color: #fff;
+  font-family: var(--font-mono);
+  padding: 40px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+#bsod[hidden] { display: none; }
+#bsod .bsod-hint { margin-top: 24px; opacity: 0.85; }
+
+#shutdown-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 410;
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 15px;
+  font-family: var(--font-mono);
+}
+#shutdown-screen[hidden] { display: none; }
+.shutdown-spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #2a5db0; border-top-color: #7fb4ff; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#matrix-canvas { position: fixed; inset: 0; z-index: 300; pointer-events: none; }
+#matrix-canvas[hidden] { display: none; }
+
+#confetti-canvas { position: fixed; inset: 0; z-index: 350; pointer-events: none; }
+
+@keyframes icon-party {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(-6deg); }
+  75% { transform: translateY(4px) rotate(6deg); }
+}
+.party-shake { animation: icon-party 0.35s ease-in-out infinite; }
+.party-shake:nth-child(2n) { animation-delay: 0.08s; }
+.party-shake:nth-child(3n) { animation-delay: 0.15s; }
+
+#toast {
+  position: fixed;
+  bottom: var(--overlay-bottom-offset);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #ffffe6;
+  border: 1px solid #c9c07a;
+  color: #15161c;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

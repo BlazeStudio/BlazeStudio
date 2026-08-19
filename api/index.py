@@ -59,19 +59,24 @@ def _site_data_json() -> str:
     return json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
 
+def _base_context() -> dict:
+    return {
+        "profile": PROFILE,
+        "projects": PROJECTS,
+        "categories": CATEGORIES,
+        "resume_source": RESUME_SOURCE,
+        "site_data_json": _site_data_json(),
+    }
+
+
 @app.get("/")
 def index(request: Request):
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        {
-            "profile": PROFILE,
-            "projects": PROJECTS,
-            "categories": CATEGORIES,
-            "resume_source": RESUME_SOURCE,
-            "site_data_json": _site_data_json(),
-        },
-    )
+    return templates.TemplateResponse(request, "index.html", _base_context())
+
+
+@app.get("/xp")
+def xp(request: Request):
+    return templates.TemplateResponse(request, "xp.html", _base_context())
 
 
 @app.get("/dossier")

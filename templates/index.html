@@ -4,102 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Anton Vasiliev</title>
-<meta name="description" content="Anton Vasiliev — Python Backend Developer. A portfolio disguised as a desktop OS.">
-<meta name="theme-color" content="#0a246a">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%2246%22 height=%2246%22 fill=%22%23ff5f5f%22/><rect x=%2254%22 width=%2246%22 height=%2246%22 fill=%22%236ee06e%22/><rect y=%2254%22 width=%2246%22 height=%2246%22 fill=%22%235fa8ff%22/><rect x=%2254%22 y=%2254%22 width=%2246%22 height=%2246%22 fill=%22%23ffd25f%22/></svg>">
-<link rel="stylesheet" href="/static/css/style.css">
+<meta name="description" content="Anton Vasiliev — Python Backend Developer.">
+<meta name="theme-color" content="#121218">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23121218%22/><text x=%2250%22 y=%2266%22 font-size=%2254%22 font-family=%22monospace%22 font-weight=%22700%22 fill=%22%23ffcf33%22 text-anchor=%22middle%22>A</text></svg>">
+<link rel="stylesheet" href="/static/css/shared.css">
 <link rel="stylesheet" href="/static/css/classic.css">
 </head>
 <body>
 
-<!-- ============ BOOT ============ -->
-<div id="boot">
-  <div class="boot-logo"><span class="flag"><span></span><span></span><span></span><span></span></span>Anton Vasiliev</div>
-  <div class="boot-bar"><div class="boot-bar-fill"></div></div>
-  <div class="boot-caption" data-ru="Загрузка личности..." data-en="Loading personality...">Загрузка личности...</div>
-</div>
-
-<!-- ============ DESKTOP ============ -->
-<div id="desktop" hidden>
-  <div id="wallpaper"></div>
-
-  <div id="icons">
-    <button class="desktop-icon" data-window="mypc">
-      <span class="icon-glyph">🖥️</span>
-      <span class="icon-label" data-ru="Мой компьютер" data-en="My Computer">Мой компьютер</span>
-    </button>
-    <button class="desktop-icon" data-window="projects">
-      <span class="icon-glyph">📁</span>
-      <span class="icon-label" data-ru="Мои проекты" data-en="My Projects">Мои проекты</span>
-    </button>
-    <button class="desktop-icon" data-window="resume">
-      <span class="icon-glyph">📄</span>
-      <span class="icon-label" data-ru="Резюме.doc" data-en="Resume.doc">Резюме.doc</span>
-    </button>
-    <button class="desktop-icon" data-window="games">
-      <span class="icon-glyph">🎮</span>
-      <span class="icon-label" data-ru="Игры" data-en="Games">Игры</span>
-    </button>
-    <button class="desktop-icon" data-window="console">
-      <span class="icon-glyph">⌨️</span>
-      <span class="icon-label" data-ru="Консоль" data-en="Command Prompt">Консоль</span>
-    </button>
-    <button class="desktop-icon" data-window="contact">
-      <span class="icon-glyph">📇</span>
-      <span class="icon-label" data-ru="Контакты" data-en="Contacts">Контакты</span>
-    </button>
-    <button class="desktop-icon" data-window="bin">
-      <span class="icon-glyph">🗑️</span>
-      <span class="icon-label" data-ru="Корзина" data-en="Recycle Bin">Корзина</span>
-    </button>
-  </div>
-
-  <div id="windows-layer"></div>
-
-  <div id="balloon" class="tray-balloon" hidden>
-    <div class="bl-title">
-      <span data-ru="3 рекрутера сейчас печатают…" data-en="3 recruiters are typing…">3 рекрутера сейчас печатают…</span>
-      <button class="bl-close" id="balloon-close">✕</button>
-    </div>
-    <span data-ru="Шутка. Но открой Консоль, там веселее." data-en="Kidding. But open Command Prompt, it's more fun.">Шутка. Но открой Консоль, там веселее.</span>
-  </div>
-
-  <div id="start-menu" hidden>
-    <div class="sm-header">
-      <span class="sm-avatar">🧑‍💻</span>
-      <span id="sm-name">Anton Vasiliev</span>
-    </div>
-    <div class="sm-body">
-      <div class="sm-col-left">
-        <button class="sm-item" data-window="resume"><span class="sm-ic">📄</span><span data-ru="Резюме.doc" data-en="Resume.doc">Резюме.doc</span></button>
-        <button class="sm-item" data-window="projects"><span class="sm-ic">📁</span><span data-ru="Мои проекты" data-en="My Projects">Мои проекты</span></button>
-        <button class="sm-item" data-window="console"><span class="sm-ic">⌨️</span><span data-ru="Консоль" data-en="Command Prompt">Консоль</span></button>
-        <button class="sm-item" data-window="games"><span class="sm-ic">🎮</span><span data-ru="Игры" data-en="Games">Игры</span></button>
-      </div>
-      <div class="sm-col-right">
-        <button class="sm-item" data-window="mypc"><span class="sm-ic">🖥️</span><span data-ru="Мой компьютер" data-en="My Computer">Мой компьютер</span></button>
-        <button class="sm-item" data-window="contact"><span class="sm-ic">📇</span><span data-ru="Контакты" data-en="Contacts">Контакты</span></button>
-        <button class="sm-item" data-window="bin"><span class="sm-ic">🗑️</span><span data-ru="Корзина" data-en="Recycle Bin">Корзина</span></button>
-      </div>
-    </div>
-    <div class="sm-footer">
-      <button class="sm-item" id="sm-shutdown"><span class="sm-ic">⏻</span><span data-ru="Завершение работы…" data-en="Shut Down…">Завершение работы…</span></button>
-    </div>
-  </div>
-
-  <div id="taskbar">
-    <button id="start-btn"><span class="start-logo">⊞</span><span data-ru="Пуск" data-en="start">Пуск</span></button>
-    <div id="taskbar-open"></div>
-    <div id="tray">
-      <button id="mode-btn" class="tray-btn" data-ru="📄 Обычная версия" data-en="📄 Plain version" title="Switch to a plain scrolling résumé">📄 Обычная версия</button>
-      <button id="lang-btn" class="tray-btn">RU</button>
-      <span id="clock" class="tray-clock"></span>
-    </div>
-  </div>
-</div>
-
-<!-- ============ CLASSIC (plain scrolling résumé) ============ -->
-<div id="classic" hidden data-theme="night">
+<div id="classic" data-theme="night">
   <header id="c-topbar">
     <div id="c-brand">
       <span id="c-brand-name">Anton Vasiliev</span>
@@ -109,7 +22,7 @@
       <a class="c-btn" id="c-pdf" href="/dossier" target="_blank" data-ru="PDF" data-en="PDF">PDF</a>
       <button class="c-btn" id="c-theme-btn" title="Night/day">🌙</button>
       <button class="c-btn" id="c-lang-btn">RU</button>
-      <button class="c-btn c-btn-accent" id="c-mode-btn" data-ru="🖥 XP-версия" data-en="🖥 XP version">🖥 XP-версия</button>
+      <a class="c-btn c-btn-accent" id="c-mode-btn" href="/xp" data-ru="🖥 XP-версия" data-en="🖥 XP version">🖥 XP-версия</a>
     </div>
   </header>
   <main id="c-main"></main>
@@ -125,7 +38,7 @@
 
 <div id="shutdown-screen" hidden>
   <div class="shutdown-spinner"></div>
-  <div data-ru="Завершение работы Windows…" data-en="Windows is shutting down…">Завершение работы Windows…</div>
+  <div data-ru="Перезагрузка в XP-версию…" data-en="Rebooting into the XP version…">Перезагрузка в XP-версию…</div>
 </div>
 
 <canvas id="matrix-canvas" hidden></canvas>
@@ -134,7 +47,6 @@
 
 <script id="site-data" type="application/json">{{ site_data_json | safe }}</script>
 <script src="/static/js/app.js"></script>
-<script src="/static/js/windows.js"></script>
 <script src="/static/js/terminal.js"></script>
 <script src="/static/js/games.js"></script>
 <script src="/static/js/classic.js"></script>
