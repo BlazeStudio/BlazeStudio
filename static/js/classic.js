@@ -373,8 +373,8 @@
     if (!layer) return;
     layer.innerHTML = `
       <svg class="c-building left" viewBox="0 0 220 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
-        <path class="c-wire" d="M196 92 C 420 175, 620 55, 860 140" stroke-width="2.5"/>
-        <path class="c-wire" d="M196 140 C 440 55, 660 195, 900 85" stroke-width="2" opacity="0.32"/>
+        <path class="c-wire" d="M196 92 C 450 175, 700 55, 1050 140" stroke-width="2.5"/>
+        <path class="c-wire" d="M196 140 C 470 55, 750 195, 1100 85" stroke-width="2" opacity="0.32"/>
         <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
         <rect x="96" y="30" width="60" height="610" fill="var(--cb-mauve-light)" opacity="0.75"/>
         <g fill="#d8dde3" opacity="0.3">
@@ -410,8 +410,8 @@
             <stop offset="100%" stop-color="var(--cb-coral-light)"/>
           </linearGradient>
         </defs>
-        <path class="c-wire" d="M30 92 C -190 175, -390 55, -630 140" stroke-width="2.5"/>
-        <path class="c-wire" d="M30 140 C -210 55, -430 195, -670 85" stroke-width="2" opacity="0.32"/>
+        <path class="c-wire" d="M30 92 C -220 175, -470 55, -820 140" stroke-width="2.5"/>
+        <path class="c-wire" d="M30 140 C -240 55, -510 195, -860 85" stroke-width="2" opacity="0.32"/>
         <rect x="30" y="60" width="160" height="580" fill="url(#tealG)"/>
         <g fill="#dff3ea" opacity="0.3">
           <rect x="50" y="100" width="11" height="15" rx="2"/>
