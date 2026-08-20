@@ -371,6 +371,7 @@
     const layer = document.getElementById('c-cityscape');
     if (!layer) return;
     layer.innerHTML = `
+      <svg id="c-wires-svg" class="c-wires-layer" aria-hidden="true"></svg>
       <svg class="c-building left" viewBox="0 0 220 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
         <rect x="96" y="30" width="60" height="610" fill="var(--cb-mauve-light)" opacity="0.75"/>
@@ -439,7 +440,6 @@
         <g transform="translate(60,652) scale(1.3)"><rect x="-3" y="0" width="6" height="20" fill="#4a3324"/><circle cx="0" cy="-7" r="16" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/></g>
         <g transform="translate(258,648) scale(1.35)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
       </svg>
-      <svg id="c-wires-svg" class="c-wires-layer" aria-hidden="true"></svg>
     `;
   }
 

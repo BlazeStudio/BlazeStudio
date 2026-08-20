@@ -162,7 +162,6 @@
   overflow: visible;
   transform: translateY(38%);
   opacity: 0.35;
-  transition: transform 0.1s linear, opacity 0.1s linear;
   filter: saturate(0.92);
 }
 #classic[data-theme='night'] .c-building { filter: saturate(0.8) brightness(0.72); opacity: 0.5; }
@@ -170,7 +169,7 @@
 #classic[data-theme='night'] .c-window-lit rect { opacity: 1; filter: drop-shadow(0 0 3px #ffd98a); }
 .c-building.left { left: 0; }
 .c-building.right { right: 0; }
-.c-wires-layer { position: absolute; inset: 0; overflow: visible; transition: opacity 0.1s linear; }
+.c-wires-layer { position: absolute; inset: 0; overflow: visible; }
 .c-wire { stroke: var(--cb-ink); opacity: 0.45; fill: none; }
 #classic[data-theme='night'] .c-wire { opacity: 0.3; }
 
