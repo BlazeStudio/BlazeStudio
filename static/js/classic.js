@@ -21,16 +21,32 @@
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'day';
     return 'night'; // unclear system preference → dark by default
   }
+  function updateThemeIcon(theme) {
+    const btn = document.getElementById('c-theme-btn');
+    if (!btn) return;
+    let icon = btn.querySelector('.icon');
+    if (!icon) {
+      btn.innerHTML = '<span class="icon"></span>';
+      icon = btn.querySelector('.icon');
+    }
+    icon.textContent = theme === 'day' ? '☀️' : '🌙';
+  }
   function applyTheme() {
     const theme = detectTheme();
     document.getElementById('classic').dataset.theme = theme;
-    const btn = document.getElementById('c-theme-btn');
-    if (btn) btn.textContent = theme === 'day' ? '☀️' : '🌙';
+    updateThemeIcon(theme);
   }
   function toggleTheme() {
+    const btn = document.getElementById('c-theme-btn');
     const cur = document.getElementById('classic').dataset.theme;
-    localStorage.setItem('av-classic-theme', cur === 'day' ? 'night' : 'day');
-    applyTheme();
+    const next = cur === 'day' ? 'night' : 'day';
+    btn.classList.add('spin');
+    setTimeout(() => {
+      localStorage.setItem('av-classic-theme', next);
+      document.getElementById('classic').dataset.theme = next;
+      updateThemeIcon(next);
+    }, 260);
+    setTimeout(() => btn.classList.remove('spin'), 620);
   }
 
   /* ---------- sections ---------- */
@@ -51,7 +67,7 @@
         <text x="50" y="45" text-anchor="middle" style="font-family:var(--font-display);font-size:25px;font-weight:700;fill:var(--cb-accent)">А</text>
         <text x="50" y="74" text-anchor="middle" style="font-family:var(--font-display);font-size:25px;font-weight:700;fill:var(--cb-accent)">В</text>
       </svg>
-      <div class="c-hero-kicker">${t('РЕЗЮМЕ · ОБЫЧНАЯ ВЕРСИЯ', 'RÉSUMÉ · PLAIN VERSION')}</div>
+      <div class="c-hero-kicker">${t('РЕЗЮМЕ', 'RÉSUMÉ')}</div>
       <h1 class="c-hero-title">${PROFILE.name[lang]} <mark>${PROFILE.role[lang]}</mark></h1>
       <p class="c-hero-tagline">${PROFILE.tagline[lang]}</p>
       <div class="c-hero-cta">
@@ -332,11 +348,27 @@
             <stop offset="0%" stop-color="var(--cb-sky-light)" stop-opacity="0.55"/>
             <stop offset="100%" stop-color="var(--cb-sky-light)" stop-opacity="0"/>
           </radialGradient>
+          <radialGradient id="sunHalo" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fff3c4" stop-opacity="0.9"/>
+            <stop offset="45%" stop-color="#ffd97a" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#ffd97a" stop-opacity="0"/>
+          </radialGradient>
         </defs>
         <rect width="1200" height="800" fill="url(#skyBase)"/>
         <rect width="1200" height="800" fill="url(#cloudA)"/>
         <rect width="1200" height="800" fill="url(#cloudB)"/>
         <rect width="1200" height="800" fill="url(#skyGlow)"/>
+        <g class="c-sun" transform="translate(1010,110)">
+          <circle r="120" fill="url(#sunHalo)"/>
+          <circle r="34" fill="#fff6da"/>
+        </g>
+        <g class="c-moon" transform="translate(1010,110)">
+          <circle r="18" fill="none" stroke="#efe6d2" stroke-width="4" opacity="0.35"/>
+          <path d="M-6 -26 A28 28 0 1 0 -6 26 A20 20 0 1 1 -6 -26 Z" fill="#f3ecd8"/>
+          <circle cx="-70" cy="40" r="2.4" fill="#efe6d2" opacity="0.8"/>
+          <circle cx="60" cy="-50" r="1.8" fill="#efe6d2" opacity="0.7"/>
+          <circle cx="90" cy="20" r="2" fill="#efe6d2" opacity="0.6"/>
+        </g>
       </svg>
     `;
   }
@@ -345,22 +377,30 @@
     const layer = document.getElementById('c-cityscape');
     if (!layer) return;
     layer.innerHTML = `
-      <svg class="c-wires" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M-20 60 C 250 180, 550 -10, 900 120 S 1250 40, 1300 90" stroke="currentColor" stroke-width="2.5" fill="none"/>
-        <path d="M-20 130 C 300 30, 650 220, 1000 60 S 1250 140, 1300 100" stroke="currentColor" stroke-width="2" fill="none" opacity="0.7"/>
+      <svg class="c-wires" viewBox="0 0 1200 260" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 40 C 300 130, 550 20, 750 95 S 1050 30, 1200 80" stroke="currentColor" stroke-width="2.5" fill="none"/>
+        <path d="M0 90 C 320 15, 600 160, 850 55 S 1080 110, 1200 40" stroke="currentColor" stroke-width="2" fill="none" opacity="0.7"/>
       </svg>
       <svg class="c-building left" viewBox="0 0 220 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
-        <defs>
-          <pattern id="winL" width="24" height="32" patternUnits="userSpaceOnUse">
-            <rect x="5" y="7" width="9" height="13" fill="#d8dde3" opacity="0.5"/>
-          </pattern>
-        </defs>
         <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
         <rect x="96" y="30" width="60" height="610" fill="var(--cb-mauve-light)" opacity="0.75"/>
-        <rect x="14" y="55" width="192" height="585" fill="url(#winL)"/>
-        <rect x="50" y="6" width="16" height="30" fill="var(--cb-ink)" opacity="0.4"/>
+        <g fill="#d8dde3" opacity="0.3">
+          <rect x="30" y="70" width="11" height="15" rx="2"/>
+          <rect x="62" y="130" width="11" height="15" rx="2"/>
+          <rect x="118" y="95" width="11" height="15" rx="2"/>
+          <rect x="150" y="165" width="11" height="15" rx="2"/>
+          <rect x="42" y="225" width="11" height="15" rx="2"/>
+          <rect x="112" y="270" width="11" height="15" rx="2"/>
+          <rect x="162" y="330" width="11" height="15" rx="2"/>
+          <rect x="72" y="390" width="11" height="15" rx="2"/>
+          <rect x="130" y="450" width="11" height="15" rx="2"/>
+          <rect x="46" y="510" width="11" height="15" rx="2"/>
+          <rect x="140" y="560" width="11" height="15" rx="2"/>
+        </g>
         <rect x="0" y="638" width="220" height="42" fill="var(--cb-ground)" opacity="0.9"/>
-        <path d="M-10 680 Q30 600 70 680 Z M55 680 Q95 610 135 680 Z M125 680 Q165 615 205 680 Z" fill="var(--cb-leaf)"/>
+        <g transform="translate(38,657)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(112,662)"><rect x="-2.5" y="0" width="5" height="19" fill="#4a3324"/><circle cx="0" cy="-7" r="15" fill="var(--cb-leaf)"/><circle cx="-10" cy="1" r="10" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="10" cy="1" r="10" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(182,658)"><rect x="-3" y="0" width="6" height="22" fill="#4a3324"/><circle cx="0" cy="-8" r="17" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="12" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="12" fill="var(--cb-leaf)" opacity="0.92"/></g>
       </svg>
       <svg class="c-building right" viewBox="0 0 320 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <defs>
@@ -372,22 +412,33 @@
             <stop offset="0%" stop-color="var(--cb-coral)"/>
             <stop offset="100%" stop-color="var(--cb-coral-light)"/>
           </linearGradient>
-          <pattern id="winT" width="22" height="30" patternUnits="userSpaceOnUse">
-            <rect x="4" y="6" width="9" height="13" fill="#dff3ea" opacity="0.45"/>
-          </pattern>
-          <pattern id="winCo" width="24" height="30" patternUnits="userSpaceOnUse">
-            <rect x="4" y="6" width="10" height="13" fill="#fff1e6" opacity="0.5"/>
-          </pattern>
         </defs>
-        <path d="M210 70 Q235 8 262 70 L262 112 L210 112 Z" fill="var(--cb-gold)"/>
-        <path d="M212 68 Q235 22 258 68 Z" fill="none" stroke="var(--cb-gold-dark)" stroke-width="2" opacity="0.6"/>
-        <rect x="228" y="92" width="16" height="220" fill="var(--cb-gold-dark)"/>
         <rect x="30" y="60" width="160" height="580" fill="url(#tealG)"/>
-        <rect x="30" y="85" width="160" height="555" fill="url(#winT)"/>
+        <g fill="#dff3ea" opacity="0.3">
+          <rect x="50" y="100" width="11" height="15" rx="2"/>
+          <rect x="90" y="140" width="11" height="15" rx="2"/>
+          <rect x="140" y="110" width="11" height="15" rx="2"/>
+          <rect x="60" y="200" width="11" height="15" rx="2"/>
+          <rect x="120" y="240" width="11" height="15" rx="2"/>
+          <rect x="55" y="320" width="11" height="15" rx="2"/>
+          <rect x="145" y="360" width="11" height="15" rx="2"/>
+          <rect x="80" y="430" width="11" height="15" rx="2"/>
+        </g>
         <rect x="150" y="260" width="170" height="380" fill="url(#coralG)"/>
-        <rect x="160" y="285" width="150" height="345" fill="url(#winCo)"/>
+        <g fill="#fff1e6" opacity="0.32">
+          <rect x="175" y="300" width="11" height="15" rx="2"/>
+          <rect x="220" y="330" width="11" height="15" rx="2"/>
+          <rect x="270" y="300" width="11" height="15" rx="2"/>
+          <rect x="185" y="390" width="11" height="15" rx="2"/>
+          <rect x="245" y="420" width="11" height="15" rx="2"/>
+          <rect x="290" y="380" width="11" height="15" rx="2"/>
+          <rect x="200" y="480" width="11" height="15" rx="2"/>
+          <rect x="260" y="510" width="11" height="15" rx="2"/>
+          <rect x="185" y="560" width="11" height="15" rx="2"/>
+        </g>
         <rect x="0" y="638" width="320" height="42" fill="var(--cb-ground)" opacity="0.85"/>
-        <path d="M90 680 Q130 608 170 680 Z" fill="var(--cb-leaf)"/>
+        <g transform="translate(65,660)"><rect x="-3" y="0" width="6" height="20" fill="#4a3324"/><circle cx="0" cy="-7" r="16" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(255,657)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
       </svg>
     `;
   }
