@@ -7,8 +7,8 @@
 <meta name="description" content="Anton Vasiliev — Python Backend Developer.">
 <meta name="theme-color" content="#121218">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23121218%22/><text x=%2250%22 y=%2266%22 font-size=%2254%22 font-family=%22monospace%22 font-weight=%22700%22 fill=%22%23ffcf33%22 text-anchor=%22middle%22>A</text></svg>">
-<link rel="stylesheet" href="/static/css/shared.css">
-<link rel="stylesheet" href="/static/css/classic.css">
+<link rel="stylesheet" href="/static/css/shared.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/classic.css?v={{ v }}">
 </head>
 <body>
 
@@ -48,9 +48,9 @@
 <div id="toast"></div>
 
 <script id="site-data" type="application/json">{{ site_data_json | safe }}</script>
-<script src="/static/js/app.js"></script>
-<script src="/static/js/terminal.js"></script>
-<script src="/static/js/games.js"></script>
-<script src="/static/js/classic.js"></script>
+<script src="/static/js/app.js?v={{ v }}"></script>
+<script src="/static/js/terminal.js?v={{ v }}"></script>
+<script src="/static/js/games.js?v={{ v }}"></script>
+<script src="/static/js/classic.js?v={{ v }}"></script>
 </body>
 </html>

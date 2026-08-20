@@ -27,6 +27,7 @@ from data.projects import CATEGORIES, PROJECTS
 
 ROOT = Path(__file__).resolve().parent.parent
 START_TIME = time.time()
+ASSET_VERSION = str(int(START_TIME))  # busts browser cache for static/* on every (re)deploy
 
 app = FastAPI(title="Anton Vasiliev", docs_url=None, redoc_url=None)
 
@@ -66,6 +67,7 @@ def _base_context() -> dict:
         "categories": CATEGORIES,
         "resume_source": RESUME_SOURCE,
         "site_data_json": _site_data_json(),
+        "v": ASSET_VERSION,
     }
 
 
@@ -84,7 +86,9 @@ def dossier(request: Request, lang: str = "ru"):
     lang = lang if lang in ("ru", "en") else "ru"
     host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.hostname
     return templates.TemplateResponse(
-        request, "dossier.html", {"profile": PROFILE, "lang": lang, "resume_source": RESUME_SOURCE, "site_host": host}
+        request,
+        "dossier.html",
+        {"profile": PROFILE, "lang": lang, "resume_source": RESUME_SOURCE, "site_host": host, "v": ASSET_VERSION},
     )
 
 

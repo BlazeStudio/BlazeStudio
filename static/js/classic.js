@@ -358,7 +358,6 @@
           <circle r="34" fill="#fff6da"/>
         </g>
         <g class="c-moon" transform="translate(1010,110)">
-          <circle r="18" fill="none" stroke="#efe6d2" stroke-width="4" opacity="0.35"/>
           <path d="M-6 -26 A28 28 0 1 0 -6 26 A20 20 0 1 1 -6 -26 Z" fill="#f3ecd8"/>
           <circle cx="-70" cy="40" r="2.4" fill="#efe6d2" opacity="0.8"/>
           <circle cx="60" cy="-50" r="1.8" fill="#efe6d2" opacity="0.7"/>
@@ -373,8 +372,6 @@
     if (!layer) return;
     layer.innerHTML = `
       <svg class="c-building left" viewBox="0 0 220 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
-        <path class="c-wire" d="M196 92 C 450 175, 700 55, 1050 140" stroke-width="2.5"/>
-        <path class="c-wire" d="M196 140 C 470 55, 750 195, 1100 85" stroke-width="2" opacity="0.32"/>
         <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
         <rect x="96" y="30" width="60" height="610" fill="var(--cb-mauve-light)" opacity="0.75"/>
         <g fill="#d8dde3" opacity="0.3">
@@ -410,8 +407,6 @@
             <stop offset="100%" stop-color="var(--cb-coral-light)"/>
           </linearGradient>
         </defs>
-        <path class="c-wire" d="M30 92 C -220 175, -470 55, -820 140" stroke-width="2.5"/>
-        <path class="c-wire" d="M30 140 C -240 55, -510 195, -860 85" stroke-width="2" opacity="0.32"/>
         <rect x="30" y="60" width="160" height="580" fill="url(#tealG)"/>
         <g fill="#dff3ea" opacity="0.3">
           <rect x="50" y="100" width="11" height="15" rx="2"/>
@@ -444,7 +439,30 @@
         <g transform="translate(60,652) scale(1.3)"><rect x="-3" y="0" width="6" height="20" fill="#4a3324"/><circle cx="0" cy="-7" r="16" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/></g>
         <g transform="translate(258,648) scale(1.35)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
       </svg>
+      <svg id="c-wires-svg" class="c-wires-layer" aria-hidden="true"></svg>
     `;
+  }
+
+  function updateWires() {
+    const svg = document.getElementById('c-wires-svg');
+    const left = document.querySelector('.c-building.left');
+    const right = document.querySelector('.c-building.right');
+    if (!svg || !left || !right) return;
+    const lr = left.getBoundingClientRect();
+    const rr = right.getBoundingClientRect();
+    const p1x = lr.left + lr.width * 0.84;
+    const p1y = lr.top + lr.height * 0.12;
+    const p2x = rr.left + rr.width * 0.14;
+    const p2y = rr.top + rr.height * 0.15;
+    const midX = (p1x + p2x) / 2;
+    const sagBase = Math.max(p1y, p2y);
+    svg.setAttribute('width', String(window.innerWidth));
+    svg.setAttribute('height', String(window.innerHeight));
+    svg.innerHTML = `
+      <path class="c-wire" d="M${p1x.toFixed(1)} ${p1y.toFixed(1)} Q ${midX.toFixed(1)} ${(sagBase + 90).toFixed(1)} ${p2x.toFixed(1)} ${p2y.toFixed(1)}" stroke-width="2.5"/>
+      <path class="c-wire" d="M${p1x.toFixed(1)} ${(p1y - 10).toFixed(1)} Q ${midX.toFixed(1)} ${(sagBase + 50).toFixed(1)} ${p2x.toFixed(1)} ${(p2y - 10).toFixed(1)}" stroke-width="2" opacity="0.32"/>
+    `;
+    svg.style.opacity = getComputedStyle(left).opacity;
   }
 
   function initCityscapeReveal() {
@@ -459,6 +477,7 @@
         el.style.transform = `translateY(${(1 - progress) * 38}%)`;
         el.style.opacity = String(0.35 + progress * 0.65);
       });
+      updateWires();
     }
 
     if (reduced) {
@@ -466,6 +485,8 @@
         el.style.transform = 'translateY(0)';
         el.style.opacity = '1';
       });
+      updateWires();
+      window.addEventListener('resize', updateWires);
       return;
     }
 
@@ -482,6 +503,7 @@
       },
       { passive: true }
     );
+    window.addEventListener('resize', update);
     update();
   }
 
