@@ -456,11 +456,26 @@
     const p2y = rr.top + rr.height * 0.15;
     const midX = (p1x + p2x) / 2;
     const sagBase = Math.max(p1y, p2y);
-    svg.setAttribute('width', String(window.innerWidth));
-    svg.setAttribute('height', String(window.innerHeight));
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    // The buildings themselves are semi-transparent while revealing, so simply painting
+    // the wires first (behind, in DOM order) still lets them show through. Punch actual
+    // holes for both buildings' rects via an evenodd clip so the wire is only ever drawn
+    // in the open sky between/around them, never "inside" a tower.
     svg.innerHTML = `
-      <path class="c-wire" d="M${p1x.toFixed(1)} ${p1y.toFixed(1)} Q ${midX.toFixed(1)} ${(sagBase + 90).toFixed(1)} ${p2x.toFixed(1)} ${p2y.toFixed(1)}" stroke-width="2.5"/>
-      <path class="c-wire" d="M${p1x.toFixed(1)} ${(p1y - 10).toFixed(1)} Q ${midX.toFixed(1)} ${(sagBase + 50).toFixed(1)} ${p2x.toFixed(1)} ${(p2y - 10).toFixed(1)}" stroke-width="2" opacity="0.32"/>
+      <defs>
+        <clipPath id="wiresClip" clipPathUnits="userSpaceOnUse" clip-rule="evenodd">
+          <path d="M0 0 H${w} V${h} H0 Z
+                   M${lr.left.toFixed(1)} ${lr.top.toFixed(1)} H${lr.right.toFixed(1)} V${lr.bottom.toFixed(1)} H${lr.left.toFixed(1)} Z
+                   M${rr.left.toFixed(1)} ${rr.top.toFixed(1)} H${rr.right.toFixed(1)} V${rr.bottom.toFixed(1)} H${rr.left.toFixed(1)} Z"/>
+        </clipPath>
+      </defs>
+      <g clip-path="url(#wiresClip)">
+        <path class="c-wire" d="M${p1x.toFixed(1)} ${p1y.toFixed(1)} Q ${midX.toFixed(1)} ${(sagBase + 90).toFixed(1)} ${p2x.toFixed(1)} ${p2y.toFixed(1)}" stroke-width="2.5"/>
+        <path class="c-wire" d="M${p1x.toFixed(1)} ${(p1y - 10).toFixed(1)} Q ${midX.toFixed(1)} ${(sagBase + 50).toFixed(1)} ${p2x.toFixed(1)} ${(p2y - 10).toFixed(1)}" stroke-width="2" opacity="0.32"/>
+      </g>
     `;
     svg.style.opacity = getComputedStyle(left).opacity;
   }
