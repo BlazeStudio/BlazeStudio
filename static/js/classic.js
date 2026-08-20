@@ -308,6 +308,84 @@
     });
   }
 
+  /* ---------- cityscape: the painting, revealed on scroll ---------- */
+  function renderCityscape() {
+    const layer = document.getElementById('c-cityscape');
+    if (!layer) return;
+    layer.innerHTML = `
+      <svg class="c-wires" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M-20 60 C 250 180, 550 -10, 900 120 S 1250 40, 1300 90" stroke="currentColor" stroke-width="2.5" fill="none"/>
+        <path d="M-20 130 C 300 30, 650 220, 1000 60 S 1250 140, 1300 100" stroke="currentColor" stroke-width="2" fill="none" opacity="0.7"/>
+      </svg>
+      <svg class="c-building left" viewBox="0 0 220 640" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+        <defs>
+          <pattern id="winL" width="24" height="32" patternUnits="userSpaceOnUse">
+            <rect x="5" y="7" width="9" height="13" fill="#d8dde3" opacity="0.5"/>
+          </pattern>
+        </defs>
+        <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
+        <rect x="96" y="30" width="60" height="610" fill="#b9adae" opacity="0.55"/>
+        <rect x="14" y="55" width="192" height="585" fill="url(#winL)"/>
+        <rect x="50" y="6" width="16" height="30" fill="var(--cb-ink)" opacity="0.5"/>
+      </svg>
+      <svg class="c-building right" viewBox="0 0 320 640" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+        <defs>
+          <pattern id="winT" width="22" height="30" patternUnits="userSpaceOnUse">
+            <rect x="4" y="6" width="9" height="13" fill="#dff3ea" opacity="0.45"/>
+          </pattern>
+          <pattern id="winCo" width="24" height="30" patternUnits="userSpaceOnUse">
+            <rect x="4" y="6" width="10" height="13" fill="#fff1e6" opacity="0.5"/>
+          </pattern>
+        </defs>
+        <path d="M210 70 Q235 10 262 70 L262 110 L210 110 Z" fill="var(--cb-gold)"/>
+        <rect x="228" y="90" width="16" height="220" fill="var(--cb-gold)" opacity="0.85"/>
+        <rect x="30" y="60" width="160" height="580" fill="var(--cb-teal)"/>
+        <rect x="30" y="85" width="160" height="555" fill="url(#winT)"/>
+        <rect x="150" y="260" width="170" height="380" fill="var(--cb-coral)"/>
+        <rect x="160" y="285" width="150" height="345" fill="url(#winCo)"/>
+        <path d="M140 640 Q165 570 190 640 Z" fill="#2f6b46" opacity="0.85"/>
+      </svg>
+    `;
+  }
+
+  function initCityscapeReveal() {
+    const scroller = document.getElementById('classic');
+    const buildings = () => document.querySelectorAll('.c-building');
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const REVEAL_DISTANCE = 520;
+
+    function update() {
+      const progress = Math.min(1, Math.max(0, scroller.scrollTop / REVEAL_DISTANCE));
+      buildings().forEach((el) => {
+        el.style.transform = `translateY(${(1 - progress) * 38}%)`;
+        el.style.opacity = String(0.35 + progress * 0.65);
+      });
+    }
+
+    if (reduced) {
+      buildings().forEach((el) => {
+        el.style.transform = 'translateY(0)';
+        el.style.opacity = '1';
+      });
+      return;
+    }
+
+    let ticking = false;
+    scroller.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          update();
+        });
+      },
+      { passive: true }
+    );
+    update();
+  }
+
   /* ---------- side quick-nav ---------- */
   const SIDENAV_SECTIONS = [
     { id: 'c-about-section', ic: '👤', ru: 'О себе', en: 'About' },
@@ -398,6 +476,8 @@
     });
 
     buildSidenav();
+    renderCityscape();
+    initCityscapeReveal();
     document.getElementById('classic').scrollTop = 0;
 
     syncGithub();

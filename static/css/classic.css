@@ -35,7 +35,7 @@
   inset: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(147, 182, 209, 0.35), transparent 60%), var(--cb-bg);
+  background: linear-gradient(180deg, rgba(147, 182, 209, 0.55) 0%, rgba(147, 182, 209, 0.22) 22%, transparent 46%), var(--cb-bg);
   color: var(--cb-ink);
   font-family: var(--font-body);
   z-index: 90;
@@ -54,7 +54,7 @@
   --cb-hairline: 1px solid rgba(242, 233, 219, 0.1);
   --cb-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.6);
   --cb-shadow-sm: 0 12px 24px -12px rgba(0, 0, 0, 0.55);
-  background: radial-gradient(ellipse 90% 55% at 50% -10%, rgba(226, 84, 63, 0.1), transparent 60%), var(--cb-bg);
+  background: linear-gradient(180deg, rgba(226, 84, 63, 0.16) 0%, rgba(60, 50, 70, 0.18) 24%, transparent 48%), var(--cb-bg);
 }
 
 #classic * { box-sizing: border-box; }
@@ -101,6 +101,42 @@
 .c-btn:hover { transform: translateY(-2px); }
 .c-btn:active { transform: translateY(0); }
 .c-btn-accent { background: var(--cb-accent); color: #fff8f0; border-color: transparent; }
+
+/* cityscape — the painting, framing the page. Buildings sit fixed at the
+   viewport edges, hidden below the fold, and rise into place as you
+   scroll past the hero — then stay put, framing everything after. */
+#c-cityscape {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  display: none;
+}
+@media (min-width: 1280px) {
+  #c-cityscape { display: block; }
+}
+.c-building {
+  position: absolute;
+  bottom: 0;
+  width: clamp(200px, 16vw, 320px);
+  transform: translateY(38%);
+  opacity: 0.35;
+  transition: transform 0.1s linear, opacity 0.1s linear;
+  filter: saturate(0.92);
+}
+#classic[data-theme='night'] .c-building { filter: saturate(0.8) brightness(0.72); opacity: 0.5; }
+.c-building.left { left: 0; }
+.c-building.right { right: 0; }
+.c-wires {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 46vh;
+  opacity: 0.4;
+  color: var(--cb-ink);
+}
 
 #c-main { max-width: 1080px; margin: 0 auto; padding: 30px 24px 20px; position: relative; z-index: 1; }
 
