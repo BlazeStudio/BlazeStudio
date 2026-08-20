@@ -4,8 +4,8 @@ PROFILE = {
     "name": {"ru": "Васильев Антон", "en": "Anton Vasiliev"},
     "role": {"ru": "Python Backend Developer", "en": "Python Backend Developer"},
     "tagline": {
-        "ru": "Пишу backend, который не падает по ночам",
-        "en": "I write backend code that doesn't page anyone at 3 a.m.",
+        "ru": "Партизан надевает корпортивное худи и выходит к людям",
+        "en": "100 years of offers",
     },
     "location": {"ru": "Москва, Россия", "en": "Moscow, Russia"},
     "age": 21,

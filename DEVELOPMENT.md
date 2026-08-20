@@ -47,7 +47,7 @@ restart.
 `api/config.py` has one constant:
 
 ```python
-RESUME_SOURCE = "hh"  # or "linkedin"
+RESUME_SOURCE = "linkedin"  # or "linkedin"
 ```
 
 - `"hh"` — the hh.ru-sourced story (RTL Consulting)
