@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Caveat:wght@600;700&display=swap');
 
 #classic {
-  /* day — dusty rooftops, teal towers, coral facades, paper sky */
+  /* day — straight off the painting: dark tower, teal + dome, coral block, mixed sky */
   --cb-bg: #f1e8d8;
   --cb-panel: #faf4e7;
   --cb-ink: #2b241e;
@@ -16,11 +16,19 @@
   --cb-faint: #9c8d7c;
   --cb-accent: #cf5a3e;
   --cb-accent-soft: rgba(207, 90, 62, 0.13);
-  --cb-mauve: #8a6672;
-  --cb-teal: #3f8b76;
-  --cb-coral: #e08063;
-  --cb-sky: #93b6d1;
-  --cb-gold: #c69249;
+  --cb-mauve: #4a3c40;
+  --cb-mauve-light: #938689;
+  --cb-teal: #2f8b78;
+  --cb-teal-light: #48a595;
+  --cb-coral: #e2795d;
+  --cb-coral-light: #ec9679;
+  --cb-gold: #b8823f;
+  --cb-gold-dark: #8a5f2c;
+  --cb-ground: #e6c79c;
+  --cb-leaf: #33562f;
+  --cb-sky-dark: #4c6f8f;
+  --cb-sky: #7fa4c4;
+  --cb-sky-light: #bcd6e8;
   --cb-radius: 20px;
   --cb-radius-sm: 12px;
   --cb-shadow: 0 18px 36px -18px rgba(43, 36, 30, 0.35);
@@ -35,7 +43,7 @@
   inset: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  background: linear-gradient(180deg, rgba(147, 182, 209, 0.55) 0%, rgba(147, 182, 209, 0.22) 22%, transparent 46%), var(--cb-bg);
+  background: var(--cb-bg);
   color: var(--cb-ink);
   font-family: var(--font-body);
   z-index: 90;
@@ -43,7 +51,7 @@
 #classic[hidden] { display: none; }
 
 #classic[data-theme='night'] {
-  /* night — the ink-portrait album cover: charcoal + hand-lettered red */
+  /* night — the same skyline at dusk, under the ink-portrait album palette */
   --cb-bg: #15120e;
   --cb-panel: #1e1a15;
   --cb-ink: #f2e9db;
@@ -54,7 +62,10 @@
   --cb-hairline: 1px solid rgba(242, 233, 219, 0.1);
   --cb-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.6);
   --cb-shadow-sm: 0 12px 24px -12px rgba(0, 0, 0, 0.55);
-  background: linear-gradient(180deg, rgba(226, 84, 63, 0.16) 0%, rgba(60, 50, 70, 0.18) 24%, transparent 48%), var(--cb-bg);
+  --cb-sky-dark: #241b2c;
+  --cb-sky: #3a2c3e;
+  --cb-sky-light: #5c3f45;
+  background: var(--cb-bg);
 }
 
 #classic * { box-sizing: border-box; }
@@ -101,6 +112,16 @@
 .c-btn:hover { transform: translateY(-2px); }
 .c-btn:active { transform: translateY(0); }
 .c-btn-accent { background: var(--cb-accent); color: #fff8f0; border-color: transparent; }
+
+/* sky — a genuine blend of tones (dark cloud band + base blue + light
+   wash), not a flat wash. Visible on every screen size. */
+#c-sky-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+#c-sky-layer svg { width: 100%; height: 100vh; display: block; }
 
 /* cityscape — the painting, framing the page. Buildings sit fixed at the
    viewport edges, hidden below the fold, and rise into place as you
@@ -268,25 +289,24 @@
 /* side quick-nav */
 #c-sidenav {
   position: fixed;
-  right: 20px;
+  right: 34px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 15;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 .c-sidenav-item {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   border: var(--cb-hairline);
   background: var(--cb-panel);
-  box-shadow: var(--cb-shadow-sm);
   font-size: 1rem;
   transition: transform 0.15s ease, background 0.15s ease;
 }
@@ -310,7 +330,7 @@
 }
 .c-sidenav-item:hover .tip { opacity: 1; }
 @media (max-width: 980px) {
-  #c-sidenav { right: 8px; }
+  #c-sidenav { right: 16px; }
   .c-sidenav-item { width: 32px; height: 32px; font-size: 0.85rem; }
   .c-sidenav-item .tip { display: none; }
 }

@@ -309,6 +309,38 @@
   }
 
   /* ---------- cityscape: the painting, revealed on scroll ---------- */
+  function renderSky() {
+    const layer = document.getElementById('c-sky-layer');
+    if (!layer) return;
+    layer.innerHTML = `
+      <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="skyBase" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--cb-sky)"/>
+            <stop offset="55%" stop-color="var(--cb-sky-light)"/>
+            <stop offset="100%" stop-color="var(--cb-sky-light)" stop-opacity="0"/>
+          </linearGradient>
+          <radialGradient id="cloudA" cx="30%" cy="8%" r="45%">
+            <stop offset="0%" stop-color="var(--cb-sky-dark)" stop-opacity="0.85"/>
+            <stop offset="100%" stop-color="var(--cb-sky-dark)" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="cloudB" cx="74%" cy="4%" r="38%">
+            <stop offset="0%" stop-color="var(--cb-sky-dark)" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="var(--cb-sky-dark)" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="skyGlow" cx="52%" cy="34%" r="55%">
+            <stop offset="0%" stop-color="var(--cb-sky-light)" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="var(--cb-sky-light)" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="1200" height="800" fill="url(#skyBase)"/>
+        <rect width="1200" height="800" fill="url(#cloudA)"/>
+        <rect width="1200" height="800" fill="url(#cloudB)"/>
+        <rect width="1200" height="800" fill="url(#skyGlow)"/>
+      </svg>
+    `;
+  }
+
   function renderCityscape() {
     const layer = document.getElementById('c-cityscape');
     if (!layer) return;
@@ -317,19 +349,29 @@
         <path d="M-20 60 C 250 180, 550 -10, 900 120 S 1250 40, 1300 90" stroke="currentColor" stroke-width="2.5" fill="none"/>
         <path d="M-20 130 C 300 30, 650 220, 1000 60 S 1250 140, 1300 100" stroke="currentColor" stroke-width="2" fill="none" opacity="0.7"/>
       </svg>
-      <svg class="c-building left" viewBox="0 0 220 640" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+      <svg class="c-building left" viewBox="0 0 220 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <defs>
           <pattern id="winL" width="24" height="32" patternUnits="userSpaceOnUse">
             <rect x="5" y="7" width="9" height="13" fill="#d8dde3" opacity="0.5"/>
           </pattern>
         </defs>
         <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
-        <rect x="96" y="30" width="60" height="610" fill="#b9adae" opacity="0.55"/>
+        <rect x="96" y="30" width="60" height="610" fill="var(--cb-mauve-light)" opacity="0.75"/>
         <rect x="14" y="55" width="192" height="585" fill="url(#winL)"/>
-        <rect x="50" y="6" width="16" height="30" fill="var(--cb-ink)" opacity="0.5"/>
+        <rect x="50" y="6" width="16" height="30" fill="var(--cb-ink)" opacity="0.4"/>
+        <rect x="0" y="638" width="220" height="42" fill="var(--cb-ground)" opacity="0.9"/>
+        <path d="M-10 680 Q30 600 70 680 Z M55 680 Q95 610 135 680 Z M125 680 Q165 615 205 680 Z" fill="var(--cb-leaf)"/>
       </svg>
-      <svg class="c-building right" viewBox="0 0 320 640" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+      <svg class="c-building right" viewBox="0 0 320 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <defs>
+          <linearGradient id="tealG" x1="0" y1="0" x2="1" y2="0.35">
+            <stop offset="0%" stop-color="var(--cb-teal)"/>
+            <stop offset="100%" stop-color="var(--cb-teal-light)"/>
+          </linearGradient>
+          <linearGradient id="coralG" x1="0" y1="0" x2="1" y2="0.35">
+            <stop offset="0%" stop-color="var(--cb-coral)"/>
+            <stop offset="100%" stop-color="var(--cb-coral-light)"/>
+          </linearGradient>
           <pattern id="winT" width="22" height="30" patternUnits="userSpaceOnUse">
             <rect x="4" y="6" width="9" height="13" fill="#dff3ea" opacity="0.45"/>
           </pattern>
@@ -337,13 +379,15 @@
             <rect x="4" y="6" width="10" height="13" fill="#fff1e6" opacity="0.5"/>
           </pattern>
         </defs>
-        <path d="M210 70 Q235 10 262 70 L262 110 L210 110 Z" fill="var(--cb-gold)"/>
-        <rect x="228" y="90" width="16" height="220" fill="var(--cb-gold)" opacity="0.85"/>
-        <rect x="30" y="60" width="160" height="580" fill="var(--cb-teal)"/>
+        <path d="M210 70 Q235 8 262 70 L262 112 L210 112 Z" fill="var(--cb-gold)"/>
+        <path d="M212 68 Q235 22 258 68 Z" fill="none" stroke="var(--cb-gold-dark)" stroke-width="2" opacity="0.6"/>
+        <rect x="228" y="92" width="16" height="220" fill="var(--cb-gold-dark)"/>
+        <rect x="30" y="60" width="160" height="580" fill="url(#tealG)"/>
         <rect x="30" y="85" width="160" height="555" fill="url(#winT)"/>
-        <rect x="150" y="260" width="170" height="380" fill="var(--cb-coral)"/>
+        <rect x="150" y="260" width="170" height="380" fill="url(#coralG)"/>
         <rect x="160" y="285" width="150" height="345" fill="url(#winCo)"/>
-        <path d="M140 640 Q165 570 190 640 Z" fill="#2f6b46" opacity="0.85"/>
+        <rect x="0" y="638" width="320" height="42" fill="var(--cb-ground)" opacity="0.85"/>
+        <path d="M90 680 Q130 608 170 680 Z" fill="var(--cb-leaf)"/>
       </svg>
     `;
   }
@@ -476,6 +520,7 @@
     });
 
     buildSidenav();
+    renderSky();
     renderCityscape();
     initCityscapeReveal();
     document.getElementById('classic').scrollTop = 0;
