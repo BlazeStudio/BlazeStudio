@@ -169,9 +169,6 @@
 #classic[data-theme='night'] .c-window-lit rect { opacity: 1; filter: drop-shadow(0 0 3px #ffd98a); }
 .c-building.left { left: 0; }
 .c-building.right { right: 0; }
-.c-wires-layer { position: absolute; inset: 0; overflow: visible; }
-.c-wire { stroke: var(--cb-ink); opacity: 0.45; fill: none; }
-#classic[data-theme='night'] .c-wire { opacity: 0.3; }
 
 #c-main { max-width: 1080px; margin: 0 auto; padding: 30px 24px 20px; position: relative; z-index: 1; }
 
