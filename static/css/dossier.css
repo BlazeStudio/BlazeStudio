@@ -14,13 +14,13 @@ body {
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
 .toolbar a.back { color: #4a5468; }
 .lang-switch a { margin: 0 4px; padding: 5px 10px; border: 1px solid #dde2ec; border-radius: 999px; color: #4a5468; }
-.lang-switch a.active { background: #0f9d58; color: #fff; border-color: #0f9d58; }
+.lang-switch a.active { background: #cf5a3e; color: #fff; border-color: #cf5a3e; }
 .print-btn { border: 1px solid #dde2ec; padding: 8px 14px; border-radius: 999px; background: #fff; cursor: pointer; }
-.print-btn:hover { border-color: #0f9d58; color: #0f9d58; }
+.print-btn:hover { border-color: #cf5a3e; color: #cf5a3e; }
 
 .d-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #14161c; padding-bottom: 18px; margin-bottom: 18px; }
 .d-name { font-size: 1.9rem; font-weight: 700; }
-.d-role { font-family: 'JetBrains Mono', monospace; color: #0f9d58; margin-top: 4px; }
+.d-role { font-family: 'JetBrains Mono', monospace; color: #cf5a3e; margin-top: 4px; }
 .d-mark { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.75rem; text-align: right; line-height: 1.3; color: #8994a8; }
 
 .d-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #4a5468; margin-bottom: 30px; display: flex; gap: 8px; flex-wrap: wrap; }

@@ -57,11 +57,6 @@
     document.getElementById('c-pdf').href = `/dossier?lang=${lang}`;
 
     document.getElementById('c-hero').innerHTML = `
-      <svg class="c-motif" viewBox="0 0 100 80" aria-hidden="true">
-        <path d="M62 14 A22 22 0 1 0 62 64 A17 17 0 1 1 62 14 Z" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round"/>
-        <path d="M18 18 L21 25 L28 28 L21 31 L18 38 L15 31 L8 28 L15 25 Z" style="fill:currentColor;opacity:0.7"/>
-        <circle cx="10" cy="54" r="2.4" style="fill:currentColor;opacity:0.5"/>
-      </svg>
       <svg class="c-seal" viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r="42" style="fill:none;stroke:var(--cb-accent);stroke-width:5"/>
         <text x="50" y="45" text-anchor="middle" style="font-family:var(--font-display);font-size:25px;font-weight:700;fill:var(--cb-accent)">А</text>
@@ -378,8 +373,8 @@
     if (!layer) return;
     layer.innerHTML = `
       <svg class="c-wires" viewBox="0 0 1200 260" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0 40 C 300 130, 550 20, 750 95 S 1050 30, 1200 80" stroke="currentColor" stroke-width="2.5" fill="none"/>
-        <path d="M0 90 C 320 15, 600 160, 850 55 S 1080 110, 1200 40" stroke="currentColor" stroke-width="2" fill="none" opacity="0.7"/>
+        <path d="M50 65 C 300 190, 550 55, 700 145 S 1000 65, 1150 85" stroke="currentColor" stroke-width="2.5" fill="none"/>
+        <path d="M70 125 C 340 35, 600 205, 780 85 S 1020 155, 1130 55" stroke="currentColor" stroke-width="2" fill="none" opacity="0.7"/>
       </svg>
       <svg class="c-building left" viewBox="0 0 220 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
@@ -397,10 +392,14 @@
           <rect x="46" y="510" width="11" height="15" rx="2"/>
           <rect x="140" y="560" width="11" height="15" rx="2"/>
         </g>
+        <g class="c-window-lit">
+          <rect x="150" y="230" width="11" height="15" rx="2"/>
+          <rect x="70" y="340" width="11" height="15" rx="2"/>
+        </g>
         <rect x="0" y="638" width="220" height="42" fill="var(--cb-ground)" opacity="0.9"/>
-        <g transform="translate(38,657)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
-        <g transform="translate(112,662)"><rect x="-2.5" y="0" width="5" height="19" fill="#4a3324"/><circle cx="0" cy="-7" r="15" fill="var(--cb-leaf)"/><circle cx="-10" cy="1" r="10" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="10" cy="1" r="10" fill="var(--cb-leaf)" opacity="0.92"/></g>
-        <g transform="translate(182,658)"><rect x="-3" y="0" width="6" height="22" fill="#4a3324"/><circle cx="0" cy="-8" r="17" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="12" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="12" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(32,650) scale(1.35)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(112,656) scale(1.3)"><rect x="-2.5" y="0" width="5" height="19" fill="#4a3324"/><circle cx="0" cy="-7" r="15" fill="var(--cb-leaf)"/><circle cx="-10" cy="1" r="10" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="10" cy="1" r="10" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(188,652) scale(1.35)"><rect x="-3" y="0" width="6" height="22" fill="#4a3324"/><circle cx="0" cy="-8" r="17" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="12" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="12" fill="var(--cb-leaf)" opacity="0.92"/></g>
       </svg>
       <svg class="c-building right" viewBox="0 0 320 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
         <defs>
@@ -436,9 +435,14 @@
           <rect x="260" y="510" width="11" height="15" rx="2"/>
           <rect x="185" y="560" width="11" height="15" rx="2"/>
         </g>
+        <g class="c-window-lit">
+          <rect x="100" y="180" width="11" height="15" rx="2"/>
+          <rect x="235" y="450" width="11" height="15" rx="2"/>
+          <rect x="60" y="380" width="11" height="15" rx="2"/>
+        </g>
         <rect x="0" y="638" width="320" height="42" fill="var(--cb-ground)" opacity="0.85"/>
-        <g transform="translate(65,660)"><rect x="-3" y="0" width="6" height="20" fill="#4a3324"/><circle cx="0" cy="-7" r="16" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/></g>
-        <g transform="translate(255,657)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(60,652) scale(1.3)"><rect x="-3" y="0" width="6" height="20" fill="#4a3324"/><circle cx="0" cy="-7" r="16" fill="var(--cb-leaf)"/><circle cx="-11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="11" cy="1" r="11" fill="var(--cb-leaf)" opacity="0.92"/></g>
+        <g transform="translate(258,648) scale(1.35)"><rect x="-3" y="0" width="6" height="23" fill="#4a3324"/><circle cx="0" cy="-9" r="18" fill="var(--cb-leaf)"/><circle cx="-12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/><circle cx="12" cy="1" r="13" fill="var(--cb-leaf)" opacity="0.92"/></g>
       </svg>
     `;
   }
