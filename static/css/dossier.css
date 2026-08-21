@@ -38,6 +38,20 @@ body {
 
 .d-foot { margin-top: 30px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #b6bdcc; }
 
+@media (max-width: 640px) {
+  body { padding: 16px 10px 48px; }
+  .sheet { padding: 24px 18px; border-radius: 12px; }
+  .toolbar { flex-wrap: wrap; gap: 10px 14px; margin-bottom: 20px; }
+  .toolbar a.back { order: 1; }
+  .print-btn { order: 2; margin-left: auto; }
+  .lang-switch { order: 3; width: 100%; }
+  .d-head { flex-direction: column; gap: 10px; }
+  .d-mark { text-align: left; }
+  .d-name { font-size: 1.5rem; }
+  .d-job-head { gap: 4px 8px; }
+  .d-period { margin-left: 0; }
+}
+
 @media print {
   body { background: #fff; padding: 0; }
   .sheet { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; }

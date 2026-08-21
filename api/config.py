@@ -5,4 +5,4 @@ the terminal's `whoami`/`cv`) reads from whichever profile module this
 resolves to. Nothing else in the codebase needs to change.
 """
 
-RESUME_SOURCE = "hh"  # "hh" (hh.ru resume, RTL-era story) or "linkedin" (Ominimo-era story)
+RESUME_SOURCE = "linkedin"  # "hh" (hh.ru resume, RTL-era story) or "linkedin" (Ominimo-era story)

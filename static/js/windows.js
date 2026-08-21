@@ -505,7 +505,7 @@ function renderConsole(root) {
   root.innerHTML = `
     <div id="term-output"></div>
     <div class="term-input-row">
-      <span class="prompt">C:\\ANTON&gt;</span>
+      <span class="prompt">${window.XP.termPrompt}</span>
       <input id="term-input" type="text" autocomplete="off" spellcheck="false">
     </div>
   `;

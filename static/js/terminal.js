@@ -6,11 +6,14 @@
     en: "Anton Vasiliev [Version 10.0.19045]\n(c) Anton Vasiliev. All rights probably reserved.\n\nType 'help' for a list of commands.\n",
   };
 
+  const PROMPT = 'anton@blaze-studio:~$';
+  window.XP.termPrompt = PROMPT;
+
   function printLine(output, text, isCmd) {
     const row = document.createElement('div');
     if (isCmd) {
       row.className = 'cmd-line';
-      row.textContent = text;
+      row.textContent = `${PROMPT} ${text}`;
     } else {
       row.textContent = text;
     }

@@ -240,7 +240,7 @@
       <div class="c-fun-grid">
         <div class="c-term">
           <div id="term-output"></div>
-          <div class="term-input-row"><span class="prompt">C:\\ANTON&gt;</span><input id="term-input" type="text" autocomplete="off" spellcheck="false"></div>
+          <div class="term-input-row"><span class="prompt">${window.XP.termPrompt}</span><input id="term-input" type="text" autocomplete="off" spellcheck="false"></div>
         </div>
         <div class="c-fun-games">
           <div class="c-games-tabs">
@@ -372,8 +372,13 @@
     if (!layer) return;
     layer.innerHTML = `
       <svg class="c-building left" viewBox="0 0 220 680" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
-        <rect x="14" y="30" width="192" height="610" fill="var(--cb-mauve)"/>
-        <rect x="96" y="30" width="60" height="610" fill="var(--cb-mauve-light)" opacity="0.75"/>
+        <defs>
+          <linearGradient id="mauveG" x1="0" y1="0" x2="1" y2="0.3">
+            <stop offset="0%" stop-color="var(--cb-mauve)"/>
+            <stop offset="100%" stop-color="var(--cb-mauve-light)"/>
+          </linearGradient>
+        </defs>
+        <rect x="14" y="30" width="192" height="610" fill="url(#mauveG)"/>
         <g fill="#d8dde3" opacity="0.3">
           <rect x="30" y="70" width="11" height="15" rx="2"/>
           <rect x="62" y="130" width="11" height="15" rx="2"/>
