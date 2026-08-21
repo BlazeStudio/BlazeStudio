@@ -4,10 +4,10 @@ PROFILE = {
     "name": {"ru": "Васильев Антон", "en": "Anton Vasiliev"},
     "role": {"ru": "Backend Developer / Actuarial Science", "en": "Backend Developer / Actuarial Science"},
     "tagline": {
-        "ru": "5+ лет пишу backend для FinTech и InsurTech",
-        "en": "5+ years building backend for FinTech & InsurTech",
+        "ru": "Партизан надевает корпортивное худи и выходит к людям",
+        "en": "100 years of offers",
     },
-    "location": {"ru": "Германия", "en": "Germany"},
+    "location": {"ru": "Москва, Россия", "en": "Moscow, Russia"},
     "age": 21,
     "employment": {
         "ru": "Открыт к предложениям — remote-first команды",
@@ -24,7 +24,7 @@ PROFILE = {
     },
     "languages": [
         {"name": {"ru": "Русский", "en": "Russian"}, "level": {"ru": "Родной", "en": "Native"}, "value": 100},
-        {"name": {"ru": "Английский", "en": "English"}, "level": {"ru": "Начальный", "en": "Elementary"}, "value": 25},
+        {"name": {"ru": "Английский", "en": "English"}, "level": {"ru": "Средний", "en": "Intermediate"}, "value": 50},
     ],
     "certifications": [
         {"ru": "Python Engineering & Programming Policy", "en": "Python Engineering & Programming Policy"},
@@ -33,19 +33,19 @@ PROFILE = {
         "ru": [
             "5+ лет в Python backend и DevOps, в основном FinTech и InsurTech — актуарное моделирование, автоматизация пенсионных фондов, риск-отчётность.",
             "От и до: микросервисы, REST API, CI/CD, Docker, миграции PostgreSQL с legacy-систем.",
-            "Remote-first по умолчанию. Живу в Германии.",
+            "Remote-first по умолчанию. Люблю пиццу и кока-колу",
         ],
         "en": [
             "5+ years in Python backend and DevOps, mostly FinTech and InsurTech — actuarial modeling, pension fund automation, risk reporting.",
             "End to end: microservices, REST APIs, CI/CD, Docker, PostgreSQL migrations off legacy systems.",
-            "Remote-first by default. Based in Germany.",
+            "Remote-first by default. I like pizza and coca-cola.",
         ],
     },
     "traits": [
         {"ru": "Не боюсь легаси", "en": "Not afraid of legacy code"},
-        {"ru": "Читает логи для удовольствия", "en": "Reads logs for fun"},
-        {"ru": "Мигрировал БД и остался жив", "en": "Migrated a database and survived"},
-        {"ru": "Спорит с багами до победного", "en": "Argues with bugs until they lose"},
+        {"ru": "Самые красивые логи", "en": "The most beatiful logs"},
+        {"ru": "Не кладу прод в пятницу", "en": "Don't shutdown prod on friday"},
+        {"ru": "Люблю документацию и автотесты", "en": "Love docs and autotests"},
     ],
     "skills": {
         "backend": {

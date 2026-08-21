@@ -236,7 +236,7 @@
   function renderFunSection() {
     document.getElementById('c-fun-section').innerHTML = `
       <div class="c-section-title" data-ru="Развлечения" data-en="Fun stuff">Развлечения</div>
-      <div class="c-section-sub" data-ru="Тот же терминал и те же игры, что и в XP-версии" data-en="The same terminal and games as the XP version">Тот же терминал и те же игры, что и в XP-версии</div>
+      <div class="c-section-sub" data-ru="Я очень сильно люблю терминалы..." data-en="I absolutely love terminals...">Я очень сильно люблю терминалы...</div>
       <div class="c-fun-grid">
         <div class="c-term">
           <div id="term-output"></div>
