@@ -2,7 +2,7 @@
 
 PROFILE = {
     "name": {"ru": "Васильев Антон", "en": "Anton Vasiliev"},
-    "role": {"ru": "Backend Developer / Actuarial Science", "en": "Backend Developer / Actuarial Science"},
+    "role": {"ru": "Python Backend Developer / Actuarial Science", "en": "Python Backend Developer / Actuarial Science"},
     "tagline": {
         "ru": "Партизан надевает корпортивное худи и выходит к людям",
         "en": "100 years of offers",
@@ -33,12 +33,12 @@ PROFILE = {
         "ru": [
             "5+ лет в Python backend и DevOps, в основном FinTech и InsurTech — актуарное моделирование, автоматизация пенсионных фондов, риск-отчётность.",
             "От и до: микросервисы, REST API, CI/CD, Docker, миграции PostgreSQL с legacy-систем.",
-            "Remote-first по умолчанию. Люблю пиццу и кока-колу",
+            "Remote-first по умолчанию. Свободное владение английским языком, особенно в письменной/технической коммуникации.",
         ],
         "en": [
             "5+ years in Python backend and DevOps, mostly FinTech and InsurTech — actuarial modeling, pension fund automation, risk reporting.",
             "End to end: microservices, REST APIs, CI/CD, Docker, PostgreSQL migrations off legacy systems.",
-            "Remote-first by default. I like pizza and coca-cola.",
+            "Remote-first by default. Working proficiency in English, stronger in written/technical communication",
         ],
     },
     "traits": [
