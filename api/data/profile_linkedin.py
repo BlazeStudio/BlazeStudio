@@ -16,8 +16,8 @@ PROFILE = {
     "format": {"ru": "Удалённо", "en": "Remote"},
     "contacts": {
         "email": "praim916@gmail.com",
-        "telegram": "https://t.me/OlegGortsev",
-        "telegram_handle": "@OlegGortsev",
+        "telegram": "https://t.me/terminallover",
+        "telegram_handle": "@terminallover",
         "github": "https://github.com/BlazeStudio",
         "linkedin": "https://www.linkedin.com/in/anton-vasiliev-developer",
         "hh": "https://hh.ru/resume/3753c2bcff0ea2b0390039ed1f576348314c68",

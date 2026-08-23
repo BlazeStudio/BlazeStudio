@@ -6,8 +6,6 @@ touches a real filesystem or shell. Effects are instructions the frontend interp
 
 from __future__ import annotations
 
-import random
-
 from data.profile import PROFILE
 from data.projects import PROJECTS
 
@@ -27,22 +25,55 @@ COMMANDS = [
     "logs",
 ]
 
+# Real verses only — Synodal translation (ru) / King James Version (en), both public domain.
 _VERSES = {
-    "1:1": (
-        "В начале был код, и код был у бэкенда, и бэкенд был код.",
-        "In the beginning was the Code, and the Code was with the Backend, and the Backend was the Code.",
+    "genesis 1:1": (
+        "В начале сотворил Бог небо и землю.",
+        "In the beginning God created the heaven and the earth.",
     ),
-    "3:16": (
-        "Ибо так возлюбил рекрутер резюме моё, что назначил собеседование.",
-        "For the recruiter so loved this résumé, that they scheduled an interview.",
+    "exodus 3:14": (
+        "Бог сказал Моисею: Я есмь Сущий.",
+        "And God said unto Moses, I AM THAT I AM.",
     ),
-    "23:1": (
-        "Git — пастырь мой; я не буду нуждаться в бэкапах.",
-        "Git is my shepherd; I shall not want for backups.",
+    "psalm 23:1": (
+        "Господь — Пастырь мой; я ни в чём не буду нуждаться.",
+        "The LORD is my shepherd; I shall not want.",
     ),
-    "500:1": (
-        "И сказал сервер: да будет 500. И стал 500. И увидел админ, что это плохо.",
-        "And the server said, let there be 500. And there was 500. And the admin saw that it was not good.",
+    "proverbs 1:7": (
+        "Начало мудрости — страх Господень.",
+        "The fear of the LORD is the beginning of knowledge.",
+    ),
+    "ecclesiastes 1:2": (
+        "Суета сует, сказал Екклесиаст, суета сует, — всё суета!",
+        "Vanity of vanities, saith the Preacher, vanity of vanities; all is vanity.",
+    ),
+    "isaiah 40:31": (
+        "А надеющиеся на Господа обновятся в силе.",
+        "But they that wait upon the LORD shall renew their strength.",
+    ),
+    "matthew 7:7": (
+        "Просите, и дано будет вам; ищите, и найдёте.",
+        "Ask, and it shall be given you; seek, and ye shall find.",
+    ),
+    "john 1:1": (
+        "В начале было Слово, и Слово было у Бога, и Слово было Бог.",
+        "In the beginning was the Word, and the Word was with God, and the Word was God.",
+    ),
+    "john 3:16": (
+        "Ибо так возлюбил Бог мир, что отдал Сына Своего Единородного.",
+        "For God so loved the world, that he gave his only begotten Son.",
+    ),
+    "romans 8:28": (
+        "Любящим Бога, призванным по Его изволению, всё содействует ко благу.",
+        "And we know that all things work together for good to them that love God.",
+    ),
+    "1 corinthians 13:4": (
+        "Любовь долготерпит, милосердствует.",
+        "Charity suffereth long, and is kind.",
+    ),
+    "revelation 3:20": (
+        "Се, стою у двери и стучу.",
+        "Behold, I stand at the door, and knock.",
     ),
 }
 
@@ -80,9 +111,9 @@ def run_command(raw: str, lang: str = "ru") -> dict:
 
     if name == "whoami":
         msg = (
-            f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(на самом деле просто человек, который слишком долго настраивал этот терминал)"
+            f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(я — просто слишком долго настраивал этот терминал)"
             if lang == "ru"
-            else f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(actually just a guy who spent too long styling this terminal)"
+            else f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(me — spent way too long styling this terminal)"
         )
         return {"output": msg, "effect": None}
 
@@ -97,9 +128,9 @@ def run_command(raw: str, lang: str = "ru") -> dict:
 
     if full == "sudo hire-anton":
         msg = (
-            "[sudo] пароль для recruiter: ********\nдоступ разрешён. Антон добавлен в команду."
+            "[sudo] пароль для recruiter: ********\nдоступ разрешён. Готов начинать."
             if lang == "ru"
-            else "[sudo] password for recruiter: ********\naccess granted. Anton has been added to the team."
+            else "[sudo] password for recruiter: ********\naccess granted. Ready to start."
         )
         return {"output": msg, "effect": {"type": "confetti"}}
 
@@ -123,15 +154,20 @@ def run_command(raw: str, lang: str = "ru") -> dict:
 
     if name == "bible":
         idx = 1 if lang == "en" else 0
-        if not arg:
-            msg = "используй: bible <глава:стих>. например: bible 3:16" if lang == "ru" else "usage: bible <chapter:verse>. try: bible 3:16"
+        ref = " ".join(arg.split())
+        if not ref:
+            examples = ", ".join(sorted(_VERSES.keys())[:4])
+            msg = f"используй: bible <книга глава:стих>. например: bible john 3:16\nдоступны: {examples}, ..." if lang == "ru" else f"usage: bible <book chapter:verse>. try: bible john 3:16\navailable: {examples}, ..."
             return {"output": msg, "effect": None}
-        verse = _VERSES.get(arg) or random.choice(list(_VERSES.values()))
+        verse = _VERSES.get(ref)
+        if not verse:
+            msg = f"стих «{ref}» не найден. наберите 'bible' для примеров." if lang == "ru" else f"verse '{ref}' not found. type 'bible' for examples."
+            return {"output": msg, "effect": None}
         return {"output": verse[idx], "effect": None}
 
     if name == "coffee":
         art = "        ) )\n       ( (\n      ........\n      |      |]\n      \\      /\n       `----'"
-        caption = "кофе закончился. продуктивность бэкендера обнулена." if lang == "ru" else "coffee's out. backend productivity reset to zero."
+        caption = "кофе закончился. моя продуктивность обнулена." if lang == "ru" else "coffee's out. my productivity just hit zero."
         return {"output": f"{art}\n{caption}", "effect": None}
 
     if name == "logs":
@@ -159,7 +195,7 @@ def _help(lang: str) -> str:
             ("party", "shakes the desktop icons"),
             ("bsod", "a scare, nothing more"),
             ("shutdown", "does what it says"),
-            ("bible <ch:v>", "seek and you shall find"),
+            ("bible <book ch:v>", "seek and you shall find"),
             ("coffee", "essential dependency"),
             ("logs", "tail -f, mostly fine"),
         ]
@@ -175,7 +211,7 @@ def _help(lang: str) -> str:
             ("party", "трясёт иконки на столе"),
             ("bsod", "просто пугалка"),
             ("shutdown", "делает ровно то, что написано"),
-            ("bible <гл:ст>", "ищите и найдёте"),
+            ("bible <книга гл:ст>", "ищите и найдёте"),
             ("coffee", "критическая зависимость"),
             ("logs", "tail -f, почти всё в порядке"),
         ]
