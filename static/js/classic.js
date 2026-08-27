@@ -126,6 +126,21 @@
     animateFills(document.getElementById('c-skills-section'));
   }
 
+  function renderTasks(tasks) {
+    if (!tasks || !tasks.length) return '';
+    if (typeof tasks[0] === 'object' && tasks[0].category) {
+      return `<div class="c-task-groups">${tasks
+        .map(
+          (g) => `<div class="c-task-group">
+            <div class="c-task-group-title">${g.category}</div>
+            <div class="c-task-grid">${g.items.map((it) => `<div class="c-task-item">${it}</div>`).join('')}</div>
+          </div>`
+        )
+        .join('')}</div>`;
+    }
+    return `<ul class="c-job-tasks">${tasks.map((tk) => `<li>${tk}</li>`).join('')}</ul>`;
+  }
+
   function renderExperience() {
     const lang = window.XP.lang();
     const edu = PROFILE.education;
@@ -138,7 +153,7 @@
               <div class="c-job-head"><span class="c-job-title">${job.title[lang]}</span><span class="c-job-company">— ${job.company[lang]}</span><span class="c-job-period">${job.period[lang]}</span></div>
               <p class="c-job-summary">${job.summary[lang]}</p>
               ${job.highlight[lang] ? `<p class="c-job-highlight">◆ ${job.highlight[lang]}</p>` : ''}
-              ${job.tasks[lang] && job.tasks[lang].length ? `<ul class="c-job-tasks">${job.tasks[lang].map((tk) => `<li>${tk}</li>`).join('')}</ul>` : ''}
+              ${renderTasks(job.tasks[lang])}
               <div class="c-tags">${job.tags.map((tg) => `<span class="c-tag">${tg}</span>`).join('')}</div>
             </div>`
           )
@@ -147,6 +162,14 @@
           <div class="c-job-head"><span class="c-job-title">${edu.school[lang]}</span><span class="c-job-period">${edu.year}</span></div>
           <p class="c-job-summary">${edu.degree[lang]}</p>
         </div>
+        ${
+          PROFILE.certifications && PROFILE.certifications.length
+            ? `<div class="c-card c-edu c-edu-extra">
+                <div class="c-job-head"><span class="c-job-title">${t('Доп. образование', 'Additional education')}</span></div>
+                <ul class="c-job-tasks">${PROFILE.certifications.map((cert) => `<li>${cert[lang]}</li>`).join('')}</ul>
+              </div>`
+            : ''
+        }
       </div>
     `;
   }
@@ -298,7 +321,13 @@
               <div class="c-game-stats"><span data-ru="Счёт" data-en="Score">Счёт</span>: <b id="tetris-score">0</b> <span data-ru="Линии" data-en="Lines">Линии</span>: <b id="tetris-lines">0</b> <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="tetris-best">0</b></div>
               <button class="c-btn" id="tetris-start" data-ru="▶ Начать" data-en="▶ Start">▶ Начать</button>
             </div>
-            <canvas id="tetris-canvas" width="180" height="360"></canvas>
+            <div class="c-tetris-layout">
+              <canvas id="tetris-canvas" width="180" height="360"></canvas>
+              <div class="c-tetris-side">
+                <div class="c-tetris-next-label" data-ru="Далее" data-en="Next">Далее</div>
+                <canvas id="tetris-next" width="64" height="64"></canvas>
+              </div>
+            </div>
           </div>
         </div>
       </div>

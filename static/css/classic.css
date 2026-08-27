@@ -237,6 +237,12 @@
 .c-job-tasks { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 3px 16px; margin: 0 0 11px; padding: 0; list-style: none; }
 .c-job-tasks li { font-size: 0.82rem; color: var(--cb-dim); padding-left: 14px; position: relative; }
 .c-job-tasks li::before { content: '·'; position: absolute; left: 2px; top: -2px; color: var(--cb-accent); font-size: 1.3em; }
+
+.c-task-groups { display: flex; flex-direction: column; gap: 14px; margin: 0 0 11px; }
+.c-task-group-title { font-weight: 700; font-size: 0.82rem; margin: 0 0 6px; }
+.c-task-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 3px 16px; }
+.c-task-item { font-size: 0.82rem; color: var(--cb-dim); padding-left: 14px; position: relative; line-height: 1.5; }
+.c-task-item::before { content: '·'; position: absolute; left: 2px; top: -2px; color: var(--cb-accent); font-size: 1.3em; }
 .c-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .c-tag { font-family: var(--font-mono); font-size: 0.66rem; padding: 4px 9px; border-radius: 999px; background: var(--cb-bg); color: var(--cb-dim); }
 
@@ -312,6 +318,10 @@
 .c-slots-msg { font-family: var(--font-mono); font-size: 0.7rem; color: var(--cb-dim); min-height: 16px; }
 
 #classic #tetris-canvas { background: #100e0b; border-radius: var(--cb-radius-sm); border: var(--cb-hairline); display: block; margin: 0 auto; max-width: 100%; }
+.c-tetris-layout { display: flex; gap: 12px; justify-content: center; align-items: flex-start; }
+.c-tetris-side { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 4px; }
+.c-tetris-next-label { font-family: var(--font-mono); font-size: 0.62rem; color: var(--cb-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+#classic #tetris-next { background: #100e0b; border-radius: var(--cb-radius-sm); border: var(--cb-hairline); display: block; }
 
 /* contact */
 .c-contact-grid { display: flex; flex-wrap: wrap; gap: 14px; }

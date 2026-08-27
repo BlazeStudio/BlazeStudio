@@ -30,6 +30,7 @@ body {
 .d-section p { margin: 0 0 8px; font-size: 0.92rem; line-height: 1.55; }
 .d-section ul { margin: 6px 0 0; padding-left: 18px; }
 .d-section li { font-size: 0.86rem; margin-bottom: 3px; color: #333c4d; }
+.d-task-group-title { font-size: 0.86rem; font-weight: 700; margin: 8px 0 2px; }
 
 .d-job { margin-bottom: 18px; }
 .d-job-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 0.95rem; margin-bottom: 6px; }

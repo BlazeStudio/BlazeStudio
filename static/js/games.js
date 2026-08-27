@@ -586,6 +586,8 @@ function initSlots(root, key) {
 function initTetris(root, key) {
   const canvas = root.querySelector('#tetris-canvas');
   const ctx = canvas.getContext('2d');
+  const nextCanvas = root.querySelector('#tetris-next');
+  const nextCtx = nextCanvas ? nextCanvas.getContext('2d') : null;
   const scoreEl = root.querySelector('#tetris-score');
   const linesEl = root.querySelector('#tetris-lines');
   const bestEl = root.querySelector('#tetris-best');
@@ -606,7 +608,7 @@ function initTetris(root, key) {
   };
   const TYPES = Object.keys(SHAPES);
 
-  let board, current, running, loopId, score, lines, disposed;
+  let board, current, running, loopId, score, lines, disposed, nextType;
 
   const best = Number(localStorage.getItem('av-tetris-best') || 0);
   bestEl.textContent = String(best);
@@ -615,8 +617,32 @@ function initTetris(root, key) {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
   }
 
+  function randomType() {
+    return TYPES[Math.floor(Math.random() * TYPES.length)];
+  }
+
+  function drawNext() {
+    if (!nextCtx) return;
+    nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    const shape = SHAPES[nextType][0];
+    const rows = shape.length;
+    const cols = shape[0].length;
+    const cell = Math.floor(Math.min(nextCanvas.width / 4, nextCanvas.height / 4));
+    const offX = (nextCanvas.width - cols * cell) / 2;
+    const offY = (nextCanvas.height - rows * cell) / 2;
+    nextCtx.fillStyle = COLORS[nextType];
+    shape.forEach((row, r) => {
+      row.forEach((v, c) => {
+        if (!v) return;
+        nextCtx.fillRect(offX + c * cell + 1, offY + r * cell + 1, cell - 2, cell - 2);
+      });
+    });
+  }
+
   function spawnPiece() {
-    const type = TYPES[Math.floor(Math.random() * TYPES.length)];
+    const type = nextType || randomType();
+    nextType = randomType();
+    drawNext();
     const shape = SHAPES[type][0];
     const x = Math.floor((COLS - shape[0].length) / 2);
     return { type, rot: 0, x, y: 0 };
@@ -729,6 +755,7 @@ function initTetris(root, key) {
     board = emptyBoard();
     score = 0;
     lines = 0;
+    nextType = null;
     scoreEl.textContent = '0';
     linesEl.textContent = '0';
     current = spawnPiece();
@@ -783,6 +810,8 @@ function initTetris(root, key) {
   document.addEventListener('keydown', onKey);
   startBtn.addEventListener('click', start);
   board = emptyBoard();
+  nextType = randomType();
+  drawNext();
   draw();
 
   window.XP.gameCleanup[key] = () => {

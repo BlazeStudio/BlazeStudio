@@ -424,6 +424,16 @@ function renderProjects(root) {
   paintDetail(null);
 }
 
+function renderTasksDoc(tasks) {
+  if (!tasks || !tasks.length) return '';
+  if (typeof tasks[0] === 'object' && tasks[0].category) {
+    return tasks
+      .map((g) => `<p class="doc-task-group-title">${g.category}</p><ul>${g.items.map((it) => `<li>${it}</li>`).join('')}</ul>`)
+      .join('');
+  }
+  return `<ul>${tasks.map((tk) => `<li>${tk}</li>`).join('')}</ul>`;
+}
+
 function renderResume(root) {
   const lang = window.XP.lang();
   const t = window.XP.t;
@@ -442,7 +452,7 @@ function renderResume(root) {
               <div class="doc-job-head"><span>${job.title[lang]} — ${job.company[lang]}</span><span class="doc-period">${job.period[lang]}</span></div>
               <p>${job.summary[lang]}</p>
               ${job.highlight[lang] ? `<p class="highlight">◆ ${job.highlight[lang]}</p>` : ''}
-              ${job.tasks[lang] && job.tasks[lang].length ? `<ul>${job.tasks[lang].map((tk) => `<li>${tk}</li>`).join('')}</ul>` : ''}
+              ${renderTasksDoc(job.tasks[lang])}
             </div>`
           )
           .join('')}
@@ -451,6 +461,12 @@ function renderResume(root) {
           <div class="doc-job-head"><span>${edu.school[lang]}</span><span class="doc-period">${edu.year}</span></div>
           <p>${edu.degree[lang]}</p>
         </div>
+        ${
+          PROFILE.certifications && PROFILE.certifications.length
+            ? `<div class="doc-h2">${t('Доп. образование', 'Additional education')}</div>
+               <ul>${PROFILE.certifications.map((cert) => `<li>${cert[lang]}</li>`).join('')}</ul>`
+            : ''
+        }
       </div>
       <a class="xp-btn" href="/dossier?lang=${lang}" target="_blank">${t('🖨 Печать / PDF', '🖨 Print / PDF')}</a>
     </div>
@@ -572,7 +588,13 @@ function renderGame(kind) {
           <div class="game-stats"><span>${t('Счёт', 'Score')}: <b id="tetris-score">0</b></span><span>${t('Линии', 'Lines')}: <b id="tetris-lines">0</b></span><span>${t('Рекорд', 'Best')}: <b id="tetris-best">0</b></span></div>
           <button class="xp-btn" id="tetris-start">${t('▶ Начать', '▶ Start')}</button>
         </div>
-        <canvas id="tetris-canvas" width="180" height="360"></canvas>
+        <div class="tetris-layout">
+          <canvas id="tetris-canvas" width="180" height="360"></canvas>
+          <div class="tetris-side">
+            <div class="tetris-next-label">${t('Далее', 'Next')}</div>
+            <canvas id="tetris-next" width="64" height="64"></canvas>
+          </div>
+        </div>
       `;
     }
     root.innerHTML = `<div class="xp-body">${inner}</div>`;

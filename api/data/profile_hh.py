@@ -36,12 +36,12 @@ PROFILE = {
         "ru": [
             "3+ года коммерческой разработки на Python, из них 2+ года — в FinTech/InsurTech. Глубоко погружён в data-инженерию (Pandas/Polars) и инфраструктуру (Docker/K8s). Понимаю бизнес-логику финансовых продуктов и умею переводить требования заказчиков в технические решения.",
             "В свободное время изучаю LLM и RAG-приложения, создание AI-агентов — вижу в этом большой потенциал для автоматизации бизнес-процессов. Пишу документацию и тесты, прод по пятницам не роняю.",
-            "Учусь в РУТ (МИИТ) на управлении информационными процессами.",
+            "Закончил РУТ (МИИТ) по управлению информационными процессами.",
         ],
         "en": [
             "3+ years of commercial Python development, 2+ of them in FinTech/InsurTech. Deep in data engineering (Pandas/Polars) and infrastructure (Docker/K8s). I understand the business logic behind financial products and translate client requirements into technical solutions.",
             "Off the clock: exploring LLMs, RAG apps, and building AI agents — I see real potential there for automating business processes. Docs and tests aren't a checkbox, and prod doesn't go down on Fridays.",
-            "Studying information process management at Russian University of Transport (RUT MIIT).",
+            "Graduated from Russian University of Transport (RUT MIIT) with a degree in information process management.",
         ],
     },
     "traits": [
@@ -49,7 +49,7 @@ PROFILE = {
         {"ru": "Самые красивые логи", "en": "The most beautiful logs"},
         {"ru": "Не кладу прод в пятницу", "en": "Don't take prod down on Fridays"},
         {"ru": "Люблю документацию и автотесты", "en": "Loves docs and autotests"},
-        {"ru": "Заглядывается на LLM/RAG", "en": "Eyeing LLM/RAG territory"},
+        {"ru": "Изучаю LLM/RAG", "en": "Learning LLM/RAG"},
     ],
     "skills": {
         "backend": {
@@ -120,37 +120,77 @@ PROFILE = {
             },
             "tasks": {
                 "ru": [
-                    "(Data) ETL-пайплайн на Pandas/Polars для актуарных расчётов — до 2 млн записей за цикл, время обработки снижено на 73% за счёт оптимизации памяти",
-                    "(Data) Модуль аналитической отчётности с агрегацией метрик по портфелям — доходность, риски, распределение активов",
-                    "(Data) Анализ и трансформация исторических данных (до 15 лет) при подключении новых клиентов, скрипты на Pandas для валидации и очистки",
-                    "(Data) Оптимизация 15+ критических SQL-запросов (индексация, оконные функции) — генерация сложных отчётов ускорена ~в 4 раза",
-                    "(Backend) Асинхронная система очередей на Celery + Redis для тяжёлых расчётов — пропускная способность выросла в 3 раза",
-                    "(Backend) Сервис-ориентированная архитектура: актуарный модуль и модуль отчётности вынесены в отдельные микросервисы, синхронизация через REST API и Kafka",
-                    "(Backend) Интеграция с внешним интерфейсом и смежными модулями, обработка событий в реальном времени",
-                    "(DevOps) CI/CD пайплайн (GitLab CI, Pytest, линтеры, деплой в Kubernetes) — релиз с 2 часов до 20 минут, ошибок при выкатке на 80% меньше",
-                    "(DevOps) Централизованное логирование и трейсинг (ELK Stack + OpenTelemetry) — детекция инцидентов в проде ускорена на 40%",
-                    "(DevOps) Алертинг, healthchecks и автовосстановление для финансово-чувствительных расчётов",
-                    "(DevOps) Автоматизация деплоя на стендах заказчика через Docker Compose и Ansible",
-                    "(Анализ) Сбор и формализация требований от бизнес-заказчиков, перевод бизнес-потребностей в технические задачи",
-                    "(Анализ) Демонстрации функционала заказчикам, сбор обратной связи и приоритизация разработки",
+                    {
+                        "category": "Data & Analytics",
+                        "items": [
+                            "ETL-пайплайн на Pandas/Polars для актуарных расчётов — до 2 млн записей за цикл, время обработки снижено на 73% за счёт оптимизации памяти",
+                            "Модуль аналитической отчётности с агрегацией метрик по портфелям — доходность, риски, распределение активов",
+                            "Анализ и трансформация исторических данных (до 15 лет) при подключении новых клиентов, скрипты на Pandas для валидации и очистки",
+                            "Оптимизация 15+ критических SQL-запросов (индексация, оконные функции) — генерация сложных отчётов ускорена ~в 4 раза",
+                        ],
+                    },
+                    {
+                        "category": "Backend & Architecture",
+                        "items": [
+                            "Асинхронная система очередей на Celery + Redis для тяжёлых расчётов — пропускная способность выросла в 3 раза",
+                            "Сервис-ориентированная архитектура: актуарный модуль и модуль отчётности вынесены в отдельные микросервисы, синхронизация через REST API и Kafka",
+                            "Интеграция с внешним интерфейсом и смежными модулями, обработка событий в реальном времени",
+                        ],
+                    },
+                    {
+                        "category": "DevOps & Reliability",
+                        "items": [
+                            "CI/CD пайплайн (GitLab CI, Pytest, линтеры, деплой в Kubernetes) — релиз с 2 часов до 20 минут, ошибок при выкатке на 80% меньше",
+                            "Централизованное логирование и трейсинг (ELK Stack + OpenTelemetry) — детекция инцидентов в проде ускорена на 40%",
+                            "Алертинг, healthchecks и автовосстановление для финансово-чувствительных расчётов",
+                            "Автоматизация деплоя на стендах заказчика через Docker Compose и Ansible",
+                        ],
+                    },
+                    {
+                        "category": "Business Analysis",
+                        "items": [
+                            "Сбор и формализация требований от бизнес-заказчиков, перевод бизнес-потребностей в технические задачи",
+                            "Демонстрации функционала заказчикам, сбор обратной связи и приоритизация разработки",
+                        ],
+                    },
                 ],
                 "en": [
-                    "(Data) Pandas/Polars ETL pipeline for actuarial calculations — up to 2M records per cycle, processing time cut by 73% via memory optimization",
-                    "(Data) Analytics reporting module aggregating key portfolio metrics — returns, risk, asset allocation",
-                    "(Data) Analyzed and transformed up to 15 years of historical data during client onboarding, wrote Pandas scripts for validation and cleanup",
-                    "(Data) Optimized 15+ critical SQL queries (indexing, window functions) — complex report generation sped up ~4x",
-                    "(Backend) Async task-queue system on Celery + Redis for heavy calculations — throughput up 3x via horizontal worker scaling",
-                    "(Backend) Service-oriented architecture: split the actuarial and reporting modules into separate microservices, synced via REST API and Kafka",
-                    "(Backend) Integrated with the external UI and adjacent modules, handling real-time event processing",
-                    "(DevOps) CI/CD pipeline (GitLab CI, Pytest, linters, Kubernetes deploys) — release time down from 2 hours to 20 minutes, rollout errors down 80%",
-                    "(DevOps) Centralized logging and tracing (ELK Stack + OpenTelemetry) — incident detection in prod sped up 40%",
-                    "(DevOps) Alerting, healthchecks and auto-recovery for financially sensitive calculations",
-                    "(DevOps) Automated client-environment deploys with Docker Compose and Ansible",
-                    "(Analysis) Gathered and formalized requirements from business stakeholders, translated business needs into engineering tasks",
-                    "(Analysis) Ran functionality demos for clients, collected feedback, and prioritized the roadmap",
+                    {
+                        "category": "Data & Analytics",
+                        "items": [
+                            "Pandas/Polars ETL pipeline for actuarial calculations — up to 2M records per cycle, processing time cut by 73% via memory optimization",
+                            "Analytics reporting module aggregating key portfolio metrics — returns, risk, asset allocation",
+                            "Analyzed and transformed up to 15 years of historical data during client onboarding, wrote Pandas scripts for validation and cleanup",
+                            "Optimized 15+ critical SQL queries (indexing, window functions) — complex report generation sped up ~4x",
+                        ],
+                    },
+                    {
+                        "category": "Backend & Architecture",
+                        "items": [
+                            "Async task-queue system on Celery + Redis for heavy calculations — throughput up 3x via horizontal worker scaling",
+                            "Service-oriented architecture: split the actuarial and reporting modules into separate microservices, synced via REST API and Kafka",
+                            "Integrated with the external UI and adjacent modules, handling real-time event processing",
+                        ],
+                    },
+                    {
+                        "category": "DevOps & Reliability",
+                        "items": [
+                            "CI/CD pipeline (GitLab CI, Pytest, linters, Kubernetes deploys) — release time down from 2 hours to 20 minutes, rollout errors down 80%",
+                            "Centralized logging and tracing (ELK Stack + OpenTelemetry) — incident detection in prod sped up 40%",
+                            "Alerting, healthchecks and auto-recovery for financially sensitive calculations",
+                            "Automated client-environment deploys with Docker Compose and Ansible",
+                        ],
+                    },
+                    {
+                        "category": "Business Analysis",
+                        "items": [
+                            "Gathered and formalized requirements from business stakeholders, translated business needs into engineering tasks",
+                            "Ran functionality demos for clients, collected feedback, and prioritized the roadmap",
+                        ],
+                    },
                 ],
             },
-            "tags": ["Python", "Django", "Celery", "PostgreSQL", "Kubernetes", "Kafka"],
+            "tags": ["Python", "Django", "Celery", "PostgreSQL", "Kubernetes", "Kafka", "Polars", "Pandas", "Numpy", "Gitlab CI/CD"],
         },
         {
             "period": {"ru": "Сентябрь 2023 — Май 2024", "en": "Sep 2023 — May 2024"},
@@ -163,7 +203,7 @@ PROFILE = {
             },
             "highlight": {"ru": "Открытые проекты: Ritm Goroda, PostgreSQL Web GUI, Vostok Messenger", "en": "Public projects: Ritm Goroda, PostgreSQL Web GUI, Vostok Messenger"},
             "tasks": {"ru": [], "en": []},
-            "tags": ["Python", "Django", "Flask", "PostgreSQL", "Ajax"],
+            "tags": ["Python", "Django", "Flask", "PostgreSQL", "Ajax", "Gitlab CI/CD"],
         },
     ],
     "education": {

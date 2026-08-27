@@ -51,7 +51,14 @@
         <p>{{ job.summary[lang] }}</p>
         {% if job.highlight[lang] %}<p class="d-highlight">{{ job.highlight[lang] }}</p>{% endif %}
         {% if job.tasks[lang] %}
+          {% if job.tasks[lang][0] is mapping %}
+            {% for group in job.tasks[lang] %}
+            <p class="d-task-group-title">{{ group.category }}</p>
+            <ul>{% for t in group['items'] %}<li>{{ t }}</li>{% endfor %}</ul>
+            {% endfor %}
+          {% else %}
         <ul>{% for t in job.tasks[lang] %}<li>{{ t }}</li>{% endfor %}</ul>
+          {% endif %}
         {% endif %}
       </div>
       {% endfor %}
@@ -64,6 +71,13 @@
         <p>{{ profile.education.degree[lang] }}</p>
       </div>
     </section>
+
+    {% if profile.certifications %}
+    <section class="d-section">
+      <h2>{{ "Доп. образование" if lang == "ru" else "Additional education" }}</h2>
+      <ul>{% for cert in profile.certifications %}<li>{{ cert[lang] }}</li>{% endfor %}</ul>
+    </section>
+    {% endif %}
 
     <section class="d-section">
       <h2>{{ "Навыки" if lang == "ru" else "Skills" }}</h2>
