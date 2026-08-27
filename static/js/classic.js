@@ -247,6 +247,9 @@
             <button data-game="bughunt" class="active" data-ru="🐛 Охота на баги" data-en="🐛 Bug Hunt">🐛 Охота на баги</button>
             <button data-game="memory" data-ru="🧠 Память" data-en="🧠 Memory Match">🧠 Память</button>
             <button data-game="snake" data-ru="🐍 Snake_Deploy" data-en="🐍 Snake_Deploy">🐍 Snake_Deploy</button>
+            <button data-game="mines" data-ru="💣 Сапёр" data-en="💣 Minesweeper">💣 Сапёр</button>
+            <button data-game="slots" data-ru="🎰 Слоты" data-en="🎰 Slots">🎰 Слоты</button>
+            <button data-game="tetris" data-ru="🧱 Blocks_Deploy" data-en="🧱 Blocks_Deploy">🧱 Blocks_Deploy</button>
           </div>
           <div class="c-game-view active" data-game="bughunt">
             <div class="c-game-toolbar">
@@ -268,6 +271,34 @@
               <button class="c-btn" id="snake-start" data-ru="▶ Деплой" data-en="▶ Deploy">▶ Деплой</button>
             </div>
             <canvas id="snake-canvas" width="300" height="300"></canvas>
+          </div>
+          <div class="c-game-view" data-game="mines">
+            <div class="c-game-toolbar">
+              <div class="c-game-stats"><span data-ru="Флаги" data-en="Flags">Флаги</span>: <b id="mines-flags">10</b> <span data-ru="Время" data-en="Time">Время</span>: <b id="mines-time">0</b> <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="mines-best">—</b></div>
+              <div class="c-game-btn-row">
+                <button class="c-btn" id="mines-flag-mode" data-ru="🚩 Флажки" data-en="🚩 Flags">🚩 Флажки</button>
+                <button class="c-btn" id="mines-restart" data-ru="🔄 Заново" data-en="🔄 Restart">🔄 Заново</button>
+              </div>
+            </div>
+            <div class="c-mines-grid" id="mines-grid"></div>
+          </div>
+          <div class="c-game-view" data-game="slots">
+            <div class="c-game-toolbar">
+              <div class="c-game-stats"><span data-ru="Кредиты" data-en="Credits">Кредиты</span>: <b id="slots-credits">100</b> <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="slots-best">100</b></div>
+              <button class="c-btn" id="slots-restart" data-ru="🔄 Заново" data-en="🔄 Restart">🔄 Заново</button>
+            </div>
+            <div class="c-slots-machine">
+              <div class="slots-reels"><span class="slots-reel" id="slots-r1">🐍</span><span class="slots-reel" id="slots-r2">🐍</span><span class="slots-reel" id="slots-r3">🐍</span></div>
+              <button class="c-btn c-btn-accent" id="slots-spin" data-ru="🎰 Крутить" data-en="🎰 Spin">🎰 Крутить</button>
+              <div class="c-slots-msg" id="slots-msg"></div>
+            </div>
+          </div>
+          <div class="c-game-view" data-game="tetris">
+            <div class="c-game-toolbar">
+              <div class="c-game-stats"><span data-ru="Счёт" data-en="Score">Счёт</span>: <b id="tetris-score">0</b> <span data-ru="Линии" data-en="Lines">Линии</span>: <b id="tetris-lines">0</b> <span data-ru="Рекорд" data-en="Best">Рекорд</span>: <b id="tetris-best">0</b></div>
+              <button class="c-btn" id="tetris-start" data-ru="▶ Начать" data-en="▶ Start">▶ Начать</button>
+            </div>
+            <canvas id="tetris-canvas" width="180" height="360"></canvas>
           </div>
         </div>
       </div>

@@ -280,6 +280,29 @@ h1, h2, h3, p { margin: 0; }
 
 #snake-canvas { background: #06210f; border: 2px inset #a8a48f; display: block; margin: 0 auto; max-width: 100%; }
 
+.mines-grid { display: grid; gap: 2px; max-width: 320px; margin: 0 auto; }
+.mines-cell { aspect-ratio: 1; border: 1px outset #a8a48f; background: #c8c4b0; font-family: var(--font-mono); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.mines-cell.revealed { border: 1px solid #a8a48f; background: #ece8da; cursor: default; }
+.mines-cell.revealed.mine { background: #e88; }
+.mines-cell.revealed.hit { background: #ff5f5f; }
+.mines-cell.flagged { background: #ffe6a8; }
+.mines-cell[data-n="1"] { color: #1565c0; }
+.mines-cell[data-n="2"] { color: #2e7d32; }
+.mines-cell[data-n="3"] { color: #c62828; }
+.mines-cell[data-n="4"] { color: #6a1b9a; }
+.mines-cell[data-n="5"] { color: #8d4b00; }
+.mines-cell[data-n="6"] { color: #00838f; }
+.mines-cell[data-n="7"] { color: #212121; }
+.mines-cell[data-n="8"] { color: #757575; }
+
+.slots-machine { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px; }
+.slots-reels { display: flex; gap: 10px; background: #1a1a1a; border: 2px inset #a8a48f; padding: 14px 18px; border-radius: 4px; }
+.slots-reel { font-size: 36px; width: 48px; text-align: center; }
+.slots-spin-btn { font-weight: 700; }
+.slots-msg { font-family: var(--font-mono); font-size: 12px; color: var(--xp-text-dim); min-height: 16px; }
+
+#tetris-canvas { background: #06210f; border: 2px inset #a8a48f; display: block; margin: 0 auto; max-width: 100%; }
+
 /* command prompt */
 .cmd-window .xp-shell { background: #000c00; }
 .cmd-window .xp-titlebar { background: linear-gradient(180deg, #4c4c4c, #262626 55%, #101010); }

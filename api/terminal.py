@@ -155,13 +155,15 @@ def run_command(raw: str, lang: str = "ru") -> dict:
     if name == "bible":
         idx = 1 if lang == "en" else 0
         ref = " ".join(arg.split())
+        if ref in ("list", "список"):
+            header = "доступные главы:" if lang == "ru" else "available chapters:"
+            return {"output": header + "\n" + "\n".join(f"  {k}" for k in _VERSES), "effect": None}
         if not ref:
-            examples = ", ".join(sorted(_VERSES.keys())[:4])
-            msg = f"используй: bible <книга глава:стих>. например: bible john 3:16\nдоступны: {examples}, ..." if lang == "ru" else f"usage: bible <book chapter:verse>. try: bible john 3:16\navailable: {examples}, ..."
+            msg = "используй: bible <книга глава:стих>. например: bible john 3:16\nполный список: bible list" if lang == "ru" else "usage: bible <book chapter:verse>. try: bible john 3:16\nfull list: bible list"
             return {"output": msg, "effect": None}
         verse = _VERSES.get(ref)
         if not verse:
-            msg = f"стих «{ref}» не найден. наберите 'bible' для примеров." if lang == "ru" else f"verse '{ref}' not found. type 'bible' for examples."
+            msg = f"стих «{ref}» не найден. наберите 'bible list' для списка." if lang == "ru" else f"verse '{ref}' not found. type 'bible list' for the full list."
             return {"output": msg, "effect": None}
         return {"output": verse[idx], "effect": None}
 
@@ -196,6 +198,7 @@ def _help(lang: str) -> str:
             ("bsod", "a scare, nothing more"),
             ("shutdown", "does what it says"),
             ("bible <book ch:v>", "seek and you shall find"),
+            ("bible list", "all available chapters"),
             ("coffee", "essential dependency"),
             ("logs", "tail -f, mostly fine"),
         ]
@@ -212,6 +215,7 @@ def _help(lang: str) -> str:
             ("bsod", "просто пугалка"),
             ("shutdown", "делает ровно то, что написано"),
             ("bible <книга гл:ст>", "ищите и найдёте"),
+            ("bible list", "список всех глав"),
             ("coffee", "критическая зависимость"),
             ("logs", "tail -f, почти всё в порядке"),
         ]

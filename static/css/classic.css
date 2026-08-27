@@ -289,6 +289,30 @@
 .c-memory-grid .memory-card.flipped, .c-memory-grid .memory-card.matched { background: var(--cb-accent-soft); }
 #classic #snake-canvas { background: #100e0b; border-radius: var(--cb-radius-sm); border: var(--cb-hairline); display: block; margin: 0 auto; max-width: 100%; }
 
+.c-game-btn-row { display: flex; gap: 8px; }
+
+.c-mines-grid { display: grid; gap: 2px; max-width: 260px; margin: 0 auto; }
+.c-mines-cell, .c-mines-grid .mines-cell { aspect-ratio: 1; border-radius: 3px; border: var(--cb-hairline); background: var(--cb-bg); font-family: var(--font-mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--cb-ink); padding: 0; }
+.c-mines-grid .mines-cell.revealed { background: var(--cb-panel); cursor: default; }
+.c-mines-grid .mines-cell.revealed.mine { background: var(--cb-coral); }
+.c-mines-grid .mines-cell.revealed.hit { background: var(--cb-accent); }
+.c-mines-grid .mines-cell.flagged { background: var(--cb-accent-soft); }
+.c-mines-grid .mines-cell[data-n="1"] { color: #4a7fc9; }
+.c-mines-grid .mines-cell[data-n="2"] { color: var(--cb-teal); }
+.c-mines-grid .mines-cell[data-n="3"] { color: var(--cb-accent); }
+.c-mines-grid .mines-cell[data-n="4"] { color: #8a5fc9; }
+.c-mines-grid .mines-cell[data-n="5"] { color: var(--cb-gold-dark); }
+.c-mines-grid .mines-cell[data-n="6"] { color: var(--cb-teal-light); }
+.c-mines-grid .mines-cell[data-n="7"] { color: var(--cb-ink); }
+.c-mines-grid .mines-cell[data-n="8"] { color: var(--cb-faint); }
+
+.c-slots-machine { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px; }
+.c-slots-machine .slots-reels { display: flex; gap: 10px; background: var(--cb-console-bg); border-radius: var(--cb-radius-sm); padding: 14px 18px; }
+.c-slots-machine .slots-reel { font-size: 32px; width: 44px; text-align: center; }
+.c-slots-msg { font-family: var(--font-mono); font-size: 0.7rem; color: var(--cb-dim); min-height: 16px; }
+
+#classic #tetris-canvas { background: #100e0b; border-radius: var(--cb-radius-sm); border: var(--cb-hairline); display: block; margin: 0 auto; max-width: 100%; }
+
 /* contact */
 .c-contact-grid { display: flex; flex-wrap: wrap; gap: 14px; }
 .c-contact-card { flex: 1 1 220px; display: flex; align-items: center; gap: 14px; color: inherit; transition: transform 0.15s ease, border-color 0.15s ease; }

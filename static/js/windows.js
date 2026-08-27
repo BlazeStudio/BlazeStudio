@@ -494,6 +494,9 @@ function renderGamesFolder(root) {
     { id: 'game-bughunt', ic: '🐛', name: t('Охота на баги', 'Bug Hunt'), best: localStorage.getItem('av-bughunt-best') || '0' },
     { id: 'game-memory', ic: '🧠', name: t('Память', 'Memory Match'), best: localStorage.getItem('av-memory-best') || '—' },
     { id: 'game-snake', ic: '🐍', name: 'Snake_Deploy', best: localStorage.getItem('av-snake-best') || '0' },
+    { id: 'game-mines', ic: '💣', name: t('Сапёр', 'Minesweeper'), best: localStorage.getItem('av-mines-best') ? localStorage.getItem('av-mines-best') + 's' : '—' },
+    { id: 'game-slots', ic: '🎰', name: t('Слоты', 'Slots'), best: localStorage.getItem('av-slots-best') || '100' },
+    { id: 'game-tetris', ic: '🧱', name: 'Blocks_Deploy', best: localStorage.getItem('av-tetris-best') || '0' },
   ];
   root.innerHTML = `<div class="xp-body"><div class="games-list">${games
     .map((g) => `<div class="game-shortcut" data-id="${g.id}"><span class="g-ic">${g.ic}</span><span class="g-name">${g.name}</span><span class="g-best">${t('рекорд', 'best')}: ${g.best}</span></div>`)
@@ -540,6 +543,37 @@ function renderGame(kind) {
         </div>
         <canvas id="snake-canvas" width="360" height="360"></canvas>
       `;
+    } else if (kind === 'mines') {
+      inner = `
+        <div class="game-toolbar">
+          <div class="game-stats"><span>${t('Флаги', 'Flags')}: <b id="mines-flags">10</b></span><span>${t('Время', 'Time')}: <b id="mines-time">0</b></span><span>${t('Рекорд', 'Best')}: <b id="mines-best">—</b></span></div>
+          <div class="xp-btn-row">
+            <button class="xp-btn" id="mines-flag-mode">🚩 ${t('Флажки', 'Flags')}</button>
+            <button class="xp-btn" id="mines-restart">${t('🔄 Заново', '🔄 Restart')}</button>
+          </div>
+        </div>
+        <div class="mines-grid" id="mines-grid"></div>
+      `;
+    } else if (kind === 'slots') {
+      inner = `
+        <div class="game-toolbar">
+          <div class="game-stats"><span>${t('Кредиты', 'Credits')}: <b id="slots-credits">100</b></span><span>${t('Рекорд', 'Best')}: <b id="slots-best">100</b></span></div>
+          <button class="xp-btn" id="slots-restart">${t('🔄 Заново', '🔄 Restart')}</button>
+        </div>
+        <div class="slots-machine">
+          <div class="slots-reels"><span class="slots-reel" id="slots-r1">🐍</span><span class="slots-reel" id="slots-r2">🐍</span><span class="slots-reel" id="slots-r3">🐍</span></div>
+          <button class="xp-btn slots-spin-btn" id="slots-spin">${t('🎰 Крутить', '🎰 Spin')}</button>
+          <div class="slots-msg" id="slots-msg"></div>
+        </div>
+      `;
+    } else if (kind === 'tetris') {
+      inner = `
+        <div class="game-toolbar">
+          <div class="game-stats"><span>${t('Счёт', 'Score')}: <b id="tetris-score">0</b></span><span>${t('Линии', 'Lines')}: <b id="tetris-lines">0</b></span><span>${t('Рекорд', 'Best')}: <b id="tetris-best">0</b></span></div>
+          <button class="xp-btn" id="tetris-start">${t('▶ Начать', '▶ Start')}</button>
+        </div>
+        <canvas id="tetris-canvas" width="180" height="360"></canvas>
+      `;
     }
     root.innerHTML = `<div class="xp-body">${inner}</div>`;
     window.XP.initGame(kind, root);
@@ -560,6 +594,9 @@ const WINDOW_DEFS = {
   'game-bughunt': { title: { ru: 'Охота на баги', en: 'Bug Hunt' }, icon: '🐛', width: 460, height: 400, render: renderGame('bughunt'), stateful: true },
   'game-memory': { title: { ru: 'Память', en: 'Memory Match' }, icon: '🧠', width: 400, height: 460, render: renderGame('memory'), stateful: true },
   'game-snake': { title: { ru: 'Snake_Deploy', en: 'Snake_Deploy' }, icon: '🐍', width: 420, height: 470, render: renderGame('snake'), stateful: true },
+  'game-mines': { title: { ru: 'Сапёр', en: 'Minesweeper' }, icon: '💣', width: 420, height: 470, render: renderGame('mines'), stateful: true },
+  'game-slots': { title: { ru: 'Слоты', en: 'Slots' }, icon: '🎰', width: 380, height: 380, render: renderGame('slots'), stateful: true },
+  'game-tetris': { title: { ru: 'Blocks_Deploy', en: 'Blocks_Deploy' }, icon: '🧱', width: 320, height: 500, render: renderGame('tetris'), stateful: true },
 };
 
 /* =========================================================
