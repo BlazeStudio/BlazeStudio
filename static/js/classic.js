@@ -452,7 +452,7 @@
           <rect x="46" y="510" width="11" height="15" rx="2"/>
           <rect x="140" y="560" width="11" height="15" rx="2"/>
         </g>
-        <g class="c-window-lit">
+        <g class="c-window-lit" fill="#d8dde3">
           <rect x="150" y="230" width="11" height="15" rx="2"/>
           <rect x="70" y="340" width="11" height="15" rx="2"/>
         </g>
@@ -495,8 +495,10 @@
           <rect x="260" y="510" width="11" height="15" rx="2"/>
           <rect x="185" y="560" width="11" height="15" rx="2"/>
         </g>
-        <g class="c-window-lit">
+        <g class="c-window-lit" fill="#dff3ea">
           <rect x="100" y="180" width="11" height="15" rx="2"/>
+        </g>
+        <g class="c-window-lit" fill="#fff1e6">
           <rect x="235" y="450" width="11" height="15" rx="2"/>
           <rect x="60" y="380" width="11" height="15" rx="2"/>
         </g>
