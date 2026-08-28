@@ -198,11 +198,39 @@ PROFILE = {
             "company": {"ru": "Веб-студия «Фрилансер» (Краснодар)", "en": "Freelance web studio (Krasnodar)"},
             "title": {"ru": "Fullstack Developer", "en": "Fullstack Developer"},
             "summary": {
-                "ru": "Django (февраль — май 2024): веб-сервис для поиска досуга в Москве с Yandex Maps API — динамическое добавление событий, графическая статистика посещений/оценок/закладок, админ-панель для управления событиями и модерации. Flask (сентябрь — декабрь 2023): веб-инструмент для управления PostgreSQL (аналог pgAdmin/DBeaver) с GUI и SQL-консолью, поддержка нескольких БД одновременно; MVP социальной сети — регистрация, друзья, жалобы, обмен сообщениями в реальном времени на Ajax.",
-                "en": "Django (Feb – May 2024): a leisure-discovery web service for Moscow with the Yandex Maps API — dynamic event pins, per-event charts for visits/ratings/bookmarks, and an admin panel for managing events and moderating content. Flask (Sep – Dec 2023): a PostgreSQL management tool (a pgAdmin/DBeaver alternative) with a GUI and SQL console, supporting multiple simultaneous DB connections; a social-network MVP — registration, friends, reports, real-time Ajax messaging.",
+                "ru": "",
+                "en": "",
             },
             "highlight": {"ru": "Открытые проекты: Ritm Goroda, PostgreSQL Web GUI, Vostok Messenger", "en": "Public projects: Ritm Goroda, PostgreSQL Web GUI, Vostok Messenger"},
-            "tasks": {"ru": [], "en": []},
+            "tasks": {"ru": [
+                    {
+                        "category": "Django (февраль — май 2024)",
+                        "items": [
+                            "Веб-сервис для поиска досуга в Москве с Yandex Maps API — динамическое добавление событий, графическая статистика посещений/оценок/закладок",
+                            "Админ-панель для управления событиями и модерации"
+                        ],
+                    },
+                    {
+                        "category": "Flask (сентябрь — декабрь 2023)",
+                        "items": [
+                            "Веб-инструмент для управления PostgreSQL (аналог pgAdmin/DBeaver) с GUI и SQL-консолью, поддержка нескольких БД одновременно; MVP социальной сети — регистрация, друзья, жалобы, обмен сообщениями в реальном времени на Ajax"
+                        ],
+                    },
+            ], "en": [
+                    {
+                        "category": "Django (Feb – May 2024)",
+                        "items": [
+                            "A leisure-discovery web service for Moscow with the Yandex Maps API — dynamic event pins, per-event charts for visits/ratings/bookmarks",
+                            "An admin panel for managing events and moderating content."
+                        ],
+                    },
+                    {
+                        "category": "Flask (Sep – Dec 2023)",
+                        "items": [
+                            "A PostgreSQL management tool (a pgAdmin/DBeaver alternative) with a GUI and SQL console, supporting multiple simultaneous DB connections; a social-network MVP — registration, friends, reports, real-time Ajax messaging"
+                        ],
+                    },
+            ]},
             "tags": ["Python", "Django", "Flask", "PostgreSQL", "Ajax", "Gitlab CI/CD"],
         },
     ],
