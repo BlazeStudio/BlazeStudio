@@ -241,6 +241,13 @@ def get_cs_inventory(count: int = 12) -> dict:
         d = descriptions.get((a.get("classid"), a.get("instanceid")))
         if not d:
             continue
+        # Service medals, operation coins and other profile trinkets aren't
+        # tradeable or sellable — they carry no real value, so they'd only
+        # clutter a "by value" list (and some carry a flashy but meaningless
+        # rarity tag that could otherwise outrank actual skins). Only show
+        # what can actually be sold on the Market.
+        if not d.get("marketable"):
+            continue
         name = d.get("market_hash_name") or d.get("name")
         if not name or name in seen_names:
             continue
@@ -258,21 +265,21 @@ def get_cs_inventory(count: int = 12) -> dict:
                 "rarity_color": f"#{rarity['color']}" if rarity and rarity.get("color") else None,
                 "rarity_rank": _RARITY_RANK.get(rarity_name, 0),
                 "exterior": exterior.get("localized_tag_name") if exterior else None,
-                "market_url": f"https://steamcommunity.com/market/listings/730/{urllib.parse.quote(name)}" if d.get("marketable") else None,
-                "_mhn": name if d.get("marketable") else None,
+                "market_url": f"https://steamcommunity.com/market/listings/730/{urllib.parse.quote(name)}",
+                "_mhn": name,
             }
         )
-    # Price every marketable item, not just a rarity-prefiltered slice — a lot
-    # of real value in a CS inventory sits in pins/patches/stickers, which
-    # don't carry a "Rarity" tag at all (rarity_rank 0) and would otherwise
-    # never even be considered next to a common weapon skin that does have
-    # one. Attempts run in the inventory's own (unbiased) order and are
+    # Price every item in the (already marketable-only) list, not just a
+    # rarity-prefiltered slice — stickers/patches/music kits carry real value
+    # but often don't have a "Rarity" tag at all (rarity_rank 0), and would
+    # otherwise never be considered next to a common weapon skin that does
+    # have one. Attempts run in the inventory's own (unbiased) order and are
     # bounded purely by the wall-clock budget and the failure backoff below.
     deadline = time.time() + PRICE_BUDGET_SECONDS
     consecutive_failures = 0
     for it in items:
         mhn = it.pop("_mhn")
-        if not mhn or time.time() >= deadline or consecutive_failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
+        if time.time() >= deadline or consecutive_failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
             it["price_rub"] = None
             continue
         price = _get_market_price(mhn)

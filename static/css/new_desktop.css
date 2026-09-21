@@ -80,7 +80,12 @@ a:hover { color: #d00000; }
 /* visibility:hidden (not display:none) — a hidden window keeps its slot in
    the flex column, so showing/hiding one window never resizes its siblings */
 .nd-win.nd-hidden { visibility: hidden; pointer-events: none; }
-.nd-win.nd-detached { position: absolute; flex: none; }
+/* The template gives every window an inline max-height so it behaves in the
+   responsive grid — but that same inline max-height silently caps a detached
+   window's height forever (inline styles beat stylesheet rules unless
+   !important), which is why dragging the resize handle used to make height
+   stop growing partway through while width kept tracking the cursor. */
+.nd-win.nd-detached { position: absolute; flex: none; max-height: none !important; }
 /* A detached or maximized window is taken out of its column's flex flow
    (that's how CSS handles absolute/fixed positioning), which would otherwise
    free up its slot and make its siblings grow to fill the gap. This
@@ -507,7 +512,7 @@ a:hover { color: #d00000; }
 .nd-btn98:disabled { color: #888; cursor: default; }
 .nd-btn98:disabled:hover { background: var(--nd-panel); }
 .nd-btn-row { display: flex; gap: 8px; margin-top: 12px; }
-.mines-grid { display: grid; gap: 4px; max-width: 390px; margin: 10px auto; background: var(--nd-blue-4); padding: 5px; border: 2px inset #808080; }
+.mines-grid { display: grid; gap: 4px; max-width: 280px; margin: 10px auto; background: var(--nd-blue-4); padding: 5px; border: 2px inset #808080; }
 .mines-cell { aspect-ratio: 1; border: 2px outset #fff; background: var(--nd-panel); font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .mines-cell.revealed { border: 1px solid #b9b6a5; background: #fff; cursor: default; }
 .mines-cell.revealed.mine { background: #e88; }

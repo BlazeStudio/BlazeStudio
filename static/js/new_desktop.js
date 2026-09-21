@@ -203,15 +203,26 @@
       if (e.button !== undefined && e.button !== 0) return;
       if (e.target.closest('button')) return;
       if (isMaximized(id)) return; // dragging a maximized window doesn't make sense
-      const d = ensureDetached(id);
-      applyWinStyle(id);
       const sx = e.clientX;
       const sy = e.clientY;
-      const base = { left: d.left, top: d.top };
-      raise(id);
+      let dragging = false;
+      let base = null;
+      // Detaching (flex item -> absolute-positioned) only once the pointer
+      // has actually moved, not on every titlebar mousedown, so a plain
+      // click-to-focus never touches the window's layout mode at all — that
+      // switch is what could produce a tiny visible hop, and a click that
+      // was never going to drag has no reason to risk it.
       function move(ev) {
-        state.detached[id].left = Math.round(base.left + (ev.clientX - sx));
-        state.detached[id].top = Math.round(base.top + (ev.clientY - sy));
+        if (!dragging) {
+          if (Math.abs(ev.clientX - sx) < 4 && Math.abs(ev.clientY - sy) < 4) return;
+          dragging = true;
+          const d = ensureDetached(id);
+          base = { left: d.left, top: d.top };
+          applyWinStyle(id);
+          raise(id);
+        }
+        state.detached[id].left = base.left + (ev.clientX - sx);
+        state.detached[id].top = base.top + (ev.clientY - sy);
         applyWinStyle(id);
       }
       function up() {
@@ -732,15 +743,31 @@
 
   /* One shared fetch of /api/steam for both the Steam window (profile +
      recent games) and the Explorer's Screenshots tab, instead of hitting
-     the endpoint twice. */
+     the endpoint twice. profile.synced is the one reliable "did Steam
+     actually connect" signal (screenshots/inventory can legitimately come
+     back empty rather than failed), so a false there gets a couple of quick
+     retries — covers a transient hiccup on the very first cold request —
+     before settling into the "not connected" state. */
+  const STEAM_RETRY_DELAYS_MS = [1500, 3000];
   let steamData = null;
   let steamPromise = null;
+  function fetchSteamOnce() {
+    return fetch('/api/steam')
+      .then((res) => res.json())
+      .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, screenshots: { screenshots: [] }, cs_inventory: { items: [] } }));
+  }
   function fetchSteam() {
     if (steamData) return Promise.resolve(steamData);
     if (!steamPromise) {
-      steamPromise = fetch('/api/steam')
-        .then((res) => res.json())
-        .catch(() => ({ profile: { synced: false }, recent_games: { games: [] }, screenshots: { screenshots: [] } }));
+      steamPromise = (async () => {
+        let data = await fetchSteamOnce();
+        for (const delay of STEAM_RETRY_DELAYS_MS) {
+          if (data && data.profile && data.profile.synced) break;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          data = await fetchSteamOnce();
+        }
+        return data;
+      })();
     }
     return steamPromise.then((data) => {
       steamData = data;
