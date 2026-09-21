@@ -74,7 +74,10 @@
     const el = winEl(id);
     const wr = el.getBoundingClientRect();
     const sr = surfaceRect();
-    const d = { left: Math.round(wr.left - sr.left), top: Math.round(wr.top - sr.top), width: Math.round(wr.width), height: Math.round(wr.height) };
+    // Keep the captured box in exact (sub-pixel) coordinates rather than
+    // rounding — rounding here is what used to produce a ~1px snap the
+    // instant a window detaches, visible as a tiny jump on the first touch.
+    const d = { left: wr.left - sr.left, top: wr.top - sr.top, width: wr.width, height: wr.height };
     state.detached[id] = d;
     return d;
   }
@@ -111,6 +114,9 @@
     const el = winEl(id);
     if (!el) return;
     const d = state.detached[id];
+    // Reserve the placeholder's space before the window itself leaves flow,
+    // so the column never has a frame where the slot is briefly unclaimed.
+    syncPlaceholder(id);
     if (d) {
       el.classList.add('nd-detached');
       el.style.left = d.left + 'px';
@@ -125,7 +131,6 @@
       el.style.height = '';
     }
     el.style.zIndex = state.z[id] || 1;
-    syncPlaceholder(id);
   }
 
   function raise(id) {
@@ -345,6 +350,7 @@
   function renderTabPanel(tab) {
     cleanupGame('nd-mines');
     cleanupGame('nd-slots');
+    cleanupGame('nd-snake');
     const panel = document.getElementById('nd-explorer-panel');
     if (!panel) return;
     const l = lang();
@@ -518,9 +524,8 @@
           <div id="nd-slots-root"></div>
         </div>
         <div class="nd-gcard">
-          <div class="nd-gcard-title">${t('Рисовалка', 'Doodle pad')}</div>
-          <div class="nd-gcard-placeholder">${t('Холст, кисть, палитра — скоро.', 'Canvas, brush, palette — coming soon.')}</div>
-          <span class="nd-soon">${t('СКОРО', 'SOON')}</span>
+          <div class="nd-gcard-title">Snake_Deploy</div>
+          <div id="nd-snake-root"></div>
         </div>
       </div>
     `;
@@ -556,6 +561,17 @@
         </div>
       `;
       window.XP.initGame('slots', slotsRoot, 'nd-slots');
+    }
+    const snakeRoot = document.getElementById('nd-snake-root');
+    if (snakeRoot) {
+      snakeRoot.innerHTML = `
+        <div class="nd-game-toolbar">
+          <div class="nd-game-stats"><span>${t('Запросов', 'Requests')}: <b id="snake-score">0</b></span><span>${t('Рекорд', 'Best')}: <b id="snake-best">0</b></span></div>
+          <button class="nd-btn98" id="snake-start">${t('▶ Деплой', '▶ Deploy')}</button>
+        </div>
+        <canvas id="snake-canvas" width="360" height="360"></canvas>
+      `;
+      window.XP.initGame('snake', snakeRoot, 'nd-snake');
     }
     void l;
   }
@@ -768,14 +784,12 @@
       inv && inv.synced
         ? `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS · по ценности', 'CS inventory · by value')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
            <div class="nd-steam-inv-grid">${inv.items
-             .map((it) => {
+             .map((it, i) => {
                const priceLabel = it.price_rub != null ? ` · ${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽` : '';
                const title = `${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}${priceLabel}`;
                const inner = it.icon ? `<img src="${it.icon}" alt="" loading="lazy">` : '';
                const style = `style="--inv-color:${it.rarity_color || '#4b69ff'}"`;
-               return it.market_url
-                 ? `<a class="nd-steam-inv-item" ${style} title="${title}" href="${it.market_url}" target="_blank" rel="noopener">${inner}</a>`
-                 : `<div class="nd-steam-inv-item" ${style} title="${title}">${inner}</div>`;
+               return `<button type="button" class="nd-steam-inv-item" ${style} title="${title}" data-i="${i}">${inner}</button>`;
              })
              .join('')}</div>`
         : '';
@@ -789,6 +803,15 @@
       ${invHtml}
       <a class="nd-btn98 nd-block" href="${p.profile_url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
+    if (inv && inv.synced) {
+      body.querySelectorAll('.nd-steam-inv-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const it = inv.items[Number(btn.dataset.i)];
+          if (!it || !it.icon) return;
+          openLightbox(`${it.icon}/360fx360f`, it.market_url || null);
+        });
+      });
+    }
   }
 
   let faceitCache = null;

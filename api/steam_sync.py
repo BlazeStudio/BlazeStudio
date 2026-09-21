@@ -181,7 +181,7 @@ _RARITY_RANK = {
 PRICE_CURRENCY = "5"  # RUB
 PRICE_CACHE_TTL = 3600  # prices move slowly enough that an hour-old figure is fine
 PRICE_TIMEOUT = 1.5  # the market endpoint is aggressively rate-limited — fail fast rather than stall the page
-PRICE_BUDGET_SECONDS = 5.0  # total wall-clock time this request may spend pricing items
+PRICE_BUDGET_SECONDS = 6.0  # total wall-clock time this request may spend pricing items
 PRICE_MAX_CONSECUTIVE_FAILURES = 3  # stop hammering an endpoint that's already started rate-limiting us
 
 _PRICE_NUM_RE = re.compile(r"[\d][\d\s  ]*(?:[.,]\d+)?")
@@ -262,12 +262,15 @@ def get_cs_inventory(count: int = 12) -> dict:
                 "_mhn": name if d.get("marketable") else None,
             }
         )
-    items.sort(key=lambda it: it["rarity_rank"], reverse=True)
-
-    pool = items[: max(count * 2, 20)]
+    # Price every marketable item, not just a rarity-prefiltered slice — a lot
+    # of real value in a CS inventory sits in pins/patches/stickers, which
+    # don't carry a "Rarity" tag at all (rarity_rank 0) and would otherwise
+    # never even be considered next to a common weapon skin that does have
+    # one. Attempts run in the inventory's own (unbiased) order and are
+    # bounded purely by the wall-clock budget and the failure backoff below.
     deadline = time.time() + PRICE_BUDGET_SECONDS
     consecutive_failures = 0
-    for it in pool:
+    for it in items:
         mhn = it.pop("_mhn")
         if not mhn or time.time() >= deadline or consecutive_failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
             it["price_rub"] = None
@@ -275,12 +278,9 @@ def get_cs_inventory(count: int = 12) -> dict:
         price = _get_market_price(mhn)
         it["price_rub"] = price
         consecutive_failures = 0 if price is not None else consecutive_failures + 1
-    for it in items[len(pool):]:
-        it.pop("_mhn", None)
-        it["price_rub"] = None
 
-    pool.sort(key=lambda it: (it["price_rub"] is not None, it["price_rub"] or 0, it["rarity_rank"]), reverse=True)
-    top = pool[:count]
+    items.sort(key=lambda it: (it["price_rub"] is not None, it["price_rub"] or 0, it["rarity_rank"]), reverse=True)
+    top = items[:count]
     for it in top:
         del it["rarity_rank"]
         it["price_rub"] = round(it["price_rub"], 2) if it["price_rub"] is not None else None
