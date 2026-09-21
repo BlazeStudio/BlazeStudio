@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
-import xml.etree.ElementTree as ET
 from typing import Any
 
 API_KEY = os.environ.get("STEAM_API_KEY", "")
@@ -29,7 +29,7 @@ def _get(url: str, parse: str = "json") -> Any | None:
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             raw = resp.read()
-            return json.loads(raw) if parse == "json" else raw
+            return json.loads(raw) if parse == "json" else raw.decode("utf-8", "ignore")
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
         return None
 
@@ -65,6 +65,25 @@ def get_profile() -> dict:
     }
 
 
+def get_extra_stats() -> dict:
+    """Owned-games count + total playtime, and the Steam level — a couple more
+    numbers for the profile card beyond the basics in get_profile()."""
+    if not (API_KEY and STEAM_ID):
+        return {"synced": False, "game_count": None, "total_playtime_hours": None, "level": None}
+    games_url = f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={API_KEY}&steamid={STEAM_ID}&include_played_free_games=1"
+    level_url = f"https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/?key={API_KEY}&steamid={STEAM_ID}"
+    games_data = (_cached("steam:owned_games", games_url) or {}).get("response", {})
+    level_data = (_cached("steam:level", level_url) or {}).get("response", {})
+    games = games_data.get("games", [])
+    total_minutes = sum(g.get("playtime_forever", 0) for g in games)
+    return {
+        "synced": True,
+        "game_count": games_data.get("game_count"),
+        "total_playtime_hours": round(total_minutes / 60) if games else None,
+        "level": level_data.get("player_level"),
+    }
+
+
 def get_recently_played(count: int = 6) -> dict:
     if not (API_KEY and STEAM_ID):
         return {"synced": False, "games": []}
@@ -89,27 +108,25 @@ def get_recently_played(count: int = 6) -> dict:
     }
 
 
+_SCREENSHOT_RE = re.compile(r"background-image:\s*url\('(https://images\.steamusercontent\.com/ugc/[^']+)'\)[^>]*id=\"imgWallItem_(\d+)\"")
+
+
 def get_recent_screenshots(count: int = 6) -> dict:
-    """Best-effort scrape of the community profile's public screenshot feed
-    (?xml=1 is an old but still-served Steam Community output format — there is
-    no official Web API for a user's screenshots). Returns an empty list rather
-    than raising if the format ever changes or the profile is private.
+    """Scrapes the community profile's public screenshots grid page. The old
+    ?xml=1 output format this used to read is dead — Steam now ignores that
+    param and just serves the normal HTML page — so this reads the actual grid
+    markup instead: each screenshot is a `background-image: url('...')` on a
+    `.imgWallItem` div, carrying the published-file id in its element id.
+    Returns an empty list rather than raising if the format ever changes again,
+    or if the profile (or its screenshot tab) turns out to be private.
     """
     if not STEAM_ID:
         return {"synced": False, "screenshots": []}
-    url = f"https://steamcommunity.com/profiles/{STEAM_ID}/screenshots/?appid=0&sort=newestfirst&browsefilter=myfiles&view=grid&xml=1"
-    raw = _cached("steam:screenshots:xml", url, parse="text")
-    if not raw:
+    url = f"https://steamcommunity.com/profiles/{STEAM_ID}/screenshots/?appid=0&sort=newestfirst&browsefilter=myfiles&view=grid"
+    html = _cached("steam:screenshots:html", url, parse="text")
+    if not html or "This profile is private" in html:
         return {"synced": False, "screenshots": []}
-    try:
-        root = ET.fromstring(raw)
-        shots = []
-        for node in root.findall(".//screenshot")[:count]:
-            full = node.findtext("imageFullURL") or node.findtext("full_url")
-            thumb = node.findtext("imageThumbURL") or node.findtext("thumbnail_url")
-            title = node.findtext("caption") or ""
-            if full or thumb:
-                shots.append({"full": full, "thumb": thumb or full, "title": title})
-        return {"synced": bool(shots), "screenshots": shots}
-    except ET.ParseError:
-        return {"synced": False, "screenshots": []}
+    shots = []
+    for image_url, published_id in _SCREENSHOT_RE.findall(html)[:count]:
+        shots.append({"full": image_url, "thumb": image_url, "title": "", "view_url": f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}"})
+    return {"synced": bool(shots), "screenshots": shots}

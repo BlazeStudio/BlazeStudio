@@ -29,7 +29,7 @@ a:hover { color: #d00000; }
 }
 
 #nd-surface { position: absolute; inset: 0 0 40px 0; overflow: auto; }
-#nd-surface-inner { position: relative; width: 1320px; height: 860px; }
+#nd-surface-inner { position: relative; width: 1320px; height: 950px; }
 
 /* ============ desktop icons ============ */
 #nd-icons { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; gap: 2px; z-index: 1; }
@@ -63,6 +63,19 @@ a:hover { color: #d00000; }
   color: #000;
 }
 .nd-win.nd-hidden { display: none; }
+
+.nd-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+  background: linear-gradient(135deg, transparent 0 50%, var(--nd-blue-4) 50% 58%, transparent 58% 66%, var(--nd-blue-4) 66% 74%, transparent 74% 82%, var(--nd-blue-4) 82% 90%, transparent 90%);
+  opacity: 0.65;
+}
+.nd-resize:hover { opacity: 1; }
 
 .nd-tb {
   height: 28px;
@@ -151,9 +164,23 @@ a:hover { color: #d00000; }
 .nd-steam-game-name { flex-grow: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .nd-steam-hours { flex: none; color: #8fb0c6; font-family: 'Courier New', monospace; font-size: 11px; }
 .nd-steam-dim { color: #8fb0c6; font-size: 12px; margin: 6px 0; }
+.nd-steam-body .nd-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.nd-steam-body .nd-stat { background: #0e141b; border: 1px solid #2a475e; color: #8fb0c6; }
+.nd-steam-body .nd-stat b { color: #fff; }
 .nd-faceit-body { background: #1f1f22; color: #e6e6e6; }
 .nd-faceit-body .nd-not-connected { color: #b8b8b8; }
 .nd-faceit-body .nd-not-connected code { background: #2a2a2e; color: #e6e6e6; }
+
+/* ---- github window: avatar, extra stats, contribution heat strip ---- */
+.nd-gh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nd-gh-heat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nd-text-dim); margin: 4px 0 4px; display: flex; justify-content: space-between; }
+.nd-gh-heat-wrap { overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; }
+.nd-gh-heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 9px); gap: 2px; width: max-content; }
+.nd-gh-cell { width: 9px; height: 9px; border-radius: 2px; background: #ebedf0; }
+.nd-gh-cell[data-lvl="1"] { background: #9be9a8; }
+.nd-gh-cell[data-lvl="2"] { background: #40c463; }
+.nd-gh-cell[data-lvl="3"] { background: #30a14e; }
+.nd-gh-cell[data-lvl="4"] { background: #216e39; }
 
 /* ---- explorer window ---- */
 .nd-addr { flex: none; display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-bottom: 1px solid #aca899; font-size: 12px; }
@@ -209,7 +236,7 @@ a:hover { color: #d00000; }
 .nd-shot img { width: 100%; height: 56px; object-fit: cover; display: block; }
 
 .nd-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-.nd-gcard { border: 2px outset #fff; background: var(--nd-panel); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.nd-gcard { border: 2px outset #fff; background: var(--nd-panel); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; overflow-x: auto; }
 .nd-gcard-title { font: bold 14px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
 .nd-gcard-placeholder { font-size: 12px; color: #222; height: 118px; background: #fff; border: 2px inset #808080; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; box-sizing: border-box; }
 .nd-soon { align-self: flex-start; font: bold 11px Tahoma, Verdana, sans-serif; background: #ffd400; color: #000; border: 1px solid #000; padding: 1px 6px; }
@@ -346,20 +373,21 @@ a:hover { color: #d00000; }
 #nd-start:hover { filter: brightness(1.08); }
 #nd-tasks { flex-grow: 1; display: flex; gap: 4px; overflow: hidden; height: 30px; }
 .nd-task {
-  min-width: 88px;
-  max-width: 190px;
+  width: 34px;
   height: 28px;
-  padding: 0 12px;
-  font: 12px Tahoma, Verdana, sans-serif;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   background: #5b9bf5;
-  color: #000;
+  color: #fff;
   border: 1px solid #0a2f80;
+  opacity: 0.75;
 }
-.nd-task.active { background: #0f3a98; color: #fff; border: 1px solid #06205c; box-shadow: inset 1px 1px 3px #000; }
+.nd-task svg { width: 18px; height: 18px; display: block; }
+.nd-task.active { background: #0f3a98; border: 1px solid #06205c; box-shadow: inset 1px 1px 3px #000; opacity: 1; }
+.nd-task:hover { opacity: 1; }
 #nd-arrange, #nd-toggle-all {
   height: 28px;
   padding: 0 12px;
@@ -369,6 +397,7 @@ a:hover { color: #d00000; }
   font: 12px Tahoma, Verdana, sans-serif;
   flex: none;
 }
+.nd-tray-ico { display: flex; align-items: center; justify-content: center; color: #dce8ff; flex: none; padding: 0 3px; }
 .nd-tray-btn { font-size: 11px; font-weight: 700; color: #dce8ff; padding: 4px 7px; border-radius: 3px; text-decoration: none; flex: none; }
 .nd-tray-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
 .nd-tray-clock { font-size: 12px; color: #fff; flex: none; padding: 0 4px; }
@@ -392,8 +421,8 @@ a:hover { color: #d00000; }
 .nd-btn98:disabled { color: #888; cursor: default; }
 .nd-btn98:disabled:hover { background: var(--nd-panel); }
 .nd-btn-row { display: flex; gap: 8px; margin-top: 12px; }
-.mines-grid { display: grid; gap: 2px; max-width: 320px; margin: 0 auto; background: var(--nd-blue-4); padding: 2px; border: 2px inset #808080; }
-.mines-cell { aspect-ratio: 1; border: 2px outset #fff; background: var(--nd-panel); font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.mines-grid { display: grid; gap: 4px; max-width: 390px; margin: 10px auto; background: var(--nd-blue-4); padding: 5px; border: 2px inset #808080; }
+.mines-cell { aspect-ratio: 1; border: 2px outset #fff; background: var(--nd-panel); font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .mines-cell.revealed { border: 1px solid #b9b6a5; background: #fff; cursor: default; }
 .mines-cell.revealed.mine { background: #e88; }
 .mines-cell.revealed.hit { background: #ff5f5f; }
@@ -429,7 +458,7 @@ a:hover { color: #d00000; }
   .nd-explorer-side { width: auto; flex-direction: row; flex-wrap: wrap; }
   .nd-hint { display: none; }
   #nd-tasks { overflow-x: auto; }
-  .nd-task { min-width: 64px; flex: none; }
+  .nd-resize { display: none; } /* resizing is off on mobile too — windows are fixed full-screen */
   #nd-arrange { display: none; } /* dragging is off on mobile, so "arrange" has nothing to do */
 }
 

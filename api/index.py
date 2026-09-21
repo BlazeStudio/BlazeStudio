@@ -129,13 +129,17 @@ def projects(live: bool = True):
 
 @app.get("/api/github/stats")
 def github_stats():
-    return github_sync.get_profile_stats()
+    stats = github_sync.get_profile_stats()
+    stats["commit_count"] = github_sync.get_commit_count()
+    stats["contributions"] = github_sync.get_contribution_calendar()
+    return stats
 
 
 @app.get("/api/steam")
 def steam_stats():
     return {
         "profile": steam_sync.get_profile(),
+        "extra": steam_sync.get_extra_stats(),
         "recent_games": steam_sync.get_recently_played(),
         "screenshots": steam_sync.get_recent_screenshots(),
     }

@@ -25,7 +25,7 @@
     explorer: { l: 358, t: 10, w: 640, h: 560 },
     github: { l: 1018, t: 10, w: 256, h: 320 },
     hh: { l: 1018, t: 348, w: 256, h: 210 },
-    console: { l: 358, t: 588, w: 640, h: 210 },
+    console: { l: 358, t: 588, w: 640, h: 340 },
     corner: { l: 1018, t: 578, w: 256, h: 220 },
   };
   const WIN_ORDER = ['avatar', 'explorer', 'github', 'hh', 'console', 'steam', 'faceit', 'corner'];
@@ -39,11 +39,29 @@
     console: () => t('Консоль', 'Console'),
     corner: () => t('Уголок', 'Corner'),
   };
+  const WIN_ICON = {
+    avatar: 'ico-avatar',
+    steam: 'ico-steam',
+    faceit: 'ico-faceit',
+    explorer: 'ico-folder',
+    github: 'ico-github',
+    hh: 'ico-hh',
+    console: 'ico-console',
+    corner: 'ico-corner',
+  };
+  const MIN_WIN_W = 200;
+  const MIN_WIN_H = 140;
 
-  const state = { hidden: {}, pos: {}, z: {}, zc: 10, tab: 'resume' };
+  const state = { hidden: {}, pos: {}, size: {}, z: {}, zc: 10, tab: 'resume' };
 
   function winEl(id) {
     return document.getElementById('nd-win-' + id);
+  }
+
+  function winSize(id) {
+    const s = state.size[id];
+    const d = DEFS[id];
+    return { w: (s && s.w) || d.w, h: (s && s.h) || d.h };
   }
 
   function applyWinStyle(id) {
@@ -51,10 +69,11 @@
     if (!el) return;
     const d = DEFS[id];
     const p = state.pos[id] || { x: 0, y: 0 };
+    const sz = winSize(id);
     el.style.left = d.l + p.x + 'px';
     el.style.top = d.t + p.y + 'px';
-    el.style.width = d.w + 'px';
-    el.style.height = d.h + 'px';
+    el.style.width = sz.w + 'px';
+    el.style.height = sz.h + 'px';
     el.style.zIndex = state.z[id] || 1;
   }
 
@@ -110,6 +129,31 @@
     };
   }
 
+  function startResize(id) {
+    return function (e) {
+      if (window.innerWidth <= 720) return; // windows go fixed full-screen on mobile — nothing to resize
+      if (e.button !== undefined && e.button !== 0) return;
+      e.stopPropagation(); // don't let the window's own pointerdown->raise fight this
+      e.preventDefault();
+      const base = winSize(id);
+      const sx = e.clientX;
+      const sy = e.clientY;
+      raise(id);
+      function move(ev) {
+        state.size[id] = { w: Math.max(MIN_WIN_W, Math.round(base.w + (ev.clientX - sx))), h: Math.max(MIN_WIN_H, Math.round(base.h + (ev.clientY - sy))) };
+        applyWinStyle(id);
+      }
+      function up() {
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        document.removeEventListener('pointercancel', up);
+      }
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up);
+      document.addEventListener('pointercancel', up);
+    };
+  }
+
   function initWindows() {
     WIN_ORDER.forEach((id) => {
       const el = winEl(id);
@@ -121,6 +165,8 @@
       if (min) min.addEventListener('click', () => toggleWin(id));
       const close = el.querySelector('.nd-x');
       if (close) close.addEventListener('click', () => toggleWin(id));
+      const resizeHandle = el.querySelector('.nd-resize');
+      if (resizeHandle) resizeHandle.addEventListener('pointerdown', startResize(id));
       el.addEventListener('pointerdown', () => raise(id));
       raise(id);
     });
@@ -134,7 +180,8 @@
       const btn = document.createElement('button');
       const hidden = !!state.hidden[id];
       btn.className = 'nd-task' + (hidden ? '' : ' active');
-      btn.textContent = WIN_LABEL[id]();
+      btn.innerHTML = `<svg aria-hidden="true"><use href="#${WIN_ICON[id]}"></use></svg>`;
+      btn.title = WIN_LABEL[id]();
       btn.setAttribute('aria-label', (hidden ? t('Показать окно ', 'Show window ') : t('Скрыть окно ', 'Hide window ')) + WIN_LABEL[id]());
       btn.addEventListener('click', () => toggleWin(id));
       bar.appendChild(btn);
@@ -146,6 +193,7 @@
 
   function arrange() {
     state.pos = {};
+    state.size = {};
     WIN_ORDER.forEach(applyWinStyle);
     window.XP.toast(t('Окна расставлены по местам.', 'Windows arranged.'));
   }
@@ -498,17 +546,30 @@
       body.innerHTML = `<p class="nd-not-connected">${t('GitHub сейчас недоступен.', 'GitHub is unreachable right now.')}</p>`;
       return;
     }
+    const memberSince = s.created_at ? new Date(s.created_at).getFullYear() : null;
+    const contrib = s.contributions || {};
+    const days = contrib.days || [];
+    const heatHtml = days.length
+      ? `
+        <div class="nd-gh-heat-label"><span>${t('Активность за год', 'Activity, past year')}</span><span>${contrib.total ?? days.filter((d) => d.level > 0).length} ${t('коммитов', 'commits')}</span></div>
+        <div class="nd-gh-heat-wrap" id="nd-gh-heat-wrap"><div class="nd-gh-heat">${days.map((d) => `<span class="nd-gh-cell" data-lvl="${d.level}" title="${d.date}"></span>`).join('')}</div></div>`
+      : '';
     body.innerHTML = `
       <div class="nd-win-head">
-        <div class="nd-win-avatar-badge">GH</div>
+        <div class="nd-win-avatar-badge">${s.avatar_url ? `<img src="${s.avatar_url}" alt="">` : 'GH'}</div>
         <div><div class="nd-win-name">BlazeStudio</div><a class="nd-win-link" href="${PROFILE.contacts.github}" target="_blank" rel="noopener">github.com/BlazeStudio</a></div>
       </div>
-      <div class="nd-stat-grid">
+      <div class="nd-stat-grid nd-gh-stats">
         <div class="nd-stat">${t('Репозитории', 'Repos')}<b>${s.public_repos ?? '—'}</b></div>
         <div class="nd-stat">${t('Подписчики', 'Followers')}<b>${s.followers ?? '—'}</b></div>
+        <div class="nd-stat">${t('Коммиты', 'Commits')}<b>${s.commit_count != null ? s.commit_count + '+' : '—'}</b></div>
+        <div class="nd-stat">${t('На GitHub с', 'On GitHub since')}<b>${memberSince ?? '—'}</b></div>
       </div>
+      ${heatHtml}
       <a class="nd-btn98 nd-block" href="${PROFILE.contacts.github}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
+    const heatWrap = document.getElementById('nd-gh-heat-wrap');
+    if (heatWrap) heatWrap.scrollLeft = heatWrap.scrollWidth; // scrolled to the most recent weeks by default
   }
 
   /* One shared fetch of /api/steam for both the Steam window (profile +
@@ -542,6 +603,14 @@
       return;
     }
     const statusLabel = { online: t('в сети', 'online'), offline: t('не в сети', 'offline'), busy: t('занят', 'busy'), away: t('отошёл', 'away') }[p.status] || p.status;
+    const extra = steamData.extra || {};
+    const statsHtml = extra.synced
+      ? `<div class="nd-stat-grid">
+           <div class="nd-stat">${t('Игр', 'Games')}<b>${extra.game_count ?? '—'}</b></div>
+           <div class="nd-stat">${t('Часов', 'Hours')}<b>${extra.total_playtime_hours ?? '—'}</b></div>
+           <div class="nd-stat">${t('Уровень', 'Level')}<b>${extra.level ?? '—'}</b></div>
+         </div>`
+      : '';
     const games = (steamData.recent_games && steamData.recent_games.games) || [];
     const gamesHtml = games.length
       ? `<div class="nd-steam-games-label">${t('Недавно играл', 'Recently played')}</div>
@@ -557,6 +626,7 @@
         <div class="nd-win-avatar-badge"><img src="${p.avatar}" alt=""></div>
         <div><div class="nd-win-name">${p.persona_name || ''}</div><div class="nd-steam-status">● ${statusLabel}</div></div>
       </div>
+      ${statsHtml}
       ${gamesHtml}
       <a class="nd-btn98 nd-block" href="${p.profile_url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
