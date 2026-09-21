@@ -7,29 +7,6 @@
     return window.XP.t(ru, en);
   }
 
-  /* ---------- logo ---------- */
-  function renderLogo() {
-    const el = document.getElementById('e-logo');
-    const name = PROFILE.name.en.replace(/\s+/g, '\u00A0\u00A0');
-    el.innerHTML = Array.from(name)
-      .map((ch, i) => `<span style="--r:${((i * 37) % 9) - 4}deg">${ch === '\u00A0' ? '&nbsp;' : ch}</span>`)
-      .join('');
-  }
-
-  /* ---------- marquee ---------- */
-  function renderMarquee() {
-    const items = [
-      t('★ обновлено: сегодня (всегда)', '★ updated: today (always)'),
-      t('★ добавь в избранное', '★ bookmark this page'),
-      t(`★ добро пожаловать на домашнюю страничку ${PROFILE.name.ru}!`, `★ welcome to ${PROFILE.name.en}'s home page!`),
-      `★ ${t('ты посетитель №', "you're visitor #")} ${visitorNumber()}`,
-      t('★ включи звук', '★ turn your sound on'),
-    ];
-    const text = items.join('\u00A0\u00A0\u00A0\u00A0');
-    const track = document.getElementById('e-marquee-track');
-    track.innerHTML = `<span>${text}</span><span aria-hidden="true">\u00A0\u00A0\u00A0\u00A0${text}</span>`;
-  }
-
   /* ---------- decorative visitor counter (no backend — purely for flavor) ---------- */
   function visitorNumber() {
     const epoch = Date.UTC(2026, 0, 1);
@@ -37,42 +14,76 @@
     return String(13375 + days * 7).padStart(7, '0');
   }
 
-  function renderStatusLine() {
+  /* ---------- title / role ---------- */
+  function renderTitle() {
+    const lang = window.XP.lang();
+    document.getElementById('e-title').textContent = PROFILE.name[lang].toUpperCase();
+    document.getElementById('e-role').textContent = PROFILE.role[lang];
+  }
+
+  /* ---------- HUD: hearts / keys / coins (original SVG icons, no ripped sprites) ---------- */
+  function heartSvg() {
+    return '<svg viewBox="0 0 24 24" class="e-heart" fill="#c23a3a" stroke="#c23a3a" stroke-width="1.5"><path d="M12 21s-7.5-4.6-10-9.1C.4 8.4 2 4.8 5.6 4.2c2-.3 3.9.6 5 2.2 1.1-1.6 3-2.5 5-2.2 3.6.6 5.2 4.2 3.6 7.7C19.5 16.4 12 21 12 21z"/></svg>';
+  }
+  function keySvg() {
+    return '<svg viewBox="0 0 24 24" class="e-key" fill="none" stroke="#e0b84b" stroke-width="1.5"><circle cx="7" cy="12" r="4"/><line x1="11" y1="12" x2="21" y2="12"/><line x1="17" y1="12" x2="17" y2="16"/><line x1="21" y1="12" x2="21" y2="16"/></svg>';
+  }
+  function renderHud() {
+    document.getElementById('e-hud-hearts').innerHTML = Array.from({ length: 4 }, heartSvg).join('');
+    const keyCount = (PROFILE.languages || []).length || 1;
+    document.getElementById('e-hud-keys').innerHTML = Array.from({ length: keyCount }, keySvg).join('');
     document.getElementById('e-guests').textContent = visitorNumber();
   }
 
-  /* ---------- about.txt ---------- */
-  function renderAbout() {
+  /* ---------- flavor text + D6 reroll (all original lines, written for this page) ---------- */
+  const FLAVOR_LINES = [
+    () => PROFILE.tagline[window.XP.lang()],
+    () => t('+1 к пониманию бизнес-логики. Заказчики теперь боятся сложных требований.', '+1 grasp of business logic. Clients now fear complex requirements.'),
+    () => t('Прод не падает по пятницам. Постоянный эффект.', "Prod doesn't go down on Fridays. Permanent effect."),
+    () => t('Каждый баг — заряженный предмет: страшно, но потом гордишься.', 'Every bug is a charged item: scary, but you brag about it later.'),
+    () => t('+3 к Docker. Инфраструктура больше не плачет.', '+3 Docker. The infrastructure stopped crying.'),
+    () => t('Пишет тесты добровольно. Редкий предмет, шанс выпадения: низкий.', 'Writes tests voluntarily. Rare item, low drop chance.'),
+  ];
+  let flavorIndex = 0;
+  function renderFlavor() {
+    document.getElementById('e-flavor-text').textContent = FLAVOR_LINES[flavorIndex]();
+  }
+  function initD6() {
+    const el = document.getElementById('e-d6-btn');
+    el.addEventListener('click', () => {
+      flavorIndex = (flavorIndex + 1) % FLAVOR_LINES.length;
+      renderFlavor();
+      el.classList.remove('spin');
+      void el.offsetWidth;
+      el.classList.add('spin');
+    });
+  }
+
+  /* ---------- journal (real about text) ---------- */
+  function renderJournal() {
     const lang = window.XP.lang();
     const lines = PROFILE.about[lang] || [];
     document.getElementById('e-about-text').textContent = lines.join('\n\n');
   }
 
-  /* ---------- cmd.exe boot log (real GitHub stats, no fake numbers) ---------- */
-  const PROMPT = '<span class="e-term-prompt">C:\\ANTON&gt;</span>';
-
-  async function renderTerminal() {
+  /* ---------- GitHub artifact card (real stats, no fake numbers) ---------- */
+  async function renderGithubCard() {
     const body = document.getElementById('e-term-body');
-    const lang = window.XP.lang();
-    let statLine;
     try {
       const res = await fetch('/api/github/stats');
       const stats = await res.json();
-      statLine = stats.synced
-        ? `{ public_repos: ${stats.public_repos}, followers: ${stats.followers} }`
-        : t('{ офлайн-режим — GitHub недоступен }', '{ offline mode — GitHub unreachable }');
+      if (!stats.synced) {
+        body.innerHTML = `<p class="e-sync-text">${t('Руны стёрлись — GitHub недоступен', 'Runes faded — GitHub unreachable')}</p>`;
+        return;
+      }
+      body.innerHTML = `
+        <div class="e-widget-head"><div class="e-widget-name">BlazeStudio</div></div>
+        <p class="e-widget-sub">+${stats.public_repos} ${t('репозиториев (перманентный эффект)', 'repos (permanent effect)')}</p>
+        <p class="e-widget-sub">+${stats.followers} ${t('подписчиков', 'followers')}</p>
+      `;
     } catch (e) {
-      statLine = t('{ офлайн-режим }', '{ offline mode }');
+      body.innerHTML = `<p class="e-sync-text">${t('Руны стёрлись', 'Runes faded')}</p>`;
     }
-    body.innerHTML = [
-      `${PROMPT} whoami`,
-      `${PROFILE.name.en} — ${PROFILE.role[lang]}`,
-      '',
-      `${PROMPT} curl api.github.com/users/BlazeStudio`,
-      statLine,
-      '',
-      `${PROMPT} <span class="e-cursor"></span>`,
-    ].join('\n');
   }
 
   /* ---------- Steam ---------- */
@@ -145,13 +156,13 @@
     }
   }
 
-  /* ---------- guestbook (decorative — static entries, no real submissions) ---------- */
+  /* ---------- old diary entries (decorative — static, no real submissions) ---------- */
   function renderGuestbook() {
     const lang = window.XP.lang();
     const entries = [
-      { name: 'sys_admin_98', date: '14.03.2005', ru: 'Красивый сайт! Как делал анимацию?', en: 'Nice site! How did you make the animation?' },
-      { name: PROFILE.name.ru, date: '14.03.2005', ru: 'Спасибо! Всё руками, никакого фреймворка :)', en: 'Thanks! All by hand, no framework :)' },
-      { name: 'anon', date: '02.09.2026', ru: 'ждал этот редизайн 20 лет', en: 'been waiting 20 years for this redesign' },
+      { name: t('мама', 'mom'), date: '???', ru: 'Тебе нужно больше молиться и меньше сидеть в подвале.', en: 'You should pray more and spend less time in the basement.' },
+      { name: PROFILE.name.ru, date: '2024', ru: 'Нашёл способ выйти — научился программировать.', en: 'Found a way out — learned to program.' },
+      { name: 'anon', date: '2026', ru: 'зашёл в подвал, увидел код, испугался, зауважал', en: 'walked into the basement, saw the code, got scared, gained respect' },
     ];
     document.getElementById('e-guestbook-entries').innerHTML = entries
       .map((e) => `<div class="e-guestbook-entry"><span class="e-gb-date">${e.date}</span><b>${e.name}:</b> ${lang === 'ru' ? e.ru : e.en}</div>`)
@@ -160,7 +171,6 @@
 
   /* ---------- contacts ---------- */
   function renderContacts() {
-    const lang = window.XP.lang();
     const c = PROFILE.contacts;
     const items = [
       { ic: '✉️', label: 'Email', href: `mailto:${c.email}` },
@@ -202,34 +212,22 @@
     });
   }
 
-  /* ---------- nostalgic joke buttons ---------- */
-  function initJokeLinks() {
-    document.getElementById('e-fav-btn').addEventListener('click', (e) => {
-      e.preventDefault();
-      window.XP.toast(t('Браузеры это больше не умеют — но Ctrl+D сработает!', "Browsers don't do this anymore — but Ctrl+D works!"));
-    });
-    document.getElementById('e-home-btn').addEventListener('click', (e) => {
-      e.preventDefault();
-      window.XP.toast(t('В 2026-м так уже не делают, но идея была хорошая', "Nobody does this in 2026, but it was a good idea"));
-    });
-  }
-
   function renderAll() {
-    renderMarquee();
-    renderStatusLine();
-    renderAbout();
+    renderTitle();
+    renderHud();
+    renderFlavor();
+    renderJournal();
     renderGuestbook();
     renderContacts();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    renderLogo();
     renderAll();
-    renderTerminal();
+    renderGithubCard();
     renderSteam();
     renderFaceit();
+    initD6();
     initMusic();
-    initJokeLinks();
     window.XP.onLangChange.push(renderAll);
   });
 })();

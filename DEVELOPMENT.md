@@ -37,6 +37,7 @@ Then open:
 - **http://localhost:8000/** — the retro "визитка" entry screen (boots into either version below)
 - **http://localhost:8000/desktop** — the plain scrolling résumé
 - **http://localhost:8000/xp** — the Windows XP desktop version
+- **http://localhost:8000/isaac** — the résumé as a The Binding of Isaac run (doors, boss fights, a devil deal, a treasure room); sprites in `static/img/isaac/` come from the TBoI-ES-Modification mod project
 - **http://localhost:8000/dossier** — the printable PDF résumé (`?lang=en` for English)
 
 `--reload` restarts the server automatically when you edit a `.py` file. Static files
@@ -80,6 +81,13 @@ official Web API for another user's screenshots) — your Steam privacy settings
 
 The "Включить музыку" button plays `/static/audio/theme.mp3` if that file exists;
 drop your own track there (not committed by default) — nothing plays otherwise.
+
+## The /isaac page
+
+`static/img/isaac/` holds sprites cropped from the actual game (The Binding of
+Isaac: Rebirth/Repentance, © Edmund McMillen / Nicalis) — pulled from the asset
+dump for the TBoI-ES-Modification mod (see `api/data/projects.py`). They're used
+as-is, not redrawn, so the footer on `/isaac` carries an attribution line.
 
 ## Deploying
 

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anton Vasiliev — The Binding of the Résumé</title>
+<meta name="description" content="Резюме Anton Vasiliev, оформленное как забег The Binding of Isaac: двери, боссы, сделки с дьяволом и сокровищница проектов.">
+<meta name="theme-color" content="#120a0a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%231a0d0d%22/><text x=%2250%22 y=%2266%22 font-size=%2254%22 font-family=%22monospace%22 font-weight=%22700%22 fill=%22%23c23a3a%22 text-anchor=%22middle%22>A</text></svg>">
+<link rel="stylesheet" href="/static/css/shared.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/isaac.css?v={{ v }}">
+</head>
+<body>
+
+<div id="isaac">
+
+  <div class="i-topbar">
+    <a class="i-back-link" href="/" data-ru="← обычный сайт" data-en="← the normal site">← обычный сайт</a>
+    <button id="c-lang-btn" class="i-lang-btn">RU</button>
+  </div>
+
+  <header class="i-hero" id="i-hero">
+    <div class="i-hero-bg" aria-hidden="true"></div>
+    <div class="i-hero-vignette" aria-hidden="true"></div>
+
+    <img class="i-flame i-flame-left" src="/static/img/isaac/flame-orange.png" alt="" aria-hidden="true">
+    <img class="i-flame i-flame-right" src="/static/img/isaac/flame-orange.png" alt="" aria-hidden="true">
+
+    <button class="i-poop" id="i-poop" type="button" title="???" aria-label="secret">
+      <img src="/static/img/isaac/poop.png" alt="">
+    </button>
+
+    <div class="i-hero-inner">
+      <img class="i-logo" src="/static/img/isaac/logo.png" alt="The Binding of Isaac: Repentance">
+      <p class="i-modcut" data-ru="ПОРТФОЛИО-МОД · ANTON VASILIEV" data-en="PORTFOLIO MOD · ANTON VASILIEV">ПОРТФОЛИО-МОД · ANTON VASILIEV</p>
+
+      <p class="i-hero-role" id="i-hero-role"></p>
+      <p class="i-hero-tagline" id="i-hero-tagline"></p>
+
+      <a class="i-press-start" href="#i-doormap" data-ru="НАЖМИ, ЧТОБЫ НАЧАТЬ ЗАБЕГ" data-en="PRESS TO START THE RUN">НАЖМИ, ЧТОБЫ НАЧАТЬ ЗАБЕГ</a>
+    </div>
+  </header>
+
+  <nav class="i-doormap" id="i-doormap" aria-label="floor map">
+    <a class="i-door" href="#i-about">
+      <img src="/static/img/isaac/door-about.png" alt="">
+      <span data-ru="Новый забег" data-en="New run">Новый забег</span>
+    </a>
+    <a class="i-door" href="#i-experience">
+      <img src="/static/img/isaac/door-experience.png" alt="">
+      <span data-ru="Бой с боссом" data-en="Boss fight">Бой с боссом</span>
+    </a>
+    <a class="i-door" href="#i-skills">
+      <img src="/static/img/isaac/door-skills.png" alt="">
+      <span data-ru="Сделка с дьяволом" data-en="Devil deal">Сделка с дьяволом</span>
+    </a>
+    <a class="i-door" href="#i-projects">
+      <img src="/static/img/isaac/door-projects.png" alt="">
+      <span data-ru="Сокровищница" data-en="Treasure room">Сокровищница</span>
+    </a>
+    <a class="i-door" href="#i-achievements">
+      <img src="/static/img/isaac/achievement-badge.png" alt="">
+      <span data-ru="Достижения" data-en="Achievements">Достижения</span>
+    </a>
+    <a class="i-door" href="#i-contact">
+      <img src="/static/img/isaac/door-contact.png" alt="">
+      <span data-ru="Святая комната" data-en="Holy room">Святая комната</span>
+    </a>
+  </nav>
+
+  <main class="i-main">
+
+    <section class="i-room" id="i-about">
+      <div class="i-room-label" data-ru="Комната 1 / 5" data-en="Room 1 / 5">Комната 1 / 5</div>
+      <h2 class="i-room-title" data-ru="Новый забег" data-en="New Run">Новый забег</h2>
+
+      <div class="i-paper i-character">
+        <div class="i-character-head">
+          <div>
+            <h3 id="i-name"></h3>
+            <p id="i-role2" class="i-character-role"></p>
+          </div>
+          <img class="i-soulheart" src="/static/img/isaac/soulheart.png" alt="">
+        </div>
+        <dl class="i-stat-list">
+          <div><dt data-ru="Локация" data-en="Location">Локация</dt><dd id="i-location"></dd></div>
+          <div><dt data-ru="Возраст" data-en="Age">Возраст</dt><dd id="i-age"></dd></div>
+          <div><dt data-ru="Занятость" data-en="Employment">Занятость</dt><dd id="i-employment"></dd></div>
+          <div><dt data-ru="Формат" data-en="Format">Формат</dt><dd id="i-format"></dd></div>
+        </dl>
+        <div class="i-traits" id="i-traits"></div>
+        <div class="i-about-text" id="i-about-text"></div>
+      </div>
+    </section>
+
+    <section class="i-room i-room-dark" id="i-experience">
+      <div class="i-room-label" data-ru="Комната 2 / 5" data-en="Room 2 / 5">Комната 2 / 5</div>
+      <h2 class="i-room-title" data-ru="Бой с боссом" data-en="Boss Fight">Бой с боссом</h2>
+      <p class="i-room-sub" data-ru="Опыт работы — каждая компания рендерится как энкаунтер с боссом." data-en="Work experience — every company renders as a boss encounter.">Опыт работы</p>
+      <div id="i-experience-list" class="i-boss-list"></div>
+    </section>
+
+    <section class="i-room i-room-nebula" id="i-skills">
+      <div class="i-room-label" data-ru="Комната 3 / 5" data-en="Room 3 / 5">Комната 3 / 5</div>
+      <h2 class="i-room-title" data-ru="Сделка с дьяволом" data-en="Devil Deal">Сделка с дьяволом</h2>
+      <p class="i-room-sub" data-ru="Навыки, отданные за здоровье. Обратной силы не имеет." data-en="Skills traded for health. No refunds.">Навыки</p>
+      <div id="i-skills-groups" class="i-skills-groups"></div>
+    </section>
+
+    <section class="i-room" id="i-projects">
+      <div class="i-room-label" data-ru="Комната 4 / 5" data-en="Room 4 / 5">Комната 4 / 5</div>
+      <h2 class="i-room-title" data-ru="Сокровищница" data-en="Treasure Room">Сокровищница</h2>
+      <p class="i-room-sub" data-ru="Предметы, подобранные за годы забега." data-en="Items picked up over the years.">Проекты</p>
+      <div id="i-projects-grid" class="i-projects-grid"></div>
+    </section>
+
+    <section class="i-room i-room-dark" id="i-achievements">
+      <div class="i-achievements-wall" aria-hidden="true"></div>
+      <div class="i-room-label" data-ru="Бонус" data-en="Bonus">Бонус</div>
+      <h2 class="i-room-title" data-ru="Достижения открыты" data-en="Achievements Unlocked">Достижения открыты</h2>
+      <div id="i-achievements-list" class="i-ach-list"></div>
+      <div class="i-winstreak" id="i-winstreak">
+        <img src="/static/img/isaac/winstreak.png" alt="">
+        <div>
+          <div class="i-winstreak-num" id="i-winstreak-num"></div>
+          <div class="i-winstreak-label" data-ru="дней без падения прода в пятницу" data-en="days without a Friday prod outage">дней без падения прода в пятницу</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="i-room" id="i-contact">
+      <div class="i-room-label" data-ru="Комната 5 / 5" data-en="Room 5 / 5">Комната 5 / 5</div>
+      <h2 class="i-room-title" data-ru="Святая комната" data-en="Holy Room">Святая комната</h2>
+      <p class="i-room-sub" data-ru="Тут можно оставить подношение (то есть — написать)." data-en="Leave an offering here (i.e. — get in touch).">Связь</p>
+      <div id="i-contact-list" class="i-contact-list"></div>
+    </section>
+
+  </main>
+
+  <footer class="i-footer">
+    <a class="i-revive" href="/">
+      <img src="/static/img/isaac/revive-machine.png" alt="">
+      <span data-ru="Продолжить на обычном сайте?" data-en="Continue on the normal site?">Продолжить на обычном сайте?</span>
+    </a>
+    <img class="i-exit-door" src="/static/img/isaac/door-exit.png" alt="">
+    <p class="i-disclaimer" data-ru="Фан-страница по мотивам The Binding of Isaac: Rebirth/Repentance (Edmund McMillen / Nicalis). Спрайты — из моего мод-проекта TBoI-ES-Modification, права на оригинальную игру принадлежат их владельцам. Не аффилировано с Nicalis." data-en="A fan page based on The Binding of Isaac: Rebirth/Repentance (Edmund McMillen / Nicalis). Sprites are from my TBoI-ES-Modification mod project — rights to the original game belong to their owners. Not affiliated with Nicalis.">Фан-страница по мотивам The Binding of Isaac.</p>
+    <p class="i-copy">© 2026, Anton Vasiliev.</p>
+  </footer>
+
+</div>
+
+<div id="toast"></div>
+
+<script id="site-data" type="application/json">{{ site_data_json | safe }}</script>
+<script src="/static/js/app.js?v={{ v }}"></script>
+<script src="/static/js/isaac.js?v={{ v }}"></script>
+</body>
+</html>

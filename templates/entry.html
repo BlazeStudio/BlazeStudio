@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Anton Vasiliev — визитка</title>
-<meta name="description" content="Anton Vasiliev — сайт-визитка. Резюме, проекты, Steam, FACEIT — всё как в 2005-м, но по-настоящему.">
-<meta name="theme-color" content="#050318">
+<title>Anton Vasiliev — подвал</title>
+<meta name="description" content="Anton Vasiliev — Python Backend Developer. Резюме, проекты, Steam, FACEIT — оформлено как комната с предметами.">
+<meta name="theme-color" content="#1c1720">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23121218%22/><text x=%2250%22 y=%2266%22 font-size=%2254%22 font-family=%22monospace%22 font-weight=%22700%22 fill=%22%23ffcf33%22 text-anchor=%22middle%22>A</text></svg>">
 <link rel="stylesheet" href="/static/css/shared.css?v={{ v }}">
 <link rel="stylesheet" href="/static/css/entry.css?v={{ v }}">
@@ -13,124 +13,104 @@
 <body>
 
 <div id="entry">
-  <div class="e-marquee-bar">
-    <div class="e-marquee-track" id="e-marquee-track"></div>
-  </div>
+  <div class="e-drip" aria-hidden="true"></div>
+  <div class="e-drip" aria-hidden="true"></div>
+  <div class="e-drip" aria-hidden="true"></div>
+  <div class="e-drip" aria-hidden="true"></div>
 
   <nav class="e-nav">
     <div class="e-nav-links">
-      <a href="#e-about" data-ru="Обо мне" data-en="About">Обо мне</a>
+      <a href="#e-about" data-ru="Дневник" data-en="Journal">Дневник</a>
       <a href="/desktop" data-ru="Резюме" data-en="Résumé">Резюме</a>
       <a href="#e-steam" data-ru="Steam" data-en="Steam">Steam</a>
       <a href="#e-faceit" data-ru="FACEIT" data-en="FACEIT">FACEIT</a>
-      <a href="#e-guestbook" data-ru="Гостевая" data-en="Guestbook">Гостевая</a>
+      <a href="#e-guestbook" data-ru="Записи" data-en="Notes">Записи</a>
       <a href="#e-contacts" data-ru="Связь" data-en="Contact">Связь</a>
     </div>
     <button id="c-lang-btn" class="e-lang-btn">RU</button>
   </nav>
 
-  <header class="e-banner">
-    <div class="e-clouds" aria-hidden="true"><span></span><span></span><span></span></div>
-    <div class="e-banner-inner">
-      <p class="e-kicker">~*~ <span data-ru="добро пожаловать на" data-en="welcome to">добро пожаловать на</span> ~*~</p>
-      <h1 class="e-logo" aria-label="Anton Vasiliev" id="e-logo"></h1>
-      <div class="e-badge-row">
-        <span class="e-badge-new" data-ru="NEW! 2026" data-en="NEW! 2026">NEW! 2026</span>
-        <span class="e-badge-tape" data-ru="ON THE INTERNET С 2005" data-en="ON THE INTERNET SINCE 2005">ON THE INTERNET С 2005</span>
-      </div>
-      <p class="e-subtitle" data-ru="личная страничка-визитка" data-en="a personal home page">личная страничка-визитка</p>
-
-      <div class="e-avatar-frame">
-        <span class="e-avatar-tag" data-ru="это я! →" data-en="this is me! →">это я! →</span>
-        <div class="e-avatar">🧑‍💻</div>
-      </div>
-
-      <div class="e-cta-row">
-        <button id="e-music-btn" class="e-btn" type="button">
-          <span class="e-music-icon">♫</span>
-          <span data-ru="Включить музыку" data-en="Turn on music">Включить музыку</span>
-        </button>
-        <a class="e-btn" id="e-write-btn" href="mailto:{{ profile.contacts.email }}">✉ <span data-ru="Написать" data-en="Message me">Написать</span></a>
-        <a class="e-btn e-btn-ghost" href="#e-contacts"><span data-ru="Все контакты" data-en="All contacts">Все контакты</span> ↓</a>
-      </div>
-
-      <p class="e-status-line">
-        <span data-ru="онлайн" data-en="online">онлайн</span>: <b id="e-online">1 (<span data-ru="это вы" data-en="that's you">это вы</span>)</b>
-        <span class="e-dot">·</span>
-        <span data-ru="гостей" data-en="visitors">гостей</span>: <b id="e-guests">—</b>
-        <span class="e-dot">·</span>
-        <a href="#" class="e-fav" id="e-fav-btn" data-ru="добавить в избранное" data-en="add to bookmarks">добавить в избранное</a>
-        <span class="e-dot">·</span>
-        <a href="#" class="e-fav" id="e-home-btn" data-ru="сделать стартовой" data-en="set as homepage">сделать стартовой</a>
-      </p>
+  <div class="e-hud" aria-hidden="true">
+    <div class="e-hud-group" id="e-hud-hearts" title="открыт к предложениям"></div>
+    <div class="e-hud-group" id="e-hud-keys" title="языки"></div>
+    <div class="e-hud-group" id="e-hud-coins" title="счётчик">
+      <svg viewBox="0 0 24 24" class="e-ic-coin"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6" class="e-coin-inner"/></svg>
+      <span id="e-guests">—</span>
     </div>
+  </div>
+
+  <header class="e-hero">
+    <h1 class="e-title" id="e-title"></h1>
+    <p class="e-role" id="e-role"></p>
+
+    <div class="e-flavor-row">
+      <p class="e-flavor" id="e-flavor-text"></p>
+      <button class="e-d6" id="e-d6-btn" type="button" title="перебросить">
+        <svg viewBox="0 0 24 24" class="e-ic-die"><rect x="3" y="3" width="18" height="18" rx="3"/><circle class="pip" cx="8" cy="8" r="1.6"/><circle class="pip" cx="16" cy="8" r="1.6"/><circle class="pip" cx="8" cy="16" r="1.6"/><circle class="pip" cx="16" cy="16" r="1.6"/><circle class="pip" cx="12" cy="12" r="1.6"/></svg>
+      </button>
+    </div>
+
+    <div class="e-doors">
+      <a class="e-door e-door-gold" href="/desktop">
+        <span class="e-door-ic">📄</span>
+        <span class="e-door-lb" data-ru="Резюме" data-en="Résumé">Резюме</span>
+        <span class="e-door-sb" data-ru="дверь сокровищ" data-en="treasure door">дверь сокровищ</span>
+      </a>
+      <a class="e-door e-door-boss" href="/xp">
+        <span class="e-door-ic">🖥️</span>
+        <span class="e-door-lb" data-ru="XP-версия" data-en="XP desktop">XP-версия</span>
+        <span class="e-door-sb" data-ru="дверь босса" data-en="boss door">дверь босса</span>
+      </a>
+      <a class="e-door e-door-devil" href="/isaac">
+        <span class="e-door-ic">👹</span>
+        <span class="e-door-lb" data-ru="Isaac-версия" data-en="Isaac cut">Isaac-версия</span>
+        <span class="e-door-sb" data-ru="дверь дьявола" data-en="devil door">дверь дьявола</span>
+      </a>
+    </div>
+
+    <button id="e-music-btn" class="e-music-btn" type="button">
+      <span class="e-music-icon">♪</span>
+      <span data-ru="Врубить эмбиент" data-en="Turn on ambience">Врубить эмбиент</span>
+    </button>
   </header>
 
   <main class="e-main">
-    <section class="e-boot-select">
-      <p class="e-boot-caption" data-ru="выберите, во что загрузиться:" data-en="pick what to boot into:">выберите, во что загрузиться:</p>
-      <div class="e-boot-options">
-        <a class="e-boot-card" href="/desktop">
-          <span class="e-boot-icon">📄</span>
-          <span class="e-boot-label" data-ru="Обычная версия" data-en="Plain résumé">Обычная версия</span>
-          <span class="e-boot-sub" data-ru="скроллящееся резюме" data-en="scrolling résumé">скроллящееся резюме</span>
-        </a>
-        <a class="e-boot-card" href="/xp">
-          <span class="e-boot-icon">🖥️</span>
-          <span class="e-boot-label" data-ru="XP-версия" data-en="XP desktop">XP-версия</span>
-          <span class="e-boot-sub" data-ru="рабочий стол Windows XP" data-en="Windows XP desktop">рабочий стол Windows XP</span>
-        </a>
-      </div>
+    <section class="e-journal" id="e-about">
+      <div class="e-journal-head">📓 <span data-ru="Дневник" data-en="Journal">Дневник</span></div>
+      <div class="e-journal-body" id="e-about-text"></div>
     </section>
 
-    <section class="e-windows-grid">
-      <div class="e-window e-notepad" id="e-about">
-        <div class="e-window-bar">
-          <span>📄 about.txt — <span data-ru="Блокнот" data-en="Notepad">Блокнот</span></span>
-          <span class="e-window-controls"><i></i><i></i><i class="e-close"></i></span>
-        </div>
-        <div class="e-window-menu" data-ru="Файл  Правка  Формат  Вид  Справка" data-en="File  Edit  Format  View  Help">Файл  Правка  Формат  Вид  Справка</div>
-        <div class="e-window-body e-notepad-body" id="e-about-text"></div>
-      </div>
-
-      <div class="e-window e-term">
-        <div class="e-window-bar e-window-bar-dark">
-          <span>C:\ANTON\cmd.exe</span>
-          <span class="e-window-controls"><i></i><i></i><i class="e-close"></i></span>
-        </div>
-        <pre class="e-window-body e-term-body" id="e-term-body"></pre>
-      </div>
-
-      <div class="e-window e-steam" id="e-steam">
-        <div class="e-window-bar e-window-bar-steam">
-          <span>🎮 Steam</span>
-          <span class="e-window-controls"><i></i><i></i><i class="e-close"></i></span>
-        </div>
-        <div class="e-window-body" id="e-steam-body">
-          <p class="e-sync-text" data-ru="Синхронизация со Steam…" data-en="Syncing Steam…">Синхронизация со Steam…</p>
+    <section class="e-items-grid">
+      <div class="e-item-card" id="e-github">
+        <div class="e-item-head">🗝️ <span data-ru="Артефакт: GitHub" data-en="Artifact: GitHub">Артефакт: GitHub</span></div>
+        <div class="e-item-body" id="e-term-body">
+          <p class="e-sync-text" data-ru="Считываем руны…" data-en="Reading the runes…">Считываем руны…</p>
         </div>
       </div>
 
-      <div class="e-window e-faceit" id="e-faceit">
-        <div class="e-window-bar e-window-bar-faceit">
-          <span>🔫 FACEIT</span>
-          <span class="e-window-controls"><i></i><i></i><i class="e-close"></i></span>
+      <div class="e-item-card" id="e-steam">
+        <div class="e-item-head">🎮 <span data-ru="Тайная комната: Steam" data-en="Secret room: Steam">Тайная комната: Steam</span></div>
+        <div class="e-item-body" id="e-steam-body">
+          <p class="e-sync-text" data-ru="Открываем сундук…" data-en="Opening the chest…">Открываем сундук…</p>
         </div>
-        <div class="e-window-body" id="e-faceit-body">
-          <p class="e-sync-text" data-ru="Синхронизация с FACEIT…" data-en="Syncing FACEIT…">Синхронизация с FACEIT…</p>
+      </div>
+
+      <div class="e-item-card" id="e-faceit">
+        <div class="e-item-head">💀 <span data-ru="Испытание: FACEIT" data-en="Challenge: FACEIT">Испытание: FACEIT</span></div>
+        <div class="e-item-body" id="e-faceit-body">
+          <p class="e-sync-text" data-ru="Открываем дверь босса…" data-en="Opening the boss door…">Открываем дверь босса…</p>
         </div>
       </div>
     </section>
 
     <section class="e-guestbook" id="e-guestbook">
-      <h2>📖 <span data-ru="Гостевая книга" data-en="Guestbook">Гостевая книга</span></h2>
-      <p class="e-guestbook-hint" data-ru="(архивные записи, оставлять новые пока нельзя)" data-en="(archived entries — no new ones for now)">(архивные записи, оставлять новые пока нельзя)</p>
+      <h2>📖 <span data-ru="Старые записи в дневнике" data-en="Old diary entries">Старые записи в дневнике</span></h2>
       <div class="e-guestbook-entries" id="e-guestbook-entries"></div>
     </section>
 
     <footer class="e-footer" id="e-contacts">
       <div class="e-contacts-row" id="e-contacts-row"></div>
-      <p class="e-copy" data-ru="© 2005–2026, Anton Vasiliev. Сделано без единого фреймворка (почти)." data-en="© 2005–2026, Anton Vasiliev. Made with zero frameworks (almost).">© 2005–2026, Anton Vasiliev. Сделано без единого фреймворка (почти).</p>
+      <p class="e-copy" data-ru="© 2026, Anton Vasiliev. Оригинальная графика, ни одного изъятого спрайта." data-en="© 2026, Anton Vasiliev. Original art — not a single ripped sprite.">© 2026, Anton Vasiliev. Оригинальная графика, ни одного изъятого спрайта.</p>
     </footer>
   </main>
 

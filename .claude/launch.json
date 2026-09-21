@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "blazestudio-dev",
+      "runtimeExecutable": ".venv/Scripts/uvicorn.exe",
+      "runtimeArgs": ["api.index:app", "--reload", "--port", "8001"],
+      "port": 8001
+    }
+  ]
+}

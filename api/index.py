@@ -88,6 +88,11 @@ def xp(request: Request):
     return templates.TemplateResponse(request, "xp.html", _base_context())
 
 
+@app.get("/isaac")
+def isaac(request: Request):
+    return templates.TemplateResponse(request, "isaac.html", _base_context())
+
+
 @app.get("/dossier")
 def dossier(request: Request, lang: str = "ru"):
     lang = lang if lang in ("ru", "en") else "ru"
