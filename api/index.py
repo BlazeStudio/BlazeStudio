@@ -142,6 +142,7 @@ def steam_stats():
         "extra": steam_sync.get_extra_stats(),
         "recent_games": steam_sync.get_recently_played(),
         "screenshots": steam_sync.get_recent_screenshots(),
+        "cs_inventory": steam_sync.get_cs_inventory(),
     }
 
 

@@ -12,23 +12,16 @@
   }
 
   /* =========================================================
-     Window manager — same drag/raise/hide idea as windows.js,
-     but for a fixed set of windows already present in the DOM
-     (this page isn't a window-open/close shell, it's a snapshot
-     desktop where every window already exists and can be shown,
-     hidden, dragged and raised).
+     Window manager. The desktop itself never scrolls — #nd-surface
+     always exactly fills the viewport — so by default every window
+     just sits in a responsive 3-column flex grid (CSS) that shares
+     out the available space, wider or narrower depending on the
+     monitor. Dragging a titlebar or the resize handle "detaches"
+     that one window into free pixel positioning within the same
+     fixed box; "Расставить" clears all detached state and lets
+     everything fall back into the grid.
      ========================================================= */
-  const DEFS = {
-    avatar: { l: 112, t: 10, w: 226, h: 260 },
-    steam: { l: 112, t: 294, w: 226, h: 240 },
-    faceit: { l: 112, t: 558, w: 226, h: 240 },
-    explorer: { l: 358, t: 10, w: 640, h: 560 },
-    github: { l: 1018, t: 10, w: 256, h: 320 },
-    hh: { l: 1018, t: 348, w: 256, h: 210 },
-    console: { l: 358, t: 588, w: 640, h: 340 },
-    corner: { l: 1018, t: 578, w: 256, h: 220 },
-  };
-  const WIN_ORDER = ['avatar', 'explorer', 'github', 'hh', 'console', 'steam', 'faceit', 'corner'];
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'corner', 'contacts'];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
@@ -38,6 +31,7 @@
     hh: () => 'hh.ru',
     console: () => t('Консоль', 'Console'),
     corner: () => t('Уголок', 'Corner'),
+    contacts: () => t('Контакты', 'Contacts'),
   };
   const WIN_ICON = {
     avatar: 'ico-avatar',
@@ -48,39 +42,63 @@
     hh: 'ico-hh',
     console: 'ico-console',
     corner: 'ico-corner',
+    contacts: 'ico-contacts',
   };
   const MIN_WIN_W = 200;
   const MIN_WIN_H = 140;
 
-  const state = { hidden: {}, pos: {}, size: {}, z: {}, zc: 10, tab: 'resume' };
+  const state = { hidden: {}, detached: {}, preMax: {}, z: {}, tab: 'resume' };
+  let zOrder = []; // back-to-front stacking order, kept short so z-index never has to grow unbounded (and stays well under the taskbar's)
 
   function winEl(id) {
     return document.getElementById('nd-win-' + id);
   }
 
-  function winSize(id) {
-    const s = state.size[id];
-    const d = DEFS[id];
-    return { w: (s && s.w) || d.w, h: (s && s.h) || d.h };
+  function surfaceRect() {
+    return document.getElementById('nd-surface').getBoundingClientRect();
+  }
+
+  // Captures the window's CURRENT on-screen box (wherever the responsive
+  // grid put it) as pixel coordinates, so the first drag/resize frame
+  // doesn't jump. A no-op if it's already detached.
+  function ensureDetached(id) {
+    if (state.detached[id]) return state.detached[id];
+    const el = winEl(id);
+    const wr = el.getBoundingClientRect();
+    const sr = surfaceRect();
+    const d = { left: Math.round(wr.left - sr.left), top: Math.round(wr.top - sr.top), width: Math.round(wr.width), height: Math.round(wr.height) };
+    state.detached[id] = d;
+    return d;
   }
 
   function applyWinStyle(id) {
     const el = winEl(id);
     if (!el) return;
-    const d = DEFS[id];
-    const p = state.pos[id] || { x: 0, y: 0 };
-    const sz = winSize(id);
-    el.style.left = d.l + p.x + 'px';
-    el.style.top = d.t + p.y + 'px';
-    el.style.width = sz.w + 'px';
-    el.style.height = sz.h + 'px';
+    const d = state.detached[id];
+    if (d) {
+      el.classList.add('nd-detached');
+      el.style.left = d.left + 'px';
+      el.style.top = d.top + 'px';
+      el.style.width = d.width + 'px';
+      el.style.height = d.height + 'px';
+    } else {
+      el.classList.remove('nd-detached');
+      el.style.left = '';
+      el.style.top = '';
+      el.style.width = '';
+      el.style.height = '';
+    }
     el.style.zIndex = state.z[id] || 1;
   }
 
   function raise(id) {
-    state.zc += 1;
-    state.z[id] = state.zc;
-    applyWinStyle(id);
+    zOrder = zOrder.filter((x) => x !== id);
+    zOrder.push(id);
+    zOrder.forEach((wid, i) => {
+      state.z[wid] = 10 + i;
+      const el = winEl(wid);
+      if (el) el.style.zIndex = state.z[wid];
+    });
     syncTaskbar();
   }
 
@@ -105,17 +123,52 @@
     raise(id);
   }
 
+  function isMaximized(id) {
+    const el = winEl(id);
+    return !!el && el.classList.contains('nd-maximized');
+  }
+
+  function toggleMaximize(id) {
+    const el = winEl(id);
+    if (!el) return;
+    if (isMaximized(id)) {
+      el.classList.remove('nd-maximized');
+      state.detached[id] = state.preMax[id] || null;
+      if (!state.detached[id]) delete state.detached[id];
+      delete state.preMax[id];
+      applyWinStyle(id);
+    } else {
+      state.preMax[id] = state.detached[id] ? Object.assign({}, state.detached[id]) : null;
+      el.classList.add('nd-maximized');
+      raise(id);
+    }
+    updateMaxIcon(id);
+  }
+
+  function updateMaxIcon(id) {
+    const el = winEl(id);
+    if (!el) return;
+    const use = el.querySelector('.nd-max use');
+    if (use) use.setAttribute('href', isMaximized(id) ? '#ico-restore' : '#ico-maximize');
+    const btn = el.querySelector('.nd-max');
+    if (btn) btn.setAttribute('aria-label', isMaximized(id) ? t('Восстановить окно', 'Restore window') : t('Развернуть окно', 'Maximize window'));
+  }
+
   function startDrag(id) {
     return function (e) {
-      if (window.innerWidth <= 720) return; // windows go fixed full-screen on mobile — nothing to drag
+      if (window.innerWidth <= 900) return; // windows go fixed full-screen on mobile — nothing to drag
       if (e.button !== undefined && e.button !== 0) return;
       if (e.target.closest('button')) return;
-      const base = state.pos[id] || { x: 0, y: 0 };
+      if (isMaximized(id)) return; // dragging a maximized window doesn't make sense
+      const d = ensureDetached(id);
+      applyWinStyle(id);
       const sx = e.clientX;
       const sy = e.clientY;
+      const base = { left: d.left, top: d.top };
       raise(id);
       function move(ev) {
-        state.pos[id] = { x: Math.round(base.x + (ev.clientX - sx)), y: Math.round(base.y + (ev.clientY - sy)) };
+        state.detached[id].left = Math.round(base.left + (ev.clientX - sx));
+        state.detached[id].top = Math.round(base.top + (ev.clientY - sy));
         applyWinStyle(id);
       }
       function up() {
@@ -131,16 +184,20 @@
 
   function startResize(id) {
     return function (e) {
-      if (window.innerWidth <= 720) return; // windows go fixed full-screen on mobile — nothing to resize
+      if (window.innerWidth <= 900) return; // windows go fixed full-screen on mobile — nothing to resize
       if (e.button !== undefined && e.button !== 0) return;
+      if (isMaximized(id)) return;
       e.stopPropagation(); // don't let the window's own pointerdown->raise fight this
       e.preventDefault();
-      const base = winSize(id);
+      const d = ensureDetached(id);
+      applyWinStyle(id);
       const sx = e.clientX;
       const sy = e.clientY;
+      const base = { width: d.width, height: d.height };
       raise(id);
       function move(ev) {
-        state.size[id] = { w: Math.max(MIN_WIN_W, Math.round(base.w + (ev.clientX - sx))), h: Math.max(MIN_WIN_H, Math.round(base.h + (ev.clientY - sy))) };
+        state.detached[id].width = Math.max(MIN_WIN_W, Math.round(base.width + (ev.clientX - sx)));
+        state.detached[id].height = Math.max(MIN_WIN_H, Math.round(base.height + (ev.clientY - sy)));
         applyWinStyle(id);
       }
       function up() {
@@ -165,6 +222,8 @@
       if (min) min.addEventListener('click', () => toggleWin(id));
       const close = el.querySelector('.nd-x');
       if (close) close.addEventListener('click', () => toggleWin(id));
+      const maxBtn = el.querySelector('.nd-max');
+      if (maxBtn) maxBtn.addEventListener('click', () => toggleMaximize(id));
       const resizeHandle = el.querySelector('.nd-resize');
       if (resizeHandle) resizeHandle.addEventListener('pointerdown', startResize(id));
       el.addEventListener('pointerdown', () => raise(id));
@@ -192,9 +251,11 @@
   }
 
   function arrange() {
-    state.pos = {};
-    state.size = {};
-    WIN_ORDER.forEach(applyWinStyle);
+    state.detached = {};
+    WIN_ORDER.forEach((id) => {
+      if (isMaximized(id)) toggleMaximize(id);
+      applyWinStyle(id);
+    });
     window.XP.toast(t('Окна расставлены по местам.', 'Windows arranged.'));
   }
 
@@ -339,6 +400,11 @@
     return `<div class="nd-screens"><div class="nd-big-shot" id="nd-big-shot">${t('Загрузка…', 'Loading…')}</div><div class="nd-shots-grid" id="nd-shots-grid"></div></div>`;
   }
 
+  function paintBigShot(bigEl, s) {
+    bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}"><div class="nd-big-shot-hint">${t('нажмите, чтобы открыть на весь экран', 'click to open full screen')}</div>`;
+    bigEl.querySelector('img').addEventListener('click', () => openLightbox(s.full));
+  }
+
   async function loadScreens() {
     const bigEl = document.getElementById('nd-big-shot');
     const gridEl = document.getElementById('nd-shots-grid');
@@ -351,17 +417,41 @@
         gridEl.innerHTML = '';
         return;
       }
-      bigEl.innerHTML = `<img src="${shots[0].full}" alt="${shots[0].title || ''}">`;
+      paintBigShot(bigEl, shots[0]);
       gridEl.innerHTML = shots.map((s, i) => `<button class="nd-shot" data-i="${i}"><img src="${s.thumb}" alt="${s.title || ''}" loading="lazy"></button>`).join('');
       gridEl.querySelectorAll('.nd-shot').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const s = shots[Number(btn.dataset.i)];
-          bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}">`;
-        });
+        btn.addEventListener('click', () => paintBigShot(bigEl, shots[Number(btn.dataset.i)]));
       });
     } catch (e) {
       bigEl.textContent = t('Не удалось загрузить скриншоты.', 'Could not load screenshots.');
     }
+  }
+
+  /* =========================================================
+     Lightbox — fullscreen view for the current screenshot.
+     ========================================================= */
+  function openLightbox(src) {
+    const overlay = document.getElementById('nd-lightbox');
+    const img = document.getElementById('nd-lightbox-img');
+    if (!overlay || !img) return;
+    img.src = src;
+    overlay.hidden = false;
+  }
+  function closeLightbox() {
+    const overlay = document.getElementById('nd-lightbox');
+    if (overlay) overlay.hidden = true;
+  }
+  function initLightbox() {
+    const overlay = document.getElementById('nd-lightbox');
+    const closeBtn = document.getElementById('nd-lightbox-close');
+    if (!overlay) return;
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeLightbox();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !overlay.hidden) closeLightbox();
+    });
   }
 
   function gamesHtml(l) {
@@ -621,6 +711,14 @@
            )
            .join('')}</ul>`
       : `<p class="nd-steam-dim">${t('недавних игр нет', 'no recent games')}</p>`;
+    const inv = steamData.cs_inventory;
+    const invHtml =
+      inv && inv.synced
+        ? `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS', 'CS inventory')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
+           <div class="nd-steam-inv-grid">${inv.items
+             .map((it) => `<div class="nd-steam-inv-item" style="--inv-color:${it.rarity_color || '#4b69ff'}" title="${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}">${it.icon ? `<img src="${it.icon}" alt="" loading="lazy">` : ''}</div>`)
+             .join('')}</div>`
+        : '';
     body.innerHTML = `
       <div class="nd-win-head">
         <div class="nd-win-avatar-badge"><img src="${p.avatar}" alt=""></div>
@@ -628,6 +726,7 @@
       </div>
       ${statsHtml}
       ${gamesHtml}
+      ${invHtml}
       <a class="nd-btn98 nd-block" href="${p.profile_url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
   }
@@ -729,8 +828,18 @@
   window.XP.open = function (id) {
     if (id === 'resume') openExplorer('resume');
     else if (id === 'projects') openExplorer('projects');
-    else if (id === 'contact') openExplorer('links');
+    else if (id === 'contact') show('contacts');
   };
+
+  /* =========================================================
+     Contacts window — a standalone version of the Explorer's
+     "Сервисы" tab, open by default next to the guest corner.
+     ========================================================= */
+  function renderContacts() {
+    const body = document.getElementById('nd-contacts-body');
+    if (!body) return;
+    body.innerHTML = linksHtml(lang());
+  }
 
   /* =========================================================
      Icons
@@ -801,10 +910,12 @@
   document.addEventListener('DOMContentLoaded', () => {
     initWindows();
     initIcons();
+    initLightbox();
     setTab('resume');
     renderAvatar();
     renderHh();
     renderCorner();
+    renderContacts();
     initConsoleWindow();
     loadGithub();
     loadSteamWin();
@@ -826,6 +937,7 @@
       renderSteamWin();
       renderFaceitWin();
       renderCorner();
+      renderContacts();
       const title = document.getElementById('nd-explorer-title');
       const addr = document.getElementById('nd-explorer-address');
       const l = lang();

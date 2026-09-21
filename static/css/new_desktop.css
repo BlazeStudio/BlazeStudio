@@ -28,11 +28,16 @@ a:hover { color: #d00000; }
   background-size: 32px 32px;
 }
 
-#nd-surface { position: absolute; inset: 0 0 40px 0; overflow: auto; }
-#nd-surface-inner { position: relative; width: 1320px; height: 950px; }
+/* The desktop never scrolls: #nd-surface always exactly fills the viewport
+   above the taskbar, and everything inside it is sized to fit — a fixed
+   pixel canvas would either need scrolling on small screens or waste space
+   on big ones, so window sizing instead comes from a responsive flex grid
+   (see #nd-grid below). Dragging or resizing a window "detaches" it into
+   free pixel positioning within this same fixed box (new_desktop.js). */
+#nd-surface { position: absolute; inset: 0 0 40px 0; overflow: hidden; display: flex; }
 
 /* ============ desktop icons ============ */
-#nd-icons { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; gap: 2px; z-index: 1; }
+#nd-icons { flex: 0 0 100px; padding: 10px 0 0 10px; display: flex; flex-direction: column; gap: 2px; min-height: 0; }
 .nd-ico {
   background: none;
   color: #fff;
@@ -42,15 +47,25 @@ a:hover { color: #d00000; }
   align-items: center;
   gap: 3px;
   width: 88px;
+  flex: none;
   padding: 4px;
   text-shadow: 1px 1px 0 #000;
   border-radius: 3px;
 }
 .nd-ico:hover, .nd-ico:focus-visible { background: rgba(58, 110, 220, 0.55); outline: 1px dotted #fff; }
 
+/* ============ the 3-column responsive grid ============ */
+#nd-grid { flex: 1 1 auto; display: flex; gap: 14px; padding: 10px 10px 10px 0; min-width: 0; min-height: 0; }
+.nd-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+.nd-col-left { flex: 1 1 clamp(200px, 15vw, 260px); min-width: 170px; }
+.nd-col-mid { flex: 3 1 clamp(340px, 42vw, 760px); min-width: 280px; }
+.nd-col-right { flex: 1.6 1 clamp(260px, 21vw, 440px); min-width: 210px; } /* wider on bigger monitors — GitHub/corner/contacts live here */
+
 /* ============ windows ============ */
 .nd-win {
-  position: absolute;
+  position: relative;
+  flex: 1 1 0;
+  min-height: 64px;
   background: var(--nd-panel);
   border: 3px solid var(--nd-blue-4);
   border-top: 0;
@@ -63,6 +78,13 @@ a:hover { color: #d00000; }
   color: #000;
 }
 .nd-win.nd-hidden { display: none; }
+.nd-win.nd-detached { position: absolute; flex: none; }
+.nd-win.nd-maximized {
+  position: fixed !important;
+  inset: 8px 8px 48px 8px !important;
+  width: auto !important;
+  height: auto !important;
+}
 
 .nd-resize {
   position: absolute;
@@ -76,6 +98,7 @@ a:hover { color: #d00000; }
   opacity: 0.65;
 }
 .nd-resize:hover { opacity: 1; }
+.nd-win.nd-maximized .nd-resize { display: none; }
 
 .nd-tb {
   height: 28px;
@@ -164,6 +187,10 @@ a:hover { color: #d00000; }
 .nd-steam-game-name { flex-grow: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .nd-steam-hours { flex: none; color: #8fb0c6; font-family: 'Courier New', monospace; font-size: 11px; }
 .nd-steam-dim { color: #8fb0c6; font-size: 12px; margin: 6px 0; }
+.nd-steam-inv-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #8fb0c6; margin: 10px 0 4px; display: flex; justify-content: space-between; }
+.nd-steam-inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; margin-bottom: 6px; }
+.nd-steam-inv-item { background: #0e141b; border: 1px solid #2a475e; border-top: 3px solid var(--inv-color, #4b69ff); padding: 4px; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; }
+.nd-steam-inv-item img { max-width: 100%; max-height: 100%; }
 .nd-steam-body .nd-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .nd-steam-body .nd-stat { background: #0e141b; border: 1px solid #2a475e; color: #8fb0c6; }
 .nd-steam-body .nd-stat b { color: #fff; }
@@ -228,12 +255,43 @@ a:hover { color: #d00000; }
 .nd-card-links a { font-size: 12px; margin-right: 10px; }
 
 .nd-screens { display: flex; flex-direction: column; gap: 12px; }
-.nd-big-shot { min-height: 220px; background: #000; border: 3px solid var(--nd-blue-4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #7dff7d; font: 14px 'Courier New', monospace; text-align: center; padding: 10px; }
-.nd-big-shot img { max-width: 100%; max-height: 240px; }
+.nd-big-shot { min-height: 380px; background: #000; border: 3px solid var(--nd-blue-4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #7dff7d; font: 14px 'Courier New', monospace; text-align: center; padding: 10px; }
+.nd-big-shot img { max-width: 100%; max-height: 60vh; cursor: zoom-in; }
+.nd-big-shot-hint { font-size: 11px; color: #5a5; margin-top: 2px; }
 .nd-shots-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .nd-shot { padding: 0; border: 2px solid var(--nd-blue-4); background: #000; overflow: hidden; }
 .nd-shot:hover, .nd-shot:focus-visible { outline: 2px solid var(--nd-accent); }
 .nd-shot img { width: 100%; height: 56px; object-fit: cover; display: block; }
+
+/* ---- fullscreen lightbox (screenshots) ---- */
+#nd-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 450;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  box-sizing: border-box;
+}
+#nd-lightbox[hidden] { display: none; }
+#nd-lightbox img { max-width: 100%; max-height: 100%; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7); }
+#nd-lightbox-close {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: bold 22px Verdana, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#nd-lightbox-close:hover { background: rgba(255, 255, 255, 0.25); }
 
 .nd-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .nd-gcard { border: 2px outset #fff; background: var(--nd-panel); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; overflow-x: auto; }
@@ -442,9 +500,13 @@ a:hover { color: #d00000; }
 .slots-msg { font-family: 'Courier New', monospace; font-size: 12px; color: var(--nd-text-dim); min-height: 16px; }
 
 /* ============ responsive ============ */
-@media (max-width: 720px) {
-  #nd-icons { position: static; flex-direction: row; flex-wrap: wrap; padding: 8px; }
-  #nd-surface-inner { width: auto; height: auto; min-height: 100%; }
+@media (max-width: 900px) {
+  #nd-surface { display: block; overflow-y: auto; } /* icons stack above the (fixed, full-screen) windows, so this one scroll is fine */
+  #nd-icons { flex-direction: row; flex-wrap: wrap; padding: 8px; }
+  /* display:contents drops the grid/column boxes from layout without hiding
+     their .nd-win children — those go position:fixed below, so they'd
+     vanish under a display:none ancestor instead of escaping it */
+  #nd-grid, .nd-col { display: contents; }
   .nd-win {
     position: fixed !important;
     left: 6px !important;
@@ -458,7 +520,7 @@ a:hover { color: #d00000; }
   .nd-explorer-side { width: auto; flex-direction: row; flex-wrap: wrap; }
   .nd-hint { display: none; }
   #nd-tasks { overflow-x: auto; }
-  .nd-resize { display: none; } /* resizing is off on mobile too — windows are fixed full-screen */
+  .nd-resize, .nd-max { display: none !important; } /* resizing/maximizing is moot on mobile — windows are already fixed full-screen */
   #nd-arrange { display: none; } /* dragging is off on mobile, so "arrange" has nothing to do */
 }
 

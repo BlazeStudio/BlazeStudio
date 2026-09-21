@@ -130,3 +130,44 @@ def get_recent_screenshots(count: int = 6) -> dict:
     for image_url, published_id in _SCREENSHOT_RE.findall(html)[:count]:
         shots.append({"full": image_url, "thumb": image_url, "title": "", "view_url": f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}"})
     return {"synced": bool(shots), "screenshots": shots}
+
+
+def get_cs_inventory(count: int = 12) -> dict:
+    """Public CS2 inventory (appid 730, context 2) — no API key needed, but the
+    profile's inventory privacy has to be set to public. Capped at `count`
+    items so a big inventory doesn't try to render hundreds of cards; `total`
+    carries the real size so the frontend can show "showing N of total".
+    """
+    if not STEAM_ID:
+        return {"synced": False, "items": [], "total": None}
+    url = f"https://steamcommunity.com/inventory/{STEAM_ID}/730/2?l=english&count=200"
+    data = _cached("steam:cs_inventory", url)
+    if not data or not data.get("success"):
+        return {"synced": False, "items": [], "total": None}
+    descriptions = {(d.get("classid"), d.get("instanceid")): d for d in data.get("descriptions", [])}
+    items = []
+    seen_names = set()
+    for a in data.get("assets", []):
+        d = descriptions.get((a.get("classid"), a.get("instanceid")))
+        if not d:
+            continue
+        name = d.get("market_hash_name") or d.get("name")
+        if not name or name in seen_names:
+            continue
+        seen_names.add(name)
+        tags = d.get("tags", [])
+        rarity = next((tag for tag in tags if tag.get("category") == "Rarity"), None)
+        exterior = next((tag for tag in tags if tag.get("category") == "Exterior"), None)
+        icon = d.get("icon_url")
+        items.append(
+            {
+                "name": d.get("name") or name,
+                "icon": f"https://community.akamai.steamstatic.com/economy/image/{icon}" if icon else None,
+                "rarity": rarity.get("localized_tag_name") if rarity else None,
+                "rarity_color": f"#{rarity['color']}" if rarity and rarity.get("color") else None,
+                "exterior": exterior.get("localized_tag_name") if exterior else None,
+            }
+        )
+        if len(items) >= count:
+            break
+    return {"synced": bool(items), "items": items, "total": data.get("total_inventory_count")}
