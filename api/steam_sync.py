@@ -13,6 +13,7 @@ import os
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -109,6 +110,22 @@ def get_recently_played(count: int = 6) -> dict:
 
 
 _SCREENSHOT_RE = re.compile(r"background-image:\s*url\('(https://images\.steamusercontent\.com/ugc/[^']+)'\)[^>]*id=\"imgWallItem_(\d+)\"")
+_UGC_ID_RE = re.compile(r"images\.steamusercontent\.com/ugc/(\d+)/([0-9A-Fa-f]+)/")
+
+
+def _screenshot_full_res(published_id: str) -> str | None:
+    """The grid page's own background-image is a small pre-baked thumbnail —
+    a genuinely different (and much smaller, ~10KB vs ~220KB) asset, not just
+    a CSS-scaled crop of the original. The screenshot's own detail page
+    references the real high-res asset id, so that page is fetched once per
+    screenshot (and cached) to build a properly sized image URL instead."""
+    html = _cached(f"steam:shot_detail:{published_id}", f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}", parse="text")
+    if not html:
+        return None
+    m = _UGC_ID_RE.search(html)
+    if not m:
+        return None
+    return f"https://images.steamusercontent.com/ugc/{m.group(1)}/{m.group(2)}/"
 
 
 def get_recent_screenshots(count: int = 6) -> dict:
@@ -127,16 +144,48 @@ def get_recent_screenshots(count: int = 6) -> dict:
     if not html or "This profile is private" in html:
         return {"synced": False, "screenshots": []}
     shots = []
-    for image_url, published_id in _SCREENSHOT_RE.findall(html)[:count]:
-        shots.append({"full": image_url, "thumb": image_url, "title": "", "view_url": f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}"})
+    for _grid_url, published_id in _SCREENSHOT_RE.findall(html)[:count]:
+        base = _screenshot_full_res(published_id)
+        if not base:
+            continue
+        shots.append(
+            {
+                "full": f"{base}?imw=1920&imh=1080&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
+                "thumb": f"{base}?imw=320&imh=180&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
+                "title": "",
+                "view_url": f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}",
+            }
+        )
     return {"synced": bool(shots), "screenshots": shots}
+
+
+# CS2 rarity tiers, roughly cheapest to priciest — there's no price data in
+# the public inventory endpoint, so rarity is the best available stand-in for
+# "most expensive" without firing off a market lookup per item.
+_RARITY_RANK = {
+    "Consumer Grade": 1,
+    "Base Grade": 1,
+    "Industrial Grade": 2,
+    "Mil-Spec Grade": 3,
+    "High Grade": 3,
+    "Restricted": 4,
+    "Remarkable": 4,
+    "Classified": 5,
+    "Exotic": 5,
+    "Covert": 6,
+    "Master": 6,
+    "Extraordinary": 7,
+    "Contraband": 8,
+}
 
 
 def get_cs_inventory(count: int = 12) -> dict:
     """Public CS2 inventory (appid 730, context 2) — no API key needed, but the
-    profile's inventory privacy has to be set to public. Capped at `count`
-    items so a big inventory doesn't try to render hundreds of cards; `total`
-    carries the real size so the frontend can show "showing N of total".
+    profile's inventory privacy has to be set to public. Sorted by rarity
+    (highest first, as a stand-in for value) and capped at `count` items so a
+    big inventory doesn't try to render hundreds of cards; `total` carries the
+    real size so the frontend can show "showing N of total". Each marketable
+    item links out to its Steam Community Market listing.
     """
     if not STEAM_ID:
         return {"synced": False, "items": [], "total": None}
@@ -159,15 +208,20 @@ def get_cs_inventory(count: int = 12) -> dict:
         rarity = next((tag for tag in tags if tag.get("category") == "Rarity"), None)
         exterior = next((tag for tag in tags if tag.get("category") == "Exterior"), None)
         icon = d.get("icon_url")
+        rarity_name = rarity.get("localized_tag_name") if rarity else None
         items.append(
             {
                 "name": d.get("name") or name,
                 "icon": f"https://community.akamai.steamstatic.com/economy/image/{icon}" if icon else None,
-                "rarity": rarity.get("localized_tag_name") if rarity else None,
+                "rarity": rarity_name,
                 "rarity_color": f"#{rarity['color']}" if rarity and rarity.get("color") else None,
+                "rarity_rank": _RARITY_RANK.get(rarity_name, 0),
                 "exterior": exterior.get("localized_tag_name") if exterior else None,
+                "market_url": f"https://steamcommunity.com/market/listings/730/{urllib.parse.quote(name)}" if d.get("marketable") else None,
             }
         )
-        if len(items) >= count:
-            break
-    return {"synced": bool(items), "items": items, "total": data.get("total_inventory_count")}
+    items.sort(key=lambda it: it["rarity_rank"], reverse=True)
+    top = items[:count]
+    for it in top:
+        del it["rarity_rank"]
+    return {"synced": bool(top), "items": top, "total": data.get("total_inventory_count")}

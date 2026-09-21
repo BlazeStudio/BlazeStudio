@@ -77,7 +77,9 @@ a:hover { color: #d00000; }
   overflow: hidden;
   color: #000;
 }
-.nd-win.nd-hidden { display: none; }
+/* visibility:hidden (not display:none) — a hidden window keeps its slot in
+   the flex column, so showing/hiding one window never resizes its siblings */
+.nd-win.nd-hidden { visibility: hidden; pointer-events: none; }
 .nd-win.nd-detached { position: absolute; flex: none; }
 .nd-win.nd-maximized {
   position: fixed !important;
@@ -189,8 +191,10 @@ a:hover { color: #d00000; }
 .nd-steam-dim { color: #8fb0c6; font-size: 12px; margin: 6px 0; }
 .nd-steam-inv-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #8fb0c6; margin: 10px 0 4px; display: flex; justify-content: space-between; }
 .nd-steam-inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; margin-bottom: 6px; }
-.nd-steam-inv-item { background: #0e141b; border: 1px solid #2a475e; border-top: 3px solid var(--inv-color, #4b69ff); padding: 4px; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; }
+.nd-steam-inv-item { background: #0e141b; border: 1px solid #2a475e; border-top: 3px solid var(--inv-color, #4b69ff); padding: 4px; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; cursor: default; }
 .nd-steam-inv-item img { max-width: 100%; max-height: 100%; }
+a.nd-steam-inv-item { cursor: pointer; }
+a.nd-steam-inv-item:hover, a.nd-steam-inv-item:focus-visible { background: #16202c; border-color: var(--inv-color, #4b69ff); outline: 1px solid var(--inv-color, #4b69ff); }
 .nd-steam-body .nd-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .nd-steam-body .nd-stat { background: #0e141b; border: 1px solid #2a475e; color: #8fb0c6; }
 .nd-steam-body .nd-stat b { color: #fff; }
@@ -278,7 +282,13 @@ a:hover { color: #d00000; }
 /* ---- fullscreen lightbox (screenshots) ---- */
 #nd-lightbox {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
   z-index: 450;
   background: rgba(0, 0, 0, 0.92);
   display: flex;
@@ -289,7 +299,7 @@ a:hover { color: #d00000; }
   padding: 40px;
   box-sizing: border-box;
 }
-#nd-lightbox[hidden] { display: none; }
+#nd-lightbox[hidden] { display: none !important; }
 #nd-lightbox img { flex: 1 1 auto; width: 100%; min-height: 0; object-fit: contain; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7); }
 #nd-lightbox-link { flex: none; color: #dce8ff; font-size: 13px; }
 #nd-lightbox-close {

@@ -603,7 +603,7 @@
       { name: 'GitHub', handle: 'BlazeStudio', tag: 'GH', bg: '#24292f', fg: '#fff', href: c.github },
       { name: 'hh.ru', handle: t('Резюме', 'Résumé'), tag: 'hh', bg: '#d6001c', fg: '#fff', href: c.hh },
       { name: 'LinkedIn', handle: t('Профиль', 'Profile'), tag: 'in', bg: '#0a66c2', fg: '#fff', href: c.linkedin },
-      { name: 'Telegram', handle: c.telegram_handle, tag: 'TG', bg: '#229ed9', fg: '#000', href: c.telegram },
+      { name: 'Telegram', handle: c.telegram_handle, icon: 'ico-telegram', href: c.telegram },
       { name: 'Email', handle: c.email, tag: '@', bg: '#555', fg: '#fff', href: `mailto:${c.email}` },
     ];
     return `
@@ -611,7 +611,7 @@
         .map(
           (i) => `
         <a class="nd-svc" href="${i.href}" target="_blank" rel="noopener">
-          <span class="nd-svc-tag" style="background:${i.bg};color:${i.fg}">${i.tag}</span>
+          ${i.icon ? `<svg class="nd-svc-tag nd-svc-icon" width="34" height="34" aria-hidden="true"><use href="#${i.icon}"></use></svg>` : `<span class="nd-svc-tag" style="background:${i.bg};color:${i.fg}">${i.tag}</span>`}
           <span><b>${i.name}</b><br><span class="nd-svc-handle">${i.handle}</span></span>
         </a>`
         )
@@ -725,9 +725,16 @@
     const inv = steamData.cs_inventory;
     const invHtml =
       inv && inv.synced
-        ? `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS', 'CS inventory')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
+        ? `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS · по ценности', 'CS inventory · by value')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
            <div class="nd-steam-inv-grid">${inv.items
-             .map((it) => `<div class="nd-steam-inv-item" style="--inv-color:${it.rarity_color || '#4b69ff'}" title="${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}">${it.icon ? `<img src="${it.icon}" alt="" loading="lazy">` : ''}</div>`)
+             .map((it) => {
+               const title = `${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}`;
+               const inner = it.icon ? `<img src="${it.icon}" alt="" loading="lazy">` : '';
+               const style = `style="--inv-color:${it.rarity_color || '#4b69ff'}"`;
+               return it.market_url
+                 ? `<a class="nd-steam-inv-item" ${style} title="${title}" href="${it.market_url}" target="_blank" rel="noopener">${inner}</a>`
+                 : `<div class="nd-steam-inv-item" ${style} title="${title}">${inner}</div>`;
+             })
              .join('')}</div>`
         : '';
     body.innerHTML = `
