@@ -21,7 +21,7 @@
      fixed box; "Расставить" clears all detached state and lets
      everything fall back into the grid.
      ========================================================= */
-  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'corner', 'contacts'];
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts'];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
@@ -30,7 +30,6 @@
     github: () => 'GitHub',
     hh: () => 'hh.ru',
     console: () => t('Консоль', 'Console'),
-    corner: () => t('Уголок', 'Corner'),
     contacts: () => t('Контакты', 'Contacts'),
   };
   const WIN_ICON = {
@@ -41,7 +40,6 @@
     github: 'ico-github',
     hh: 'ico-hh',
     console: 'ico-console',
-    corner: 'ico-corner',
     contacts: 'ico-contacts',
   };
   const MIN_WIN_W = 200;
@@ -194,10 +192,13 @@
       const sx = e.clientX;
       const sy = e.clientY;
       const base = { width: d.width, height: d.height };
+      const sr = surfaceRect();
+      const maxW = Math.round(sr.width * 0.94); // a resize handle can make a window big, but never big enough to bury the whole desktop under it — use Maximize for that
+      const maxH = Math.round(sr.height * 0.94);
       raise(id);
       function move(ev) {
-        state.detached[id].width = Math.max(MIN_WIN_W, Math.round(base.width + (ev.clientX - sx)));
-        state.detached[id].height = Math.max(MIN_WIN_H, Math.round(base.height + (ev.clientY - sy)));
+        state.detached[id].width = Math.min(maxW, Math.max(MIN_WIN_W, Math.round(base.width + (ev.clientX - sx))));
+        state.detached[id].height = Math.min(maxH, Math.max(MIN_WIN_H, Math.round(base.height + (ev.clientY - sy))));
         applyWinStyle(id);
       }
       function up() {
@@ -401,8 +402,9 @@
   }
 
   function paintBigShot(bigEl, s) {
-    bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}"><div class="nd-big-shot-hint">${t('нажмите, чтобы открыть на весь экран', 'click to open full screen')}</div>`;
-    bigEl.querySelector('img').addEventListener('click', () => openLightbox(s.full));
+    const linkHtml = s.view_url ? `<div class="nd-big-shot-link"><a href="${s.view_url}" target="_blank" rel="noopener">${t('Открыть на Steam ↗', 'Open on Steam ↗')}</a></div>` : '';
+    bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}"><div class="nd-big-shot-hint">${t('нажмите, чтобы открыть на весь экран', 'click to open full screen')}</div>${linkHtml}`;
+    bigEl.querySelector('img').addEventListener('click', () => openLightbox(s.full, s.view_url));
   }
 
   async function loadScreens() {
@@ -430,11 +432,20 @@
   /* =========================================================
      Lightbox — fullscreen view for the current screenshot.
      ========================================================= */
-  function openLightbox(src) {
+  function openLightbox(src, viewUrl) {
     const overlay = document.getElementById('nd-lightbox');
     const img = document.getElementById('nd-lightbox-img');
+    const link = document.getElementById('nd-lightbox-link');
     if (!overlay || !img) return;
     img.src = src;
+    if (link) {
+      if (viewUrl) {
+        link.href = viewUrl;
+        link.hidden = false;
+      } else {
+        link.hidden = true;
+      }
+    }
     overlay.hidden = false;
   }
   function closeLightbox() {
@@ -749,11 +760,36 @@
       body.innerHTML = notConnectedHtml(['FACEIT_API_KEY', 'FACEIT_NICKNAME'], 'https://developers.faceit.com/apps');
       return;
     }
+    const stats = (faceitCache && faceitCache.stats) || {};
+    const statsHtml = stats.synced
+      ? `<div class="nd-stat-grid">
+           <div class="nd-stat">${t('Матчи', 'Matches')}<b>${stats.matches ?? '—'}</b></div>
+           <div class="nd-stat">${t('Победы %', 'Win rate %')}<b>${stats.win_rate ?? '—'}</b></div>
+           <div class="nd-stat">K/D<b>${stats.kd_ratio ?? '—'}</b></div>
+           <div class="nd-stat">HS%<b>${stats.headshot_pct ?? '—'}</b></div>
+         </div>`
+      : '';
+    const matches = (faceitCache.recent_matches && faceitCache.recent_matches.matches) || [];
+    const matchesHtml = matches.length
+      ? `<div class="nd-faceit-matches-label">${t('Последние матчи', 'Recent matches')}</div>
+         <div class="nd-faceit-matches">${matches
+           .slice(0, 5)
+           .map((m) => {
+             const cls = m.result === 'win' ? 'win' : m.result === 'loss' ? 'loss' : 'unknown';
+             const label = m.result === 'win' ? 'W' : m.result === 'loss' ? 'L' : '?';
+             const date = m.finished_at ? new Date(m.finished_at * 1000).toLocaleDateString() : '';
+             return `<a class="nd-faceit-dot ${cls}" href="${m.faceit_url || '#'}" target="_blank" rel="noopener" title="${date}">${label}</a>`;
+           })
+           .join('')}</div>`
+      : '';
     body.innerHTML = `
       <div class="nd-win-head">
         <div class="nd-win-avatar-badge"><img src="${p.avatar}" alt=""></div>
         <div><div class="nd-win-name">${p.nickname || ''}</div><div class="nd-steam-status">Elo ${p.elo ?? '—'} · ${t('уровень', 'level')} ${p.level ?? '—'}</div></div>
       </div>
+      ${p.country ? `<div class="nd-faceit-country">${t('Страна', 'Country')}: ${String(p.country).toUpperCase()}</div>` : ''}
+      ${statsHtml}
+      ${matchesHtml}
       <a class="nd-btn98 nd-block" href="${p.faceit_url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
   }
@@ -778,24 +814,6 @@
     const role = document.getElementById('nd-av-role');
     if (name) name.textContent = PROFILE.name[l];
     if (role) role.textContent = PROFILE.role[l];
-  }
-
-  /* =========================================================
-     Guest corner — decorative visitor counter, same formula
-     entry.js uses (no backend behind it, purely flavor).
-     ========================================================= */
-  function visitorNumber() {
-    const epoch = Date.UTC(2026, 0, 1);
-    const days = Math.max(0, Math.floor((Date.now() - epoch) / 86400000));
-    return String(13375 + days * 7).padStart(7, '0');
-  }
-  function renderCorner() {
-    const el = document.getElementById('nd-counter');
-    if (!el) return;
-    el.innerHTML = visitorNumber()
-      .split('')
-      .map((d) => `<span>${d}</span>`)
-      .join('');
   }
 
   /* =========================================================
@@ -833,7 +851,7 @@
 
   /* =========================================================
      Contacts window — a standalone version of the Explorer's
-     "Сервисы" tab, open by default next to the guest corner.
+     "Сервисы" tab, open by default alongside the other windows.
      ========================================================= */
   function renderContacts() {
     const body = document.getElementById('nd-contacts-body');
@@ -914,7 +932,6 @@
     setTab('resume');
     renderAvatar();
     renderHh();
-    renderCorner();
     renderContacts();
     initConsoleWindow();
     loadGithub();
@@ -936,7 +953,6 @@
       renderGithub();
       renderSteamWin();
       renderFaceitWin();
-      renderCorner();
       renderContacts();
       const title = document.getElementById('nd-explorer-title');
       const addr = document.getElementById('nd-explorer-address');

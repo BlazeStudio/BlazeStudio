@@ -66,6 +66,31 @@ def get_player() -> dict:
     }
 
 
+def get_player_stats() -> dict:
+    """Lifetime CS2 stats — matches, win rate, K/D, headshot %, streaks. The
+    FACEIT API's lifetime block is an untyped bag of string-valued fields
+    (its own schema just says "object"); these are the real key names FACEIT
+    itself uses, so a value going missing just falls back to None/dash rather
+    than raising."""
+    player = get_player()
+    if not player.get("synced") or not player.get("player_id"):
+        return {"synced": False}
+    data = _cached(f"faceit:stats:{player['player_id']}", f"{BASE}/players/{player['player_id']}/stats/cs2")
+    if not data:
+        return {"synced": False}
+    life = data.get("lifetime", {})
+    return {
+        "synced": True,
+        "matches": life.get("Matches"),
+        "win_rate": life.get("Win Rate %"),
+        "kd_ratio": life.get("Average K/D Ratio"),
+        "headshot_pct": life.get("Average Headshots %"),
+        "current_streak": life.get("Current Win Streak"),
+        "longest_streak": life.get("Longest Win Streak"),
+        "recent_results": life.get("Recent Results", []),
+    }
+
+
 def get_recent_matches(limit: int = 5) -> dict:
     player = get_player()
     if not player.get("synced") or not player.get("player_id"):

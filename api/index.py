@@ -150,6 +150,7 @@ def steam_stats():
 def faceit_stats():
     return {
         "player": faceit_sync.get_player(),
+        "stats": faceit_sync.get_player_stats(),
         "recent_matches": faceit_sync.get_recent_matches(),
     }
 
