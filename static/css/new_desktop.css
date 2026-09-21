@@ -81,11 +81,19 @@ a:hover { color: #d00000; }
    the flex column, so showing/hiding one window never resizes its siblings */
 .nd-win.nd-hidden { visibility: hidden; pointer-events: none; }
 .nd-win.nd-detached { position: absolute; flex: none; }
+/* A detached or maximized window is taken out of its column's flex flow
+   (that's how CSS handles absolute/fixed positioning), which would otherwise
+   free up its slot and make its siblings grow to fill the gap. This
+   invisible placeholder takes its exact original flex-grow/max-height, so
+   the column keeps its shape while the real window floats above it. */
+.nd-win-placeholder { flex: 1 1 0; min-height: 64px; visibility: hidden; }
 .nd-win.nd-maximized {
   position: fixed !important;
   inset: 8px 8px 48px 8px !important;
   width: auto !important;
   height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
 }
 
 .nd-resize {

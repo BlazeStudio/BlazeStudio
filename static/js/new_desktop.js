@@ -44,6 +44,16 @@
   };
   const MIN_WIN_W = 200;
   const MIN_WIN_H = 140;
+  // The Steam window packs an avatar row, a stat grid, a recent-games list
+  // and an inventory grid — it needs more room than a generic window before
+  // its content starts overflowing its own borders when shrunk.
+  const MIN_SIZE = {
+    steam: { w: 260, h: 300 },
+  };
+  function minSizeFor(id) {
+    const m = MIN_SIZE[id];
+    return { w: (m && m.w) || MIN_WIN_W, h: (m && m.h) || MIN_WIN_H };
+  }
 
   const state = { hidden: {}, detached: {}, preMax: {}, z: {}, tab: 'resume' };
   let zOrder = []; // back-to-front stacking order, kept short so z-index never has to grow unbounded (and stays well under the taskbar's)
@@ -69,6 +79,34 @@
     return d;
   }
 
+  // A detached or maximized window is pulled out of its column's flex flow
+  // by its own CSS (position: absolute/fixed), which otherwise frees up its
+  // slot and makes sibling windows grow/shift to fill the gap. Keep an
+  // invisible placeholder with the same flex-grow/max-height in its spot for
+  // as long as it's out of flow, so the rest of the column never reflows.
+  function placeholderIdFor(id) {
+    return 'nd-ph-' + id;
+  }
+  function showPlaceholder(id) {
+    if (document.getElementById(placeholderIdFor(id))) return;
+    const el = winEl(id);
+    if (!el || !el.parentNode) return;
+    const ph = document.createElement('div');
+    ph.id = placeholderIdFor(id);
+    ph.className = 'nd-win-placeholder';
+    ph.style.flexGrow = el.style.flexGrow || '1';
+    ph.style.maxHeight = el.style.maxHeight || '';
+    el.parentNode.insertBefore(ph, el);
+  }
+  function hidePlaceholder(id) {
+    const ph = document.getElementById(placeholderIdFor(id));
+    if (ph) ph.remove();
+  }
+  function syncPlaceholder(id) {
+    if (state.detached[id] || isMaximized(id)) showPlaceholder(id);
+    else hidePlaceholder(id);
+  }
+
   function applyWinStyle(id) {
     const el = winEl(id);
     if (!el) return;
@@ -87,6 +125,7 @@
       el.style.height = '';
     }
     el.style.zIndex = state.z[id] || 1;
+    syncPlaceholder(id);
   }
 
   function raise(id) {
@@ -138,6 +177,7 @@
     } else {
       state.preMax[id] = state.detached[id] ? Object.assign({}, state.detached[id]) : null;
       el.classList.add('nd-maximized');
+      syncPlaceholder(id);
       raise(id);
     }
     updateMaxIcon(id);
@@ -195,10 +235,11 @@
       const sr = surfaceRect();
       const maxW = Math.round(sr.width * 0.94); // a resize handle can make a window big, but never big enough to bury the whole desktop under it — use Maximize for that
       const maxH = Math.round(sr.height * 0.94);
+      const min = minSizeFor(id);
       raise(id);
       function move(ev) {
-        state.detached[id].width = Math.min(maxW, Math.max(MIN_WIN_W, Math.round(base.width + (ev.clientX - sx))));
-        state.detached[id].height = Math.min(maxH, Math.max(MIN_WIN_H, Math.round(base.height + (ev.clientY - sy))));
+        state.detached[id].width = Math.min(maxW, Math.max(min.w, Math.round(base.width + (ev.clientX - sx))));
+        state.detached[id].height = Math.min(maxH, Math.max(min.h, Math.round(base.height + (ev.clientY - sy))));
         applyWinStyle(id);
       }
       function up() {
@@ -600,7 +641,7 @@
   function linksHtml(l) {
     const c = PROFILE.contacts;
     const items = [
-      { name: 'GitHub', handle: 'BlazeStudio', tag: 'GH', bg: '#24292f', fg: '#fff', href: c.github },
+      { name: 'GitHub', handle: 'BlazeStudio', icon: 'ico-github', href: c.github },
       { name: 'hh.ru', handle: t('Резюме', 'Résumé'), tag: 'hh', bg: '#d6001c', fg: '#fff', href: c.hh },
       { name: 'LinkedIn', handle: t('Профиль', 'Profile'), tag: 'in', bg: '#0a66c2', fg: '#fff', href: c.linkedin },
       { name: 'Telegram', handle: c.telegram_handle, icon: 'ico-telegram', href: c.telegram },
@@ -728,7 +769,8 @@
         ? `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS · по ценности', 'CS inventory · by value')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
            <div class="nd-steam-inv-grid">${inv.items
              .map((it) => {
-               const title = `${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}`;
+               const priceLabel = it.price_rub != null ? ` · ${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽` : '';
+               const title = `${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}${priceLabel}`;
                const inner = it.icon ? `<img src="${it.icon}" alt="" loading="lazy">` : '';
                const style = `style="--inv-color:${it.rarity_color || '#4b69ff'}"`;
                return it.market_url

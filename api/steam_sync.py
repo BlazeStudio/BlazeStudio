@@ -25,23 +25,23 @@ CACHE_TTL = 600  # seconds
 _cache: dict[str, tuple[float, Any]] = {}
 
 
-def _get(url: str, parse: str = "json") -> Any | None:
+def _get(url: str, parse: str = "json", timeout: float = TIMEOUT) -> Any | None:
     req = urllib.request.Request(url, headers={"User-Agent": "vasiliev-inc-site"})
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read()
             return json.loads(raw) if parse == "json" else raw.decode("utf-8", "ignore")
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
         return None
 
 
-def _cached(key: str, url: str, parse: str = "json") -> Any | None:
+def _cached(key: str, url: str, parse: str = "json", ttl: float = CACHE_TTL, timeout: float = TIMEOUT) -> Any | None:
     now = time.time()
     if key in _cache:
         ts, value = _cache[key]
-        if now - ts < CACHE_TTL:
+        if now - ts < ttl:
             return value
-    value = _get(url, parse)
+    value = _get(url, parse, timeout=timeout)
     if value is not None:
         _cache[key] = (now, value)
         return value
@@ -159,9 +159,9 @@ def get_recent_screenshots(count: int = 6) -> dict:
     return {"synced": bool(shots), "screenshots": shots}
 
 
-# CS2 rarity tiers, roughly cheapest to priciest — there's no price data in
-# the public inventory endpoint, so rarity is the best available stand-in for
-# "most expensive" without firing off a market lookup per item.
+# CS2 rarity tiers, roughly cheapest to priciest — used to pre-rank the
+# inventory before pricing it (see get_cs_inventory) and as the fallback
+# order for any item real market data couldn't be fetched for.
 _RARITY_RANK = {
     "Consumer Grade": 1,
     "Base Grade": 1,
@@ -178,14 +178,55 @@ _RARITY_RANK = {
     "Contraband": 8,
 }
 
+PRICE_CURRENCY = "5"  # RUB
+PRICE_CACHE_TTL = 3600  # prices move slowly enough that an hour-old figure is fine
+PRICE_TIMEOUT = 1.5  # the market endpoint is aggressively rate-limited — fail fast rather than stall the page
+PRICE_BUDGET_SECONDS = 5.0  # total wall-clock time this request may spend pricing items
+PRICE_MAX_CONSECUTIVE_FAILURES = 3  # stop hammering an endpoint that's already started rate-limiting us
+
+_PRICE_NUM_RE = re.compile(r"[\d][\d\s  ]*(?:[.,]\d+)?")
+
+
+def _parse_price(price_str: str | None) -> float | None:
+    """Steam formats priceoverview numbers per-locale, e.g. "80 000,00 pуб."
+    for RUB. Strip the currency label and thousands separators and normalize
+    the decimal comma so the figure can be sorted/compared numerically."""
+    if not price_str:
+        return None
+    m = _PRICE_NUM_RE.search(price_str)
+    if not m:
+        return None
+    raw = re.sub(r"[\s  ]", "", m.group(0))
+    raw = raw.replace(",", ".")
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
+def _get_market_price(market_hash_name: str) -> float | None:
+    url = f"https://steamcommunity.com/market/priceoverview/?appid=730&currency={PRICE_CURRENCY}&market_hash_name={urllib.parse.quote(market_hash_name)}"
+    data = _cached(f"steam:price:{market_hash_name}", url, ttl=PRICE_CACHE_TTL, timeout=PRICE_TIMEOUT)
+    if not data or not data.get("success"):
+        return None
+    return _parse_price(data.get("lowest_price") or data.get("median_price"))
+
 
 def get_cs_inventory(count: int = 12) -> dict:
     """Public CS2 inventory (appid 730, context 2) — no API key needed, but the
-    profile's inventory privacy has to be set to public. Sorted by rarity
-    (highest first, as a stand-in for value) and capped at `count` items so a
-    big inventory doesn't try to render hundreds of cards; `total` carries the
+    profile's inventory privacy has to be set to public. Pre-ranked by rarity
+    (highest first, a cheap stand-in for value), then the top of that pool is
+    priced for real via the Steam Market so the final order reflects actual
+    value — matching "sorted by price" on steamcommunity.com's own inventory
+    page — instead of just the rarity tier. Capped at `count` items so a big
+    inventory doesn't try to render hundreds of cards; `total` carries the
     real size so the frontend can show "showing N of total". Each marketable
     item links out to its Steam Community Market listing.
+
+    Real-time pricing is bounded (PRICE_BUDGET_SECONDS wall clock, and it
+    backs off after a few consecutive failures) since the market endpoint
+    rate-limits hard — any item that couldn't be priced in time just falls
+    back to the rarity order instead of stalling the page.
     """
     if not STEAM_ID:
         return {"synced": False, "items": [], "total": None}
@@ -218,10 +259,29 @@ def get_cs_inventory(count: int = 12) -> dict:
                 "rarity_rank": _RARITY_RANK.get(rarity_name, 0),
                 "exterior": exterior.get("localized_tag_name") if exterior else None,
                 "market_url": f"https://steamcommunity.com/market/listings/730/{urllib.parse.quote(name)}" if d.get("marketable") else None,
+                "_mhn": name if d.get("marketable") else None,
             }
         )
     items.sort(key=lambda it: it["rarity_rank"], reverse=True)
-    top = items[:count]
+
+    pool = items[: max(count * 2, 20)]
+    deadline = time.time() + PRICE_BUDGET_SECONDS
+    consecutive_failures = 0
+    for it in pool:
+        mhn = it.pop("_mhn")
+        if not mhn or time.time() >= deadline or consecutive_failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
+            it["price_rub"] = None
+            continue
+        price = _get_market_price(mhn)
+        it["price_rub"] = price
+        consecutive_failures = 0 if price is not None else consecutive_failures + 1
+    for it in items[len(pool):]:
+        it.pop("_mhn", None)
+        it["price_rub"] = None
+
+    pool.sort(key=lambda it: (it["price_rub"] is not None, it["price_rub"] or 0, it["rarity_rank"]), reverse=True)
+    top = pool[:count]
     for it in top:
         del it["rarity_rank"]
+        it["price_rub"] = round(it["price_rub"], 2) if it["price_rub"] is not None else None
     return {"synced": bool(top), "items": top, "total": data.get("total_inventory_count")}
