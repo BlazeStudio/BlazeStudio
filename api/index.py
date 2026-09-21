@@ -19,7 +19,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+import faceit_sync
 import github_sync
+import steam_sync
 import terminal
 from config import RESUME_SOURCE
 from data.profile import PROFILE
@@ -72,7 +74,12 @@ def _base_context() -> dict:
 
 
 @app.get("/")
-def index(request: Request):
+def entry(request: Request):
+    return templates.TemplateResponse(request, "entry.html", _base_context())
+
+
+@app.get("/desktop")
+def desktop(request: Request):
     return templates.TemplateResponse(request, "index.html", _base_context())
 
 
@@ -118,6 +125,23 @@ def projects(live: bool = True):
 @app.get("/api/github/stats")
 def github_stats():
     return github_sync.get_profile_stats()
+
+
+@app.get("/api/steam")
+def steam_stats():
+    return {
+        "profile": steam_sync.get_profile(),
+        "recent_games": steam_sync.get_recently_played(),
+        "screenshots": steam_sync.get_recent_screenshots(),
+    }
+
+
+@app.get("/api/faceit")
+def faceit_stats():
+    return {
+        "player": faceit_sync.get_player(),
+        "recent_matches": faceit_sync.get_recent_matches(),
+    }
 
 
 class TerminalRequest(BaseModel):
