@@ -74,8 +74,8 @@ def _base_context() -> dict:
 
 
 @app.get("/")
-def entry(request: Request):
-    return templates.TemplateResponse(request, "entry.html", _base_context())
+def home(request: Request):
+    return templates.TemplateResponse(request, "new_desktop.html", _base_context())
 
 
 @app.get("/desktop")

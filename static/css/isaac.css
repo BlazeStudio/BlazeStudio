@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+@font-face{
+  font-family:'Upheaval TT';
+  src:url('/static/fonts/upheaval-tt.otf') format('opentype');
+  font-display:swap;
+}
 
 :root{
   --bg:#150c0c; --bg2:#0c0707;
@@ -7,7 +13,7 @@
   --ink:#150c0c; --white:#f2ece0; --dim:#a99a86;
   --card:#241616; --card-line:#4a2f2f;
   --nebula:#0a0e1a; --nebula-line:#233252;
-  --font-display:'Permanent Marker', cursive; --font-body:'VT323', var(--font-mono);
+  --font-display:'Upheaval TT', 'VT323', cursive; --font-body:'VT323', var(--font-mono);
 }
 
 *{ box-sizing:border-box; }
@@ -16,6 +22,7 @@ html,body{ margin:0; height:100%; }
 #isaac{
   min-height:100%;
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
     radial-gradient(ellipse at 50% -10%, rgba(143,32,32,0.14), transparent 55%),
     repeating-linear-gradient(45deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 6px),
     radial-gradient(ellipse at 50% 0%, #241414, var(--bg) 60%);
@@ -28,6 +35,15 @@ html,body{ margin:0; height:100%; }
 }
 #isaac a{ color:inherit; cursor:url('/static/img/isaac/cursor.png') 3 2, pointer; }
 #isaac img{ image-rendering:pixelated; }
+
+/* ---------- Lost mascot, pinned top-right, follows the run ---------- */
+.i-mascot{
+  position:fixed; top:64px; right:14px; z-index:50; width:64px; height:auto;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,0.6)); animation:i-mascot-float 3.2s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes i-mascot-float{ 0%,100%{ transform:translateY(0) rotate(-2deg); } 50%{ transform:translateY(-9px) rotate(2deg); } }
+@media (max-width:640px){ .i-mascot{ width:46px; top:56px; right:8px; } }
 
 /* ---------- topbar ---------- */
 .i-topbar{
@@ -97,11 +113,18 @@ html,body{ margin:0; height:100%; }
 .i-door img{ width:44px; height:auto; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
 .i-door span{ font-size:0.85rem; text-align:center; line-height:1.2; }
 .i-door:hover{ background:rgba(224,184,75,0.08); color:var(--gold); transform:translateY(-3px); }
+.i-squirt{ position:absolute; bottom:-6px; right:2%; width:34px; opacity:0.85; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.4)); display:none; }
+@media (min-width:520px){ .i-squirt{ display:block; } }
 
 /* ---------- rooms ---------- */
 .i-main{ position:relative; z-index:1; }
 .i-room{ max-width:900px; margin:0 auto; padding:56px 20px 10px; position:relative; }
 .i-room-dark{ max-width:none; background:linear-gradient(180deg, rgba(0,0,0,0.15), transparent); }
+#i-experience::before{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:url('/static/img/isaac/crack-texture.png') center top/900px auto no-repeat; opacity:0.16;
+}
+#i-experience > *{ position:relative; z-index:1; }
 #i-about{ position:relative; }
 #i-about::before{
   content:''; position:absolute; inset:0; z-index:0;
@@ -151,12 +174,22 @@ html,body{ margin:0; height:100%; }
   background:url('/static/img/isaac/paper-blood.png') center/contain no-repeat; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.4));
 }
 .i-boss-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:10px; }
+.i-boss-portrait{
+  width:64px; height:64px; flex-shrink:0; border-radius:50%; object-fit:contain;
+  background:radial-gradient(circle, rgba(0,0,0,0.12), transparent 70%);
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+.i-boss-name-wrap{ display:flex; align-items:center; gap:12px; }
 .i-boss-name{ font-family:var(--font-display); font-size:1.3rem; }
 .i-boss-title{ opacity:0.75; font-size:1.05rem; }
 .i-boss-period{ text-align:right; font-size:0.95rem; }
 .i-boss-duration{ opacity:0.65; }
 .i-boss-summary{ font-size:1.08rem; line-height:1.5; margin:8px 0; }
-.i-boss-highlight{ font-size:1.02rem; font-weight:normal; background:rgba(143,32,32,0.12); border-left:3px solid var(--blood); padding:8px 12px; margin:10px 0; }
+.i-boss-highlight{
+  font-size:1.02rem; font-weight:normal; background:rgba(143,32,32,0.12); border-left:3px solid var(--blood);
+  padding:8px 12px; margin:10px 0; display:flex; align-items:flex-start; gap:8px;
+}
+.i-boss-highlight img{ width:20px; height:20px; flex-shrink:0; margin-top:2px; }
 .i-boss-tasks{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin:14px 0 6px; }
 .i-boss-taskcat{ font-family:var(--font-display); font-size:0.85rem; margin-bottom:4px; }
 .i-boss-taskgroup ul{ margin:0; padding-left:18px; font-size:0.98rem; line-height:1.45; }
@@ -171,10 +204,20 @@ html,body{ margin:0; height:100%; }
   background:url('/static/img/isaac/nebula-bg.png') center/cover no-repeat, var(--nebula);
   opacity:0.55;
 }
+.i-room-nebula::after{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:url('/static/img/isaac/starfield.png') repeat; background-size:400px auto;
+  opacity:0.5; animation:i-twinkle 5s ease-in-out infinite;
+}
+@keyframes i-twinkle{ 0%,100%{ opacity:0.35; } 50%{ opacity:0.65; } }
 .i-room-nebula > *{ position:relative; z-index:1; }
 .i-skills-groups{ max-width:900px; margin:0 auto; padding:0 20px; display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:22px; }
 .i-skill-group{ background:rgba(10,14,26,0.65); border:1px solid var(--nebula-line); border-radius:8px; padding:18px 20px; }
-.i-skill-group h3{ font-family:var(--font-display); font-size:1.05rem; color:var(--gold); margin:0 0 14px; }
+.i-skill-group h3{
+  font-family:var(--font-display); font-size:1.05rem; color:var(--gold); margin:0 0 14px;
+  display:flex; align-items:center; gap:8px;
+}
+.i-skill-group h3 img{ width:22px; height:22px; }
 .i-skill-items{ display:flex; flex-direction:column; gap:10px; }
 .i-skill-item{ display:grid; grid-template-columns:22px 1fr; align-items:center; gap:8px 10px; }
 .i-skill-ic{ width:20px; height:20px; grid-row:span 2; }
@@ -190,8 +233,9 @@ html,body{ margin:0; height:100%; }
 }
 .i-item-special{ border-color:var(--gold); box-shadow:0 0 0 1px rgba(224,184,75,0.3), 0 12px 24px rgba(0,0,0,0.5); }
 .i-item-badge{ position:absolute; top:-11px; left:50%; transform:translateX(-50%); background:var(--gold); color:#241614; font-family:var(--font-display); font-size:0.7rem; padding:3px 10px; border-radius:10px; white-space:nowrap; }
-.i-item-pedestal{ margin-bottom:10px; }
-.i-item-pedestal img{ width:40px; filter:drop-shadow(0 6px 8px rgba(0,0,0,0.5)); }
+.i-item-pedestal{ margin-bottom:10px; height:52px; display:flex; align-items:center; justify-content:center; }
+.i-item-pedestal img{ max-width:40px; max-height:52px; filter:drop-shadow(0 6px 8px rgba(0,0,0,0.5)); }
+.i-item-pedestal img.i-item-anim{ max-width:52px; max-height:52px; }
 .i-item-card h3{ font-family:var(--font-display); font-size:1.05rem; margin:0 0 4px; }
 .i-item-role{ color:var(--dim); font-size:0.9rem; margin:0 0 10px; }
 .i-item-desc{ font-size:1.02rem; line-height:1.45; margin:0 0 10px; text-align:left; }
@@ -220,6 +264,7 @@ html,body{ margin:0; height:100%; }
 .i-winstreak-label{ color:var(--dim); font-size:0.9rem; }
 
 /* ---------- contact / holy room ---------- */
+.i-bishop{ width:70px; margin:0 auto 6px; display:block; opacity:0.9; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.4)); }
 .i-contact-list{ max-width:640px; margin:0 auto; padding:0 20px 10px; display:flex; flex-direction:column; gap:10px; }
 .i-offering{
   display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--white);

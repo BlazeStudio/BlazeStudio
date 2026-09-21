@@ -16,6 +16,14 @@
     return PILL_ICONS[i % PILL_ICONS.length];
   }
 
+  const SKILL_GROUP_ICONS = { backend: 'ach-gear', data: 'ach-blocks', infra: 'ach-grid', practice: 'ach-dice' };
+  const BOSS_PORTRAITS = ['/static/img/isaac/boss-ultragreedier.gif', '/static/img/isaac/monster-coalboy.gif'];
+  const SPECIAL_PROJECT_ART = {
+    'tboi-mod': '/static/img/isaac/item-drfetus.gif',
+    'des-ofb': '/static/img/isaac/item-brimstone.gif',
+    'detective-board': '/static/img/isaac/item-blood-martyr.gif',
+  };
+
   /* ---------- hero ---------- */
   function renderHero() {
     document.getElementById('i-hero-role').textContent = PROFILE.role[lang()];
@@ -45,7 +53,8 @@
   function renderExperience() {
     const l = lang();
     const html = (PROFILE.experience || [])
-      .map((job) => {
+      .map((job, jobIndex) => {
+        const portrait = BOSS_PORTRAITS[jobIndex % BOSS_PORTRAITS.length];
         const tasks = (job.tasks && job.tasks[l]) || [];
         const tasksHtml = tasks
           .map(
@@ -60,9 +69,12 @@
         return `
           <article class="i-boss-card">
             <div class="i-boss-head">
-              <div>
-                <div class="i-boss-name">${job.company[l]}</div>
-                <div class="i-boss-title">${job.title[l]}</div>
+              <div class="i-boss-name-wrap">
+                <img class="i-boss-portrait" src="${portrait}" alt="">
+                <div>
+                  <div class="i-boss-name">${job.company[l]}</div>
+                  <div class="i-boss-title">${job.title[l]}</div>
+                </div>
               </div>
               <div class="i-boss-period">
                 <div>${job.period[l]}</div>
@@ -70,7 +82,7 @@
               </div>
             </div>
             ${job.summary && job.summary[l] ? `<p class="i-boss-summary">${job.summary[l]}</p>` : ''}
-            ${job.highlight && job.highlight[l] ? `<p class="i-boss-highlight">💥 ${job.highlight[l]}</p>` : ''}
+            ${job.highlight && job.highlight[l] ? `<p class="i-boss-highlight"><img src="/static/img/isaac/ach-exclaim.png" alt="">${job.highlight[l]}</p>` : ''}
             <div class="i-boss-tasks">${tasksHtml}</div>
             <div class="i-boss-tags">${tagsHtml}</div>
           </article>`;
@@ -98,9 +110,10 @@
               </div>`;
           })
           .join('');
+        const groupIcon = SKILL_GROUP_ICONS[key] || 'rune-gold';
         return `
           <div class="i-skill-group">
-            <h3>${group.label[l]}</h3>
+            <h3><img src="/static/img/isaac/${groupIcon}.png" alt="">${group.label[l]}</h3>
             <div class="i-skill-items">${itemsHtml}</div>
           </div>`;
       })
@@ -115,14 +128,15 @@
     const html = (PROJECTS || [])
       .map((p, i) => {
         const special = p.id === 'tboi-mod';
-        const icon = ITEM_ICONS[i % ITEM_ICONS.length];
+        const animIcon = SPECIAL_PROJECT_ART[p.id];
+        const icon = animIcon || ITEM_ICONS[i % ITEM_ICONS.length];
         const homepageLink = p.homepage
           ? `<a href="${p.homepage}" target="_blank" rel="noopener">${(p.homepage_label && p.homepage_label[l]) || t('сайт', 'homepage')}</a>`
           : '';
         return `
           <article class="i-item-card${special ? ' i-item-special' : ''}">
             ${special ? `<div class="i-item-badge">★ ${t('этот самый мод', 'this very mod')}</div>` : ''}
-            <div class="i-item-pedestal"><img src="${icon}" alt=""></div>
+            <div class="i-item-pedestal"><img class="${animIcon ? 'i-item-anim' : ''}" src="${icon}" alt=""></div>
             <h3>${p.name}</h3>
             <p class="i-item-role">${p.role[l]}</p>
             <p class="i-item-desc">${p.description[l]}</p>
@@ -143,13 +157,13 @@
     const l = lang();
     const rows = [];
     (PROFILE.certifications || []).forEach((c) => {
-      rows.push({ icon: 'rune-gold', title: t('Сертификат', 'Certification'), sub: c[l] });
+      rows.push({ icon: 'ach-cross', title: t('Сертификат', 'Certification'), sub: c[l] });
     });
     (PROFILE.languages || []).forEach((lg) => {
-      rows.push({ icon: 'soulheart', title: lg.name[l], sub: `${lg.level[l]} · ${lg.value}%` });
+      rows.push({ icon: 'ach-key', title: lg.name[l], sub: `${lg.level[l]} · ${lg.value}%` });
     });
     if (PROFILE.education) {
-      rows.push({ icon: 'rune-red', title: PROFILE.education.school[l], sub: `${PROFILE.education.degree[l]} · ${PROFILE.education.year}` });
+      rows.push({ icon: 'ach-trophy', title: PROFILE.education.school[l], sub: `${PROFILE.education.degree[l]} · ${PROFILE.education.year}` });
     }
     document.getElementById('i-achievements-list').innerHTML = rows
       .map(
@@ -174,10 +188,10 @@
     const c = PROFILE.contacts;
     const items = [
       { ic: 'soulheart', label: 'Email', href: `mailto:${c.email}` },
-      { ic: 'rune-gold', label: 'Telegram', href: c.telegram },
+      { ic: 'ach-key', label: 'Telegram', href: c.telegram },
       { ic: 'rune-red', label: 'GitHub', href: c.github },
-      { ic: 'soulheart', label: 'LinkedIn', href: c.linkedin },
-      { ic: 'rune-gold', label: 'hh.ru', href: c.hh },
+      { ic: 'ach-trinket', label: 'LinkedIn', href: c.linkedin },
+      { ic: 'ach-money', label: 'hh.ru', href: c.hh },
     ];
     document.getElementById('i-contact-list').innerHTML = items
       .map((i) => `<a class="i-offering" href="${i.href}" target="_blank" rel="noopener"><img src="/static/img/isaac/${i.ic}.png" alt="">${i.label}</a>`)
