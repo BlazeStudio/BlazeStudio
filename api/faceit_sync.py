@@ -91,6 +91,34 @@ def get_player_stats() -> dict:
     }
 
 
+def _match_kd(match_id: str, player_id: str) -> float | None:
+    """That player's K/D for one match — a separate call per match (FACEIT's
+    history endpoint doesn't carry per-match stats), cached per match_id so
+    it's only ever fetched once."""
+    data = _cached(f"faceit:matchstats:{match_id}", f"{BASE}/matches/{match_id}/stats")
+    if not data:
+        return None
+    for round_ in data.get("rounds", []):
+        for team in round_.get("teams", []):
+            for p in team.get("players", []):
+                if p.get("player_id") != player_id:
+                    continue
+                stats = p.get("player_stats", {})
+                kd = stats.get("K/D Ratio")
+                if kd is not None:
+                    try:
+                        return round(float(kd), 2)
+                    except (TypeError, ValueError):
+                        return None
+                try:
+                    kills = float(stats.get("Kills"))
+                    deaths = float(stats.get("Deaths"))
+                    return round(kills / deaths, 2) if deaths else kills
+                except (TypeError, ValueError):
+                    return None
+    return None
+
+
 def get_recent_matches(limit: int = 5) -> dict:
     player = get_player()
     if not player.get("synced") or not player.get("player_id"):
@@ -109,12 +137,14 @@ def get_recent_matches(limit: int = 5) -> dict:
             (faction for faction, team in teams.items() if any(p.get("player_id") == player_id for p in team.get("players", []))),
             None,
         )
+        match_id = m.get("match_id")
         matches.append(
             {
-                "match_id": m.get("match_id"),
+                "match_id": match_id,
                 "finished_at": m.get("finished_at"),
                 "result": ("win" if my_faction == winner else "loss") if my_faction and winner else None,
-                "faceit_url": f"https://www.faceit.com/en/cs2/room/{m.get('match_id')}" if m.get("match_id") else None,
+                "faceit_url": f"https://www.faceit.com/en/cs2/room/{match_id}" if match_id else None,
+                "kd": _match_kd(match_id, player_id) if match_id else None,
             }
         )
     return {"synced": True, "matches": matches}

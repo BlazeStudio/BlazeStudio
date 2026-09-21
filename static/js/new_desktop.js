@@ -754,6 +754,10 @@
           <button class="nd-wbtn" id="nd-music-stop" aria-label="${t('Стоп', 'Stop')}">■</button>
           <button class="nd-wbtn" id="nd-music-next" aria-label="${t('Следующий трек', 'Next track')}">▶▶</button>
         </div>
+        <div class="nd-wa-volume-row">
+          <span class="nd-wa-volume-ico" aria-hidden="true">🔊</span>
+          <input type="range" id="nd-music-volume" class="nd-wa-volume" min="0" max="100" value="80" aria-label="${t('Громкость', 'Volume')}">
+        </div>
         <div class="nd-music-playlist" id="nd-music-playlist"></div>
       </div>
     `;
@@ -826,9 +830,20 @@
     const seekTrack = document.getElementById('nd-music-seek-track');
     if (musicAudioEl) {
       musicAudioEl.src = musicTracks[musicState.track].url;
+      const savedVolumeRaw = localStorage.getItem('av-music-volume'); // Number(null) is 0, not NaN — check for absence first
+      const savedVolume = savedVolumeRaw === null ? NaN : Number(savedVolumeRaw);
+      musicAudioEl.volume = (Number.isFinite(savedVolume) ? Math.min(100, Math.max(0, savedVolume)) : 80) / 100;
       musicAudioEl.addEventListener('timeupdate', updateMusicTime);
       musicAudioEl.addEventListener('loadedmetadata', updateMusicTime);
       musicAudioEl.addEventListener('ended', () => playTrack(musicState.track + 1));
+    }
+    const volumeInput = document.getElementById('nd-music-volume');
+    if (volumeInput && musicAudioEl) {
+      volumeInput.value = String(Math.round(musicAudioEl.volume * 100));
+      volumeInput.addEventListener('input', () => {
+        musicAudioEl.volume = Number(volumeInput.value) / 100;
+        localStorage.setItem('av-music-volume', volumeInput.value);
+      });
     }
     if (play) {
       play.addEventListener('click', () => {
@@ -1061,22 +1076,44 @@
     }
   }
 
-  /* FACEIT's real skill-level badges are 1-10, tiered into 5 color bands —
-     drawn locally instead of hotlinking FACEIT's own CDN icons. */
-  function faceitLevelIcon(level) {
-    const lvl = Number(level) || 0;
+  /* FACEIT's real skill levels are 1-10 (plus an unranked "Challenger" tier
+     at 2001+ / top 1000), tiered into 5 color bands, shown on faceit.com as
+     a dark circular badge with a progress ring that fills up across 1-10.
+     Drawn locally (matching that look) instead of hotlinking FACEIT's own
+     CDN icons. */
+  const FACEIT_ELO_BRACKETS = [null, 100, 501, 751, 901, 1051, 1201, 1351, 1531, 1751, 2001];
+  function faceitTier(level) {
     const tiers = [
-      { max: 2, bg: '#eeeeee', fg: '#333' },
-      { max: 4, bg: '#ffc115', fg: '#402d00' },
-      { max: 6, bg: '#ff6d00', fg: '#3a1c00' },
-      { max: 8, bg: '#f52d2d', fg: '#fff' },
-      { max: 10, bg: '#b80707', fg: '#fff' },
+      { max: 2, color: '#c7c7c7' },
+      { max: 4, color: '#ffc115' },
+      { max: 6, color: '#ff6d00' },
+      { max: 8, color: '#f52d2d' },
+      { max: 10, color: '#b80707' },
     ];
-    const tier = tiers.find((tr) => lvl <= tr.max) || tiers[tiers.length - 1];
-    return `<svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true" class="nd-faceit-lvl-ico">
-      <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="${tier.bg}"/>
-      <text x="13" y="18" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="13" fill="${tier.fg}">${lvl || '?'}</text>
+    return tiers.find((tr) => level <= tr.max) || tiers[tiers.length - 1];
+  }
+  function faceitLevelIcon(level) {
+    const lvl = Math.max(0, Math.min(10, Number(level) || 0));
+    const tier = faceitTier(lvl || 1);
+    const r = 14;
+    const circumference = 2 * Math.PI * r;
+    const offset = circumference * (1 - lvl / 10);
+    return `<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true" class="nd-faceit-lvl-ico">
+      <circle cx="16" cy="16" r="15" fill="#141414"/>
+      <circle cx="16" cy="16" r="${r}" fill="none" stroke="#333" stroke-width="2.4"/>
+      <circle cx="16" cy="16" r="${r}" fill="none" stroke="${tier.color}" stroke-width="2.4" stroke-linecap="round"
+        stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
+        transform="rotate(-90 16 16)"/>
+      <text x="16" y="21" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="${tier.color}">${lvl || '?'}</text>
     </svg>`;
+  }
+  function faceitNextLevelHtml(level, elo) {
+    const lvl = Number(level);
+    const e = Number(elo);
+    if (!lvl || !e || lvl >= 10 || !FACEIT_ELO_BRACKETS[lvl + 1]) return '';
+    const remaining = FACEIT_ELO_BRACKETS[lvl + 1] - e;
+    if (remaining <= 0) return '';
+    return `<span class="nd-faceit-next">+${remaining} ${t('до', 'to')} ${lvl + 1} ${t('ур.', 'lvl')}</span>`;
   }
 
   function faceitWinbarHtml(winRate) {
@@ -1089,13 +1126,23 @@
     </div>`;
   }
 
-  function faceitFormHtml(results) {
-    if (!results || !results.length) return '';
-    const bars = results
-      .slice(0, 12)
-      .map((r) => `<span class="nd-faceit-bar ${String(r) === '1' ? 'win' : 'loss'}"></span>`)
+  /* K/D per match instead of a flat win/loss bar — bar height maps K/D onto
+     a 0-2.0 scale (capped), color still marks the win/loss so neither signal
+     is lost, and the exact figure is in the title tooltip. */
+  function faceitFormHtml(matches) {
+    if (!matches || !matches.length) return '';
+    const bars = matches
+      .slice(0, 10)
+      .map((m) => {
+        const kd = Number(m.kd);
+        const hasKd = Number.isFinite(kd);
+        const heightPct = hasKd ? Math.max(10, Math.min(100, (kd / 2) * 100)) : 30;
+        const cls = m.result === 'win' ? 'win' : m.result === 'loss' ? 'loss' : 'unknown';
+        const title = hasKd ? `K/D ${kd.toFixed(2)}` : t('K/D неизвестен', 'K/D unknown');
+        return `<span class="nd-faceit-bar ${cls}" style="height:${heightPct}%" title="${title}"></span>`;
+      })
       .join('');
-    return `<div class="nd-faceit-form-label">${t('Форма · последние матчи', 'Form · recent matches')}</div><div class="nd-faceit-form">${bars}</div>`;
+    return `<div class="nd-faceit-form-label">${t('Форма · K/D за матч', 'Form · K/D per match')}</div><div class="nd-faceit-form">${bars}</div>`;
   }
 
   let faceitCache = null;
@@ -1139,11 +1186,11 @@
            .join('')}</div>`
       : '';
     const winbarHtml = faceitWinbarHtml(stats.win_rate);
-    const formHtml = faceitFormHtml(stats.recent_results);
+    const formHtml = faceitFormHtml(matches);
     body.innerHTML = `
       <div class="nd-win-head">
         <div class="nd-win-avatar-badge"><img src="${p.avatar}" alt=""></div>
-        <div><div class="nd-win-name">${p.nickname || ''}</div><div class="nd-steam-status nd-faceit-level-row">${faceitLevelIcon(p.level)}<span>Elo ${p.elo ?? '—'} · ${t('уровень', 'level')} ${p.level ?? '—'}</span></div></div>
+        <div><div class="nd-win-name">${p.nickname || ''}</div><div class="nd-steam-status nd-faceit-level-row">${faceitLevelIcon(p.level)}<span>Elo ${p.elo ?? '—'} · ${t('уровень', 'level')} ${p.level ?? '—'} ${faceitNextLevelHtml(p.level, p.elo)}</span></div></div>
       </div>
       ${p.country ? `<div class="nd-faceit-country">${t('Страна', 'Country')}: ${String(p.country).toUpperCase()}</div>` : ''}
       ${statsHtml}
@@ -1171,10 +1218,8 @@
   function renderAvatar() {
     const l = lang();
     const name = document.getElementById('nd-av-name');
-    const role = document.getElementById('nd-av-role');
     const tagline = document.getElementById('nd-av-tagline');
     if (name) name.textContent = PROFILE.name[l];
-    if (role) role.textContent = PROFILE.role[l];
     if (tagline) tagline.textContent = (PROFILE.tagline && PROFILE.tagline[l]) || '';
   }
 

@@ -71,7 +71,7 @@ def get_extra_stats() -> dict:
     numbers for the profile card beyond the basics in get_profile()."""
     if not (API_KEY and STEAM_ID):
         return {"synced": False, "game_count": None, "total_playtime_hours": None, "level": None}
-    games_url = f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={API_KEY}&steamid={STEAM_ID}&include_played_free_games=1"
+    games_url = f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={API_KEY}&steamid={STEAM_ID}&include_played_free_games=1&include_appinfo=1"
     level_url = f"https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/?key={API_KEY}&steamid={STEAM_ID}"
     games_data = (_cached("steam:owned_games", games_url) or {}).get("response", {})
     level_data = (_cached("steam:level", level_url) or {}).get("response", {})
@@ -89,10 +89,12 @@ def get_top_games(count: int = 5) -> dict:
     """Owned games ranked by all-time playtime — reuses the exact same
     GetOwnedGames call (and its cache) get_extra_stats() already makes for
     the aggregate total, just keeping the per-game breakdown instead of
-    discarding it."""
+    discarding it. The URL has to match get_extra_stats()'s exactly (same
+    cache key), and include_appinfo=1 is what makes Steam actually return
+    each game's name/icon instead of just its appid and playtime."""
     if not (API_KEY and STEAM_ID):
         return {"synced": False, "games": []}
-    games_url = f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={API_KEY}&steamid={STEAM_ID}&include_played_free_games=1"
+    games_url = f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={API_KEY}&steamid={STEAM_ID}&include_played_free_games=1&include_appinfo=1"
     games_data = (_cached("steam:owned_games", games_url) or {}).get("response", {})
     games = games_data.get("games", [])
     top = sorted(games, key=lambda g: g.get("playtime_forever", 0), reverse=True)[:count]

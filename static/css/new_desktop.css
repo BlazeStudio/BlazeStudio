@@ -16,7 +16,7 @@
 }
 
 html, body { overflow: hidden; background: #07060a; font-family: Tahoma, Verdana, sans-serif; }
-button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; touch-action: manipulation; }
 a { color: #0a3fc0; }
 a:hover { color: #d00000; }
 
@@ -162,7 +162,6 @@ a:hover { color: #d00000; }
 /* .nd-avatar-pic { border: 3px inset #808080; background: #dfe9ff; } */
 .nd-avatar-name { font: bold 16px Verdana, sans-serif; color: #0a2f8f; text-align: center; }
 .nd-avatar-tagline { font: italic 11.5px Tahoma, Verdana, sans-serif; color: #555; text-align: center; padding: 0 6px; }
-.nd-avatar-role { font-size: 12px; color: #000; text-align: center; }
 .nd-avatar-status { font-size: 12px; color: #000; }
 .nd-avatar-status .nd-blink { color: #0a8a0a; }
 
@@ -227,8 +226,9 @@ a:hover { color: #d00000; }
 .nd-faceit-dot.win { background: #2e8f3e; }
 .nd-faceit-dot.loss { background: #b03a3a; }
 .nd-faceit-dot.unknown { background: #4a4a50; }
-.nd-faceit-level-row { display: flex; align-items: center; gap: 6px; }
+.nd-faceit-level-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .nd-faceit-lvl-ico { flex: none; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
+.nd-faceit-next { font-size: 10.5px; color: #8fd18f; background: rgba(46, 143, 62, 0.25); border: 1px solid #2e8f3e; border-radius: 3px; padding: 1px 5px; }
 .nd-faceit-winbar-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 11.5px; color: #b8b8b8; }
 .nd-faceit-winbar-label { flex: none; }
 .nd-faceit-winbar { flex: 1 1 auto; height: 10px; background: #2a2a2e; border: 1px solid #3a3a40; overflow: hidden; }
@@ -236,9 +236,10 @@ a:hover { color: #d00000; }
 .nd-faceit-winbar-pct { flex: none; font-weight: bold; color: #fff; }
 .nd-faceit-form-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #b8b8b8; margin: 6px 0 4px; }
 .nd-faceit-form { display: flex; align-items: flex-end; gap: 3px; height: 26px; }
-.nd-faceit-bar { flex: 1 1 0; border-radius: 1px; }
-.nd-faceit-bar.win { height: 100%; background: #2e8f3e; }
-.nd-faceit-bar.loss { height: 55%; background: #b03a3a; }
+.nd-faceit-bar { flex: 1 1 0; border-radius: 1px; min-height: 2px; }
+.nd-faceit-bar.win { background: #2e8f3e; }
+.nd-faceit-bar.loss { background: #b03a3a; }
+.nd-faceit-bar.unknown { background: #4a4a50; }
 
 /* ---- github window: avatar, extra stats, contribution heat strip ---- */
 /* GitHub's own dark-mode palette, matching the Steam/FACEIT windows' pattern
@@ -453,6 +454,11 @@ a:hover { color: #d00000; }
 .nd-wbtn { height: 28px; flex: 1; background: linear-gradient(#6a6a7e, #33333f); border: 1px solid #9a9aaa; border-radius: 2px; color: #fff; font: bold 13px Verdana, sans-serif; }
 .nd-wbtn:hover { filter: brightness(1.3); }
 .nd-wbtn:active { filter: brightness(0.85); }
+.nd-wa-volume-row { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
+.nd-wa-volume-ico { flex: none; font-size: 13px; }
+.nd-wa-volume { flex: 1 1 auto; -webkit-appearance: none; appearance: none; height: 4px; background: #000; border: 1px inset #444; border-radius: 2px; outline: none; }
+.nd-wa-volume::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 14px; background: linear-gradient(#8a8aa0, #4a4a58); border: 1px solid #9a9aaa; border-radius: 1px; cursor: pointer; }
+.nd-wa-volume::-moz-range-thumb { width: 12px; height: 14px; background: linear-gradient(#8a8aa0, #4a4a58); border: 1px solid #9a9aaa; border-radius: 1px; cursor: pointer; }
 .nd-music-playlist { background: #000; border: 2px inset #444; display: flex; flex-direction: column; padding: 4px 0; max-height: 140px; overflow-y: auto; }
 .nd-plrow { display: flex; gap: 10px; width: 100%; text-align: left; padding: 6px 8px; font: 12px 'Courier New', monospace; color: #c8c8c8; }
 .nd-plrow:hover { background: #2a2a3a; }
@@ -648,7 +654,13 @@ a:hover { color: #d00000; }
     height: auto !important;
   }
   .nd-explorer { flex-direction: column; }
-  .nd-explorer-side { width: auto; flex-direction: row; flex-wrap: wrap; }
+  /* .nd-tabbtn is width:100% by default (a proper vertical sidebar on
+     desktop) — on a phone that made "row + wrap" wrap ONE button per line
+     anyway, so the section list ate most of the screen before any content
+     showed. A single scrollable row keeps it to one compact strip instead. */
+  .nd-explorer-side { width: auto; flex-direction: row; flex-wrap: nowrap; flex-shrink: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 4px; padding: 8px; }
+  .nd-explorer-side-title { display: none; }
+  .nd-tabbtn { width: auto; flex: none; white-space: nowrap; }
   .nd-hint { display: none; }
   #nd-tasks { overflow-x: auto; }
   .nd-resize, .nd-max { display: none !important; } /* resizing/maximizing is moot on mobile — windows are already fixed full-screen */
