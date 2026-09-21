@@ -85,6 +85,31 @@ def get_extra_stats() -> dict:
     }
 
 
+def get_top_games(count: int = 5) -> dict:
+    """Owned games ranked by all-time playtime — reuses the exact same
+    GetOwnedGames call (and its cache) get_extra_stats() already makes for
+    the aggregate total, just keeping the per-game breakdown instead of
+    discarding it."""
+    if not (API_KEY and STEAM_ID):
+        return {"synced": False, "games": []}
+    games_url = f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={API_KEY}&steamid={STEAM_ID}&include_played_free_games=1"
+    games_data = (_cached("steam:owned_games", games_url) or {}).get("response", {})
+    games = games_data.get("games", [])
+    top = sorted(games, key=lambda g: g.get("playtime_forever", 0), reverse=True)[:count]
+    return {
+        "synced": bool(top),
+        "games": [
+            {
+                "appid": g["appid"],
+                "name": g.get("name"),
+                "playtime_forever_hours": round(g.get("playtime_forever", 0) / 60),
+                "icon": f"https://media.steampowered.com/steamcommunity/public/images/apps/{g['appid']}/{g.get('img_icon_url')}.jpg" if g.get("img_icon_url") else None,
+            }
+            for g in top
+        ],
+    }
+
+
 def get_recently_played(count: int = 6) -> dict:
     if not (API_KEY and STEAM_ID):
         return {"synced": False, "games": []}

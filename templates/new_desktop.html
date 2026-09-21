@@ -62,7 +62,7 @@
       </button>
       <button class="nd-ico" data-win="explorer" data-tab="music">
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-music"></use></svg>
-        <span data-ru="Музыка" data-en="Music">Музыка</span>
+        <span>Winamp</span>
       </button>
       <button class="nd-ico" data-win="explorer" data-tab="links">
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-links"></use></svg>
@@ -107,6 +107,7 @@
             <image href="/static/avatar.gif" x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid slice"/>
           </svg>
             <div class="nd-avatar-name" id="nd-av-name"></div>
+            <div class="nd-avatar-tagline" id="nd-av-tagline"></div>
             <div class="nd-avatar-role" id="nd-av-role"></div>
             <div class="nd-avatar-status"><span class="nd-blink">●</span> <span data-ru="в сети" data-en="online">в сети</span></div>
           </div>
@@ -144,7 +145,7 @@
               <button class="nd-tabbtn" data-tab="projects"><span data-ru="Проекты" data-en="Projects">Проекты</span></button>
               <button class="nd-tabbtn" data-tab="screens"><span data-ru="Скриншоты Steam" data-en="Steam screenshots">Скриншоты Steam</span></button>
               <button class="nd-tabbtn" data-tab="games"><span data-ru="Мини-игры" data-en="Mini-games">Мини-игры</span></button>
-              <button class="nd-tabbtn" data-tab="music"><span data-ru="Музыка" data-en="Music">Музыка</span></button>
+              <button class="nd-tabbtn" data-tab="music"><span>Winamp</span></button>
               <button class="nd-tabbtn" data-tab="links"><span data-ru="Сервисы" data-en="Services">Сервисы</span></button>
               <div class="nd-hint" data-ru="Подсказка: окна можно двигать за заголовок. «Расставить» вернёт их на места." data-en="Hint: drag windows by their title bar. “Arrange” puts them back.">Подсказка: окна можно двигать за заголовок. «Расставить» вернёт их на места.</div>
             </div>
@@ -255,8 +256,20 @@
 
 <div id="nd-lightbox" hidden>
   <button id="nd-lightbox-close" aria-label="Закрыть просмотр">×</button>
+  <button id="nd-lightbox-prev" class="nd-lightbox-nav nd-lightbox-prev" aria-label="Предыдущий" hidden>‹</button>
   <img id="nd-lightbox-img" src="" alt="">
+  <button id="nd-lightbox-next" class="nd-lightbox-nav nd-lightbox-next" aria-label="Следующий" hidden>›</button>
   <a id="nd-lightbox-link" href="#" target="_blank" rel="noopener" hidden data-ru="Открыть на Steam ↗" data-en="Open on Steam ↗">Открыть на Steam ↗</a>
+</div>
+
+<div id="nd-item-popup" hidden>
+  <div class="nd-item-popup-box">
+    <button id="nd-item-popup-close" aria-label="Закрыть">×</button>
+    <div class="nd-item-popup-icon"><img id="nd-item-popup-img" src="" alt=""></div>
+    <div class="nd-item-popup-name" id="nd-item-popup-name"></div>
+    <div class="nd-item-popup-meta" id="nd-item-popup-meta"></div>
+    <a id="nd-item-popup-link" class="nd-btn98" href="#" target="_blank" rel="noopener" hidden></a>
+  </div>
 </div>
 
 <canvas id="matrix-canvas" hidden></canvas>

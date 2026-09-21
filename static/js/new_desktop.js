@@ -331,7 +331,7 @@
     projects: { ru: 'Проекты', en: 'Projects' },
     screens: { ru: 'Скриншоты Steam', en: 'Steam screenshots' },
     games: { ru: 'Мини-игры', en: 'Mini-games' },
-    music: { ru: 'Музыка', en: 'Music' },
+    music: { ru: 'Winamp', en: 'Winamp' },
     links: { ru: 'Сервисы', en: 'Services' },
   };
 
@@ -362,6 +362,8 @@
     cleanupGame('nd-mines');
     cleanupGame('nd-slots');
     cleanupGame('nd-snake');
+    cleanupScreenNav();
+    cleanupMusic();
     const panel = document.getElementById('nd-explorer-panel');
     if (!panel) return;
     const l = lang();
@@ -370,7 +372,7 @@
     else if (tab === 'projects') panel.innerHTML = projectsHtml(l);
     else if (tab === 'screens') {
       panel.innerHTML = screensHtml();
-      loadScreens();
+      loadScreens(panel);
     } else if (tab === 'games') {
       panel.innerHTML = gamesHtml(l);
       mountGames();
@@ -456,31 +458,78 @@
   }
 
   function screensHtml() {
-    return `<div class="nd-screens"><div class="nd-big-shot" id="nd-big-shot">${t('Загрузка…', 'Loading…')}</div><div class="nd-shots-grid" id="nd-shots-grid"></div></div>`;
+    return `<div class="nd-screens">
+      <div class="nd-big-shot-row">
+        <button type="button" class="nd-shot-nav" id="nd-shot-prev" aria-label="${t('Предыдущий скриншот', 'Previous screenshot')}">‹</button>
+        <div class="nd-big-shot" id="nd-big-shot">${t('Загрузка…', 'Loading…')}</div>
+        <button type="button" class="nd-shot-nav" id="nd-shot-next" aria-label="${t('Следующий скриншот', 'Next screenshot')}">›</button>
+      </div>
+      <div class="nd-shots-grid" id="nd-shots-grid"></div>
+    </div>`;
   }
+
+  /* Shared between the inline "big shot" viewer and the fullscreen lightbox
+     so both ‹ › buttons and the arrow keys work in either place. */
+  const screenState = { shots: [] };
+  let screenKeyHandler = null;
 
   function paintBigShot(bigEl, s) {
     const linkHtml = s.view_url ? `<div class="nd-big-shot-link"><a href="${s.view_url}" target="_blank" rel="noopener">${t('Открыть на Steam ↗', 'Open on Steam ↗')}</a></div>` : '';
     bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}"><div class="nd-big-shot-hint">${t('нажмите, чтобы открыть на весь экран', 'click to open full screen')}</div>${linkHtml}`;
-    bigEl.querySelector('img').addEventListener('click', () => openLightbox(s.full, s.view_url));
+    bigEl.querySelector('img').addEventListener('click', () => openLightbox(s.full, s.view_url, true));
   }
 
-  async function loadScreens() {
+  function showShot(index) {
+    const shots = screenState.shots;
+    if (!shots.length) return;
+    const i = ((index % shots.length) + shots.length) % shots.length;
+    screenState.index = i;
+    const s = shots[i];
+    const bigEl = document.getElementById('nd-big-shot');
+    if (bigEl) paintBigShot(bigEl, s);
+    document.querySelectorAll('#nd-shots-grid .nd-shot').forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.i) === i));
+    const overlay = document.getElementById('nd-lightbox');
+    if (overlay && !overlay.hidden && overlay.dataset.nav === 'screens') setLightboxImage(s.full, s.view_url);
+  }
+
+  function cleanupScreenNav() {
+    if (screenKeyHandler) {
+      document.removeEventListener('keydown', screenKeyHandler);
+      screenKeyHandler = null;
+    }
+  }
+
+  async function loadScreens(root) {
     const bigEl = document.getElementById('nd-big-shot');
     const gridEl = document.getElementById('nd-shots-grid');
     if (!bigEl || !gridEl) return;
+    const prevBtn = root.querySelector('#nd-shot-prev');
+    const nextBtn = root.querySelector('#nd-shot-next');
+    if (prevBtn) prevBtn.addEventListener('click', () => showShot(screenState.index - 1));
+    if (nextBtn) nextBtn.addEventListener('click', () => showShot(screenState.index + 1));
+    cleanupScreenNav();
+    screenKeyHandler = (e) => {
+      // the lightbox has its own keydown handling while it's open
+      const overlay = document.getElementById('nd-lightbox');
+      if (overlay && !overlay.hidden) return;
+      if (e.key === 'ArrowLeft') showShot(screenState.index - 1);
+      else if (e.key === 'ArrowRight') showShot(screenState.index + 1);
+    };
+    document.addEventListener('keydown', screenKeyHandler);
     try {
       const data = await fetchSteam();
       const shots = (data.screenshots && data.screenshots.screenshots) || [];
+      screenState.shots = shots;
+      screenState.index = 0;
       if (!shots.length) {
         bigEl.textContent = t('Скриншотов пока нет (Steam не подключен или профиль приватный).', 'No screenshots yet (Steam not connected, or the profile is private).');
         gridEl.innerHTML = '';
         return;
       }
-      paintBigShot(bigEl, shots[0]);
-      gridEl.innerHTML = shots.map((s, i) => `<button class="nd-shot" data-i="${i}"><img src="${s.thumb}" alt="${s.title || ''}" loading="lazy"></button>`).join('');
+      showShot(0);
+      gridEl.innerHTML = shots.map((s, i) => `<button type="button" class="nd-shot${i === 0 ? ' active' : ''}" data-i="${i}"><img src="${s.thumb}" alt="${s.title || ''}" loading="lazy"></button>`).join('');
       gridEl.querySelectorAll('.nd-shot').forEach((btn) => {
-        btn.addEventListener('click', () => paintBigShot(bigEl, shots[Number(btn.dataset.i)]));
+        btn.addEventListener('click', () => showShot(Number(btn.dataset.i)));
       });
     } catch (e) {
       bigEl.textContent = t('Не удалось загрузить скриншоты.', 'Could not load screenshots.');
@@ -488,14 +537,13 @@
   }
 
   /* =========================================================
-     Lightbox — fullscreen view for the current screenshot.
+     Lightbox — fullscreen view, navigable when opened on a screenshot
+     (nav === true); a single still image (e.g. from the item popup) when not.
      ========================================================= */
-  function openLightbox(src, viewUrl) {
-    const overlay = document.getElementById('nd-lightbox');
+  function setLightboxImage(src, viewUrl) {
     const img = document.getElementById('nd-lightbox-img');
     const link = document.getElementById('nd-lightbox-link');
-    if (!overlay || !img) return;
-    img.src = src;
+    if (img) img.src = src;
     if (link) {
       if (viewUrl) {
         link.href = viewUrl;
@@ -504,6 +552,16 @@
         link.hidden = true;
       }
     }
+  }
+  function openLightbox(src, viewUrl, nav) {
+    const overlay = document.getElementById('nd-lightbox');
+    if (!overlay) return;
+    setLightboxImage(src, viewUrl);
+    overlay.dataset.nav = nav ? 'screens' : '';
+    const prevBtn = document.getElementById('nd-lightbox-prev');
+    const nextBtn = document.getElementById('nd-lightbox-next');
+    if (prevBtn) prevBtn.hidden = !nav;
+    if (nextBtn) nextBtn.hidden = !nav;
     overlay.hidden = false;
   }
   function closeLightbox() {
@@ -513,13 +571,66 @@
   function initLightbox() {
     const overlay = document.getElementById('nd-lightbox');
     const closeBtn = document.getElementById('nd-lightbox-close');
+    const prevBtn = document.getElementById('nd-lightbox-prev');
+    const nextBtn = document.getElementById('nd-lightbox-next');
     if (!overlay) return;
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeLightbox();
     });
     if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+    if (prevBtn) prevBtn.addEventListener('click', () => showShot(screenState.index - 1));
+    if (nextBtn) nextBtn.addEventListener('click', () => showShot(screenState.index + 1));
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !overlay.hidden) closeLightbox();
+      if (overlay.hidden) return;
+      if (e.key === 'Escape') closeLightbox();
+      else if (overlay.dataset.nav === 'screens' && e.key === 'ArrowLeft') showShot(screenState.index - 1);
+      else if (overlay.dataset.nav === 'screens' && e.key === 'ArrowRight') showShot(screenState.index + 1);
+    });
+  }
+
+  /* =========================================================
+     Item popup — a small card with an inventory item's details, instead of
+     blowing it up to fullscreen like a screenshot.
+     ========================================================= */
+  function openItemPopup(it) {
+    const overlay = document.getElementById('nd-item-popup');
+    if (!overlay) return;
+    const img = document.getElementById('nd-item-popup-img');
+    const name = document.getElementById('nd-item-popup-name');
+    const meta = document.getElementById('nd-item-popup-meta');
+    const link = document.getElementById('nd-item-popup-link');
+    if (img) img.src = it.icon || '';
+    if (name) name.textContent = it.name;
+    if (meta) {
+      const priceLabel = it.price_rub != null ? `${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽` : t('Цена неизвестна', 'Price unknown');
+      const bits = [it.exterior, it.rarity].filter(Boolean).join(' · ');
+      meta.innerHTML = `${bits ? `<div>${bits}</div>` : ''}<div class="nd-item-popup-price">${priceLabel}</div>`;
+    }
+    if (link) {
+      if (it.market_url) {
+        link.href = it.market_url;
+        link.hidden = false;
+        link.textContent = t('Открыть на Steam Market ↗', 'Open on Steam Market ↗');
+      } else {
+        link.hidden = true;
+      }
+    }
+    overlay.hidden = false;
+  }
+  function closeItemPopup() {
+    const overlay = document.getElementById('nd-item-popup');
+    if (overlay) overlay.hidden = true;
+  }
+  function initItemPopup() {
+    const overlay = document.getElementById('nd-item-popup');
+    const closeBtn = document.getElementById('nd-item-popup-close');
+    if (!overlay) return;
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeItemPopup();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closeItemPopup);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !overlay.hidden) closeItemPopup();
     });
   }
 
@@ -587,17 +698,54 @@
     void l;
   }
 
-  const musicState = { playing: false, sec: 0, track: 0 };
+  /* =========================================================
+     Winamp — real playback of whatever's dropped into static/music/
+     (title/artist/cover read server-side by api/music_sync.py). Playback
+     stops when the Winamp tab is left, same as the mini-games do.
+     ========================================================= */
+  const MUSIC_HUES = [165, 265, 25, 200, 330]; // fallback "art" tile color when a track has no embedded cover
+  const musicState = { playing: false, track: 0 };
+  let musicTracks = [];
+  let musicTracksLoaded = false;
+  let musicAudioEl = null;
+
+  async function loadMusicTracks() {
+    try {
+      const res = await fetch('/api/music');
+      const data = await res.json();
+      musicTracks = (data && data.tracks) || [];
+    } catch (e) {
+      musicTracks = [];
+    }
+    musicTracksLoaded = true;
+    if (state.tab === 'music') renderTabPanel('music'); // refresh if the user's already looking at the (until-now loading) tab
+  }
 
   function musicHtml() {
-    const bars = Array.from({ length: 12 })
+    if (!musicTracksLoaded) {
+      return `<div class="nd-music nd-music-empty"><p>${t('Загрузка плейлиста…', 'Loading playlist…')}</p></div>`;
+    }
+    if (!musicTracks.length) {
+      return `<div class="nd-music nd-music-empty">
+        <div class="nd-wa-art nd-wa-art-empty">♪</div>
+        <p>${t('Плейлист пуст. Положи mp3/m4a/flac/ogg файлы в static/music/ — они появятся здесь сами.', "Playlist's empty. Drop mp3/m4a/flac/ogg files into static/music/ and they'll show up here on their own.")}</p>
+      </div>`;
+    }
+    const bars = Array.from({ length: 14 })
       .map((_, i) => `<span class="nd-bar" style="animation-delay:${((i * 137) % 55) / 100}s"></span>`)
       .join('');
     return `
       <div class="nd-music">
-        <div class="nd-music-display">
-          <div class="nd-music-time" id="nd-music-time">00:00</div>
-          <div class="nd-music-bars" id="nd-music-bars">${bars}</div>
+        <audio id="nd-music-audio" preload="metadata"></audio>
+        <div class="nd-wa-display">
+          <div class="nd-wa-art" id="nd-music-art">♪</div>
+          <div class="nd-wa-display-main">
+            <div class="nd-music-display">
+              <div class="nd-music-time" id="nd-music-time">00:00</div>
+              <div class="nd-music-bars" id="nd-music-bars">${bars}</div>
+            </div>
+            <div class="nd-wa-seek" id="nd-music-seek-track"><div class="nd-wa-seek-fill" id="nd-music-seek"></div></div>
+          </div>
         </div>
         <div class="nd-music-ticker"><span class="nd-tick" id="nd-music-track"></span></div>
         <div class="nd-music-controls">
@@ -607,63 +755,127 @@
           <button class="nd-wbtn" id="nd-music-next" aria-label="${t('Следующий трек', 'Next track')}">▶▶</button>
         </div>
         <div class="nd-music-playlist" id="nd-music-playlist"></div>
-        <div class="nd-music-note">${t('Плейлист: заменить на свои треки.', 'Playlist: swap in your own tracks.')}</div>
       </div>
     `;
   }
 
-  function musicTrackNames() {
-    return [t('[Трек 1] — [Исполнитель]', '[Track 1] — [Artist]'), t('[Трек 2] — [Исполнитель]', '[Track 2] — [Artist]'), t('[Трек 3] — [Исполнитель]', '[Track 3] — [Artist]')];
+  function trackLabel(tr) {
+    return tr.artist ? `${tr.artist} — ${tr.title}` : tr.title;
   }
 
   function paintMusic() {
-    const names = musicTrackNames();
-    const timeEl = document.getElementById('nd-music-time');
+    if (!musicTracks.length) return;
+    const track = musicTracks[musicState.track];
     const trackEl = document.getElementById('nd-music-track');
     const playBtn = document.getElementById('nd-music-play');
     const barsEl = document.getElementById('nd-music-bars');
     const playlistEl = document.getElementById('nd-music-playlist');
-    if (!timeEl || !playlistEl) return;
-    const mm = String(Math.floor(musicState.sec / 60)).padStart(2, '0');
-    const ss = String(musicState.sec % 60).padStart(2, '0');
-    timeEl.textContent = `${mm}:${ss}`;
-    trackEl.textContent = names[musicState.track] + ' *** ' + names[musicState.track];
+    const artEl = document.getElementById('nd-music-art');
+    if (!trackEl || !playlistEl) return;
+    const label = trackLabel(track);
+    trackEl.textContent = label + ' *** ' + label;
     playBtn.textContent = musicState.playing ? '❚❚' : '▶';
     playBtn.setAttribute('aria-label', musicState.playing ? t('Пауза', 'Pause') : t('Играть', 'Play'));
     barsEl.classList.toggle('on', musicState.playing);
-    playlistEl.innerHTML = names.map((n, i) => `<button class="nd-plrow${i === musicState.track ? ' active' : ''}" data-i="${i}">${i + 1}. ${n}</button>`).join('');
+    if (artEl) {
+      if (track.cover_url) {
+        artEl.style.background = `center / cover no-repeat url("${track.cover_url}")`;
+        artEl.textContent = '';
+      } else {
+        const hue = MUSIC_HUES[musicState.track % MUSIC_HUES.length];
+        artEl.style.background = `linear-gradient(135deg, hsl(${hue}, 65%, 42%), hsl(${(hue + 45) % 360}, 65%, 18%))`;
+        artEl.textContent = '♪';
+      }
+    }
+    playlistEl.innerHTML = musicTracks.map((tr, i) => `<button class="nd-plrow${i === musicState.track ? ' active' : ''}" data-i="${i}">${i + 1}. ${trackLabel(tr)}</button>`).join('');
     playlistEl.querySelectorAll('.nd-plrow').forEach((b) => {
-      b.addEventListener('click', () => {
-        musicState.track = Number(b.dataset.i);
-        musicState.sec = 0;
-        musicState.playing = true;
-        paintMusic();
-      });
+      b.addEventListener('click', () => playTrack(Number(b.dataset.i)));
     });
   }
 
+  function updateMusicTime() {
+    const timeEl = document.getElementById('nd-music-time');
+    const seekEl = document.getElementById('nd-music-seek');
+    if (!musicAudioEl || !timeEl) return;
+    const cur = musicAudioEl.currentTime || 0;
+    const dur = musicAudioEl.duration || 0;
+    timeEl.textContent = `${String(Math.floor(cur / 60)).padStart(2, '0')}:${String(Math.floor(cur % 60)).padStart(2, '0')}`;
+    if (seekEl) seekEl.style.width = (dur ? cur / dur : 0) * 100 + '%';
+  }
+
+  function playTrack(i) {
+    if (!musicTracks.length || !musicAudioEl) return;
+    musicState.track = ((i % musicTracks.length) + musicTracks.length) % musicTracks.length;
+    musicAudioEl.src = musicTracks[musicState.track].url;
+    musicAudioEl.currentTime = 0;
+    musicState.playing = true;
+    musicAudioEl.play().catch(() => {
+      musicState.playing = false;
+      paintMusic();
+    });
+    paintMusic();
+  }
+
   function mountMusic() {
+    if (!musicTracks.length) return;
+    musicAudioEl = document.getElementById('nd-music-audio');
     const play = document.getElementById('nd-music-play');
     const stop = document.getElementById('nd-music-stop');
     const prev = document.getElementById('nd-music-prev');
     const next = document.getElementById('nd-music-next');
-    const names = musicTrackNames();
-    if (play) play.addEventListener('click', () => { musicState.playing = !musicState.playing; paintMusic(); });
-    if (stop) stop.addEventListener('click', () => { musicState.playing = false; musicState.sec = 0; paintMusic(); });
-    if (prev) prev.addEventListener('click', () => { musicState.track = (musicState.track + names.length - 1) % names.length; musicState.sec = 0; paintMusic(); });
-    if (next) next.addEventListener('click', () => { musicState.track = (musicState.track + 1) % names.length; musicState.sec = 0; paintMusic(); });
+    const seekTrack = document.getElementById('nd-music-seek-track');
+    if (musicAudioEl) {
+      musicAudioEl.src = musicTracks[musicState.track].url;
+      musicAudioEl.addEventListener('timeupdate', updateMusicTime);
+      musicAudioEl.addEventListener('loadedmetadata', updateMusicTime);
+      musicAudioEl.addEventListener('ended', () => playTrack(musicState.track + 1));
+    }
+    if (play) {
+      play.addEventListener('click', () => {
+        if (!musicAudioEl) return;
+        if (musicState.playing) {
+          musicAudioEl.pause();
+          musicState.playing = false;
+          paintMusic();
+        } else {
+          musicState.playing = true;
+          musicAudioEl.play().catch(() => {
+            musicState.playing = false;
+            paintMusic();
+          });
+          paintMusic();
+        }
+      });
+    }
+    if (stop) {
+      stop.addEventListener('click', () => {
+        if (!musicAudioEl) return;
+        musicAudioEl.pause();
+        musicAudioEl.currentTime = 0;
+        musicState.playing = false;
+        updateMusicTime();
+        paintMusic();
+      });
+    }
+    if (prev) prev.addEventListener('click', () => playTrack(musicState.track - 1));
+    if (next) next.addEventListener('click', () => playTrack(musicState.track + 1));
+    if (seekTrack) {
+      seekTrack.addEventListener('click', (e) => {
+        if (!musicAudioEl || !musicAudioEl.duration) return;
+        const rect = seekTrack.getBoundingClientRect();
+        musicAudioEl.currentTime = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)) * musicAudioEl.duration;
+      });
+    }
     paintMusic();
   }
 
-  setInterval(() => {
-    if (!musicState.playing) return;
-    musicState.sec += 1;
-    const timeEl = document.getElementById('nd-music-time');
-    if (!timeEl) return;
-    const mm = String(Math.floor(musicState.sec / 60)).padStart(2, '0');
-    const ss = String(musicState.sec % 60).padStart(2, '0');
-    timeEl.textContent = `${mm}:${ss}`;
-  }, 1000);
+  function cleanupMusic() {
+    if (musicAudioEl) {
+      musicAudioEl.pause();
+      musicAudioEl = null;
+    }
+    musicState.playing = false;
+  }
 
   function linksHtml(l) {
     const c = PROFILE.contacts;
@@ -820,6 +1032,13 @@
              })
              .join('')}</div>`
         : '';
+    const topGames = (steamData.top_games && steamData.top_games.games) || [];
+    const topGamesHtml = topGames.length
+      ? `<div class="nd-steam-games-label">${t('Больше всего наиграно', 'Most played')}</div>
+         <ul class="nd-steam-games">${topGames
+           .map((g) => `<li>${g.icon ? `<img src="${g.icon}" alt="">` : '<span class="nd-steam-noicon">🎮</span>'}<span class="nd-steam-game-name">${g.name}</span><span class="nd-steam-hours">${g.playtime_forever_hours}${t('ч', 'h')}</span></li>`)
+           .join('')}</ul>`
+      : '';
     body.innerHTML = `
       <div class="nd-win-head">
         <div class="nd-win-avatar-badge"><img src="${p.avatar}" alt=""></div>
@@ -828,17 +1047,55 @@
       ${statsHtml}
       ${gamesHtml}
       ${invHtml}
+      ${topGamesHtml}
       <a class="nd-btn98 nd-block" href="${p.profile_url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
     if (inv && inv.synced) {
       body.querySelectorAll('.nd-steam-inv-item').forEach((btn) => {
         btn.addEventListener('click', () => {
           const it = inv.items[Number(btn.dataset.i)];
-          if (!it || !it.icon) return;
-          openLightbox(`${it.icon}/360fx360f`, it.market_url || null);
+          if (!it) return;
+          openItemPopup(it);
         });
       });
     }
+  }
+
+  /* FACEIT's real skill-level badges are 1-10, tiered into 5 color bands —
+     drawn locally instead of hotlinking FACEIT's own CDN icons. */
+  function faceitLevelIcon(level) {
+    const lvl = Number(level) || 0;
+    const tiers = [
+      { max: 2, bg: '#eeeeee', fg: '#333' },
+      { max: 4, bg: '#ffc115', fg: '#402d00' },
+      { max: 6, bg: '#ff6d00', fg: '#3a1c00' },
+      { max: 8, bg: '#f52d2d', fg: '#fff' },
+      { max: 10, bg: '#b80707', fg: '#fff' },
+    ];
+    const tier = tiers.find((tr) => lvl <= tr.max) || tiers[tiers.length - 1];
+    return `<svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true" class="nd-faceit-lvl-ico">
+      <polygon points="13,1 24,7 24,19 13,25 2,19 2,7" fill="${tier.bg}"/>
+      <text x="13" y="18" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="13" fill="${tier.fg}">${lvl || '?'}</text>
+    </svg>`;
+  }
+
+  function faceitWinbarHtml(winRate) {
+    const pct = Math.max(0, Math.min(100, Number(winRate)));
+    if (!Number.isFinite(pct)) return '';
+    return `<div class="nd-faceit-winbar-row">
+      <span class="nd-faceit-winbar-label">${t('Винрейт', 'Win rate')}</span>
+      <div class="nd-faceit-winbar"><div class="nd-faceit-winbar-fill" style="width:${pct}%"></div></div>
+      <span class="nd-faceit-winbar-pct">${pct}%</span>
+    </div>`;
+  }
+
+  function faceitFormHtml(results) {
+    if (!results || !results.length) return '';
+    const bars = results
+      .slice(0, 12)
+      .map((r) => `<span class="nd-faceit-bar ${String(r) === '1' ? 'win' : 'loss'}"></span>`)
+      .join('');
+    return `<div class="nd-faceit-form-label">${t('Форма · последние матчи', 'Form · recent matches')}</div><div class="nd-faceit-form">${bars}</div>`;
   }
 
   let faceitCache = null;
@@ -881,13 +1138,17 @@
            })
            .join('')}</div>`
       : '';
+    const winbarHtml = faceitWinbarHtml(stats.win_rate);
+    const formHtml = faceitFormHtml(stats.recent_results);
     body.innerHTML = `
       <div class="nd-win-head">
         <div class="nd-win-avatar-badge"><img src="${p.avatar}" alt=""></div>
-        <div><div class="nd-win-name">${p.nickname || ''}</div><div class="nd-steam-status">Elo ${p.elo ?? '—'} · ${t('уровень', 'level')} ${p.level ?? '—'}</div></div>
+        <div><div class="nd-win-name">${p.nickname || ''}</div><div class="nd-steam-status nd-faceit-level-row">${faceitLevelIcon(p.level)}<span>Elo ${p.elo ?? '—'} · ${t('уровень', 'level')} ${p.level ?? '—'}</span></div></div>
       </div>
       ${p.country ? `<div class="nd-faceit-country">${t('Страна', 'Country')}: ${String(p.country).toUpperCase()}</div>` : ''}
       ${statsHtml}
+      ${winbarHtml}
+      ${formHtml}
       ${matchesHtml}
       <a class="nd-btn98 nd-block" href="${p.faceit_url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
@@ -911,8 +1172,10 @@
     const l = lang();
     const name = document.getElementById('nd-av-name');
     const role = document.getElementById('nd-av-role');
+    const tagline = document.getElementById('nd-av-tagline');
     if (name) name.textContent = PROFILE.name[l];
     if (role) role.textContent = PROFILE.role[l];
+    if (tagline) tagline.textContent = (PROFILE.tagline && PROFILE.tagline[l]) || '';
   }
 
   /* =========================================================
@@ -1026,8 +1289,16 @@
      ========================================================= */
   document.addEventListener('DOMContentLoaded', () => {
     initWindows();
+    // Mobile: windows render as fixed full-screen overlays (see the
+    // max-width: 900px rules below), so starting with all 8 open would stack
+    // full-screen panels on load with no way back to the desktop icons.
+    // Start from a clean "home screen" instead — one tap opens what's wanted.
+    if (window.innerWidth <= 900) {
+      WIN_ORDER.forEach((id) => setHidden(id, true));
+    }
     initIcons();
     initLightbox();
+    initItemPopup();
     setTab('resume');
     renderAvatar();
     renderHh();
@@ -1036,6 +1307,7 @@
     loadGithub();
     loadSteamWin();
     loadFaceit();
+    loadMusicTracks();
 
     document.querySelectorAll('.nd-tabbtn').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
 
@@ -1058,7 +1330,7 @@
       const l = lang();
       if (title) title.textContent = TAB_NAME[state.tab][l] + ' — ' + t('Мои документы', 'My Documents');
       if (addr) addr.textContent = 'C:\\' + t('Мои документы', 'My Documents') + '\\' + TAB_NAME[state.tab][l];
-      if (state.tab !== 'games') renderTabPanel(state.tab); // a running game keeps its own state, like windows.js's "stateful" windows
+      if (state.tab !== 'games' && state.tab !== 'music') renderTabPanel(state.tab); // a running game or a playing track keeps its own state, like windows.js's "stateful" windows
     });
   });
 })();

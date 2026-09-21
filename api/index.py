@@ -14,13 +14,14 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 import faceit_sync
 import github_sync
+import music_sync
 import steam_sync
 import terminal
 from config import RESUME_SOURCE
@@ -141,7 +142,8 @@ def steam_stats():
         "profile": steam_sync.get_profile(),
         "extra": steam_sync.get_extra_stats(),
         "recent_games": steam_sync.get_recently_played(),
-        "screenshots": steam_sync.get_recent_screenshots(),
+        "top_games": steam_sync.get_top_games(),
+        "screenshots": steam_sync.get_recent_screenshots(count=12),
         "cs_inventory": steam_sync.get_cs_inventory(),
     }
 
@@ -153,6 +155,20 @@ def faceit_stats():
         "stats": faceit_sync.get_player_stats(),
         "recent_matches": faceit_sync.get_recent_matches(),
     }
+
+
+@app.get("/api/music")
+def music_tracks():
+    return music_sync.get_tracks()
+
+
+@app.get("/api/music/cover/{filename}")
+def music_cover(filename: str):
+    result = music_sync.get_cover(filename)
+    if not result:
+        return Response(status_code=404)
+    data, mime = result
+    return Response(content=data, media_type=mime, headers={"Cache-Control": "public, max-age=3600"})
 
 
 class TerminalRequest(BaseModel):

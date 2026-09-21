@@ -26,6 +26,9 @@ a:hover { color: #d00000; }
   background-color: #0b1a1c;
   background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
   background-size: 32px 32px;
+  /* A slim, minimal arrow instead of the OS default — buttons/links keep
+     their own pointer cursor since that's set directly on them, not inherited. */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M2 2 L2 16 L6 12.3 L9 18.5 L11.8 17.2 L8.8 11 L15 11 Z' fill='white' stroke='%230a4fd0' stroke-width='1.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") 2 2, auto;
 }
 
 /* The desktop never scrolls: #nd-surface always exactly fills the viewport
@@ -158,6 +161,7 @@ a:hover { color: #d00000; }
 .nd-avatar-body { display: flex; flex-direction: column; align-items: center; gap: 10px; background: var(--nd-panel-2); }
 /* .nd-avatar-pic { border: 3px inset #808080; background: #dfe9ff; } */
 .nd-avatar-name { font: bold 16px Verdana, sans-serif; color: #0a2f8f; text-align: center; }
+.nd-avatar-tagline { font: italic 11.5px Tahoma, Verdana, sans-serif; color: #555; text-align: center; padding: 0 6px; }
 .nd-avatar-role { font-size: 12px; color: #000; text-align: center; }
 .nd-avatar-status { font-size: 12px; color: #000; }
 .nd-avatar-status .nd-blink { color: #0a8a0a; }
@@ -223,6 +227,18 @@ a:hover { color: #d00000; }
 .nd-faceit-dot.win { background: #2e8f3e; }
 .nd-faceit-dot.loss { background: #b03a3a; }
 .nd-faceit-dot.unknown { background: #4a4a50; }
+.nd-faceit-level-row { display: flex; align-items: center; gap: 6px; }
+.nd-faceit-lvl-ico { flex: none; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
+.nd-faceit-winbar-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 11.5px; color: #b8b8b8; }
+.nd-faceit-winbar-label { flex: none; }
+.nd-faceit-winbar { flex: 1 1 auto; height: 10px; background: #2a2a2e; border: 1px solid #3a3a40; overflow: hidden; }
+.nd-faceit-winbar-fill { height: 100%; background: linear-gradient(90deg, #2e8f3e, #4fc766); }
+.nd-faceit-winbar-pct { flex: none; font-weight: bold; color: #fff; }
+.nd-faceit-form-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #b8b8b8; margin: 6px 0 4px; }
+.nd-faceit-form { display: flex; align-items: flex-end; gap: 3px; height: 26px; }
+.nd-faceit-bar { flex: 1 1 0; border-radius: 1px; }
+.nd-faceit-bar.win { height: 100%; background: #2e8f3e; }
+.nd-faceit-bar.loss { height: 55%; background: #b03a3a; }
 
 /* ---- github window: avatar, extra stats, contribution heat strip ---- */
 /* GitHub's own dark-mode palette, matching the Steam/FACEIT windows' pattern
@@ -290,14 +306,23 @@ a:hover { color: #d00000; }
 .nd-card-links a { font-size: 12px; margin-right: 10px; }
 
 .nd-screens { display: flex; flex-direction: column; gap: 12px; }
-.nd-big-shot { min-height: 380px; max-height: 62vh; background: #000; border: 3px solid var(--nd-blue-4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #7dff7d; font: 14px 'Courier New', monospace; text-align: center; padding: 10px; box-sizing: border-box; }
+.nd-big-shot-row { display: flex; align-items: stretch; gap: 8px; }
+/* Capped max-width keeps the box near a normal screenshot's proportions —
+   without it, a maximized (very wide) window stretches this to the full
+   window width while height stays capped, producing huge empty letterbox
+   bars on either side of the image. */
+.nd-big-shot { flex: 1 1 auto; min-width: 0; min-height: 380px; max-height: 62vh; max-width: 960px; margin: 0 auto; background: #000; border: 3px solid var(--nd-blue-4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #7dff7d; font: 14px 'Courier New', monospace; text-align: center; padding: 10px; box-sizing: border-box; }
 .nd-big-shot img { flex: 1 1 auto; width: 100%; min-height: 0; object-fit: contain; cursor: zoom-in; }
 .nd-big-shot-hint { flex: none; font-size: 11px; color: #5a5; }
 .nd-big-shot-link { flex: none; font-size: 12px; }
 .nd-big-shot-link a { color: #7dff7d; }
+.nd-shot-nav { flex: none; align-self: center; width: 36px; height: 56px; background: var(--nd-panel); border: 2px outset #fff; font: bold 20px Tahoma, Verdana, sans-serif; color: #000; }
+.nd-shot-nav:hover { background: #fff8d0; }
+.nd-shot-nav:active { border-style: inset; }
 .nd-shots-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .nd-shot { padding: 0; border: 2px solid var(--nd-blue-4); background: #000; overflow: hidden; }
 .nd-shot:hover, .nd-shot:focus-visible { outline: 2px solid var(--nd-accent); }
+.nd-shot.active { border-color: var(--nd-accent); outline: 2px solid var(--nd-accent); }
 .nd-shot img { width: 100%; height: 56px; object-fit: cover; display: block; }
 
 /* ---- fullscreen lightbox (screenshots) ---- */
@@ -338,6 +363,69 @@ a:hover { color: #d00000; }
   justify-content: center;
 }
 #nd-lightbox-close:hover { background: rgba(255, 255, 255, 0.25); }
+.nd-lightbox-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: bold 26px Verdana, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nd-lightbox-nav:hover { background: rgba(255, 255, 255, 0.25); }
+.nd-lightbox-prev { left: 16px; }
+.nd-lightbox-next { right: 16px; }
+
+/* ---- item popup (small card, not fullscreen) ---- */
+#nd-item-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 450;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#nd-item-popup[hidden] { display: none !important; }
+.nd-item-popup-box {
+  position: relative;
+  width: 240px;
+  background: var(--nd-panel);
+  border: 3px solid var(--nd-blue-4);
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+#nd-item-popup-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  background: linear-gradient(#f08a6a, #c8371a);
+  color: #fff;
+  font: bold 13px Verdana;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nd-item-popup-icon { width: 96px; height: 96px; background: #0e141b; border: 1px solid #2a475e; display: flex; align-items: center; justify-content: center; }
+.nd-item-popup-icon img { max-width: 100%; max-height: 100%; }
+.nd-item-popup-name { font: bold 13px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
+.nd-item-popup-meta { font-size: 12px; color: #333; line-height: 1.5; }
+.nd-item-popup-price { font-weight: bold; color: #a45a00; }
 
 /* align-items: start keeps each card sized to its own content — without it,
    CSS Grid's default row-stretch makes every card in a row match the
@@ -347,22 +435,32 @@ a:hover { color: #d00000; }
 .nd-gcard { border: 2px outset #fff; background: var(--nd-panel); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; overflow-x: auto; }
 .nd-gcard-title { font: bold 14px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
 
-.nd-music { display: flex; flex-direction: column; gap: 10px; }
-.nd-music-display { display: flex; justify-content: space-between; align-items: center; background: #000; border: 2px inset #666; padding: 8px 12px; }
-.nd-music-time { font: bold 32px 'Courier New', monospace; color: #3cff3c; }
-.nd-music-bars { display: flex; align-items: flex-end; gap: 2px; height: 34px; }
-.nd-bar { width: 6px; height: 34px; background: linear-gradient(#ff3b30, #ffd400 45%, #3cff3c); transform-origin: bottom; transform: scaleY(0.12); }
+/* ---- Winamp-style player chassis ---- */
+.nd-music { display: flex; flex-direction: column; gap: 8px; background: linear-gradient(#54546a, #2c2c3a); border: 2px outset #7a7a90; border-radius: 3px; padding: 10px; }
+.nd-wa-display { display: flex; gap: 8px; align-items: stretch; }
+.nd-wa-art { flex: none; width: 58px; height: 58px; border: 2px inset #444; display: flex; align-items: center; justify-content: center; font-size: 24px; color: rgba(255, 255, 255, 0.9); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); }
+.nd-wa-display-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.nd-music-display { flex: 1 1 auto; display: flex; justify-content: space-between; align-items: center; background: #000; border: 2px inset #444; padding: 6px 10px; min-width: 0; }
+.nd-music-time { font: bold 26px 'Courier New', monospace; color: #3cff3c; }
+.nd-music-bars { display: flex; align-items: flex-end; gap: 2px; height: 28px; }
+.nd-bar { width: 4px; height: 28px; background: linear-gradient(#ff3b30, #ffd400 45%, #3cff3c); transform-origin: bottom; transform: scaleY(0.12); }
 .nd-music-bars.on .nd-bar { animation: nd-eq 0.55s ease-in-out infinite alternate; }
 @keyframes nd-eq { from { transform: scaleY(0.15); } to { transform: scaleY(1); } }
-.nd-music-ticker { background: #000; border: 2px inset #666; overflow: hidden; padding: 4px 0; font: 13px 'Courier New', monospace; color: #3cff3c; }
+.nd-wa-seek { height: 7px; background: #000; border: 1px inset #444; overflow: hidden; cursor: pointer; }
+.nd-wa-seek-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #3cff3c, #ffd400); pointer-events: none; }
+.nd-music-ticker { background: #000; border: 2px inset #444; overflow: hidden; padding: 4px 0; font: 13px 'Courier New', monospace; color: #3cff3c; }
 .nd-music-controls { display: flex; gap: 4px; }
-.nd-wbtn { height: 28px; flex: 1; background: linear-gradient(#5a5a6a, #2a2a36); border: 1px solid #9a9aaa; color: #fff; font: bold 13px Verdana, sans-serif; }
+.nd-wbtn { height: 28px; flex: 1; background: linear-gradient(#6a6a7e, #33333f); border: 1px solid #9a9aaa; border-radius: 2px; color: #fff; font: bold 13px Verdana, sans-serif; }
 .nd-wbtn:hover { filter: brightness(1.3); }
-.nd-music-playlist { background: #000; border: 2px inset #666; display: flex; flex-direction: column; padding: 4px 0; }
+.nd-wbtn:active { filter: brightness(0.85); }
+.nd-music-playlist { background: #000; border: 2px inset #444; display: flex; flex-direction: column; padding: 4px 0; max-height: 140px; overflow-y: auto; }
 .nd-plrow { display: flex; gap: 10px; width: 100%; text-align: left; padding: 6px 8px; font: 12px 'Courier New', monospace; color: #c8c8c8; }
 .nd-plrow:hover { background: #2a2a3a; }
 .nd-plrow.active { color: #3cff3c; }
-.nd-music-note { font-size: 12px; color: #222; }
+.nd-music-note { font-size: 12px; color: #c8c8d8; }
+.nd-music-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; background: linear-gradient(#54546a, #2c2c3a); border: 2px outset #7a7a90; border-radius: 3px; padding: 22px 16px; text-align: center; }
+.nd-music-empty p { margin: 0; font-size: 12.5px; color: #d8d8e4; max-width: 280px; }
+.nd-wa-art-empty { width: 58px; height: 58px; font-size: 24px; }
 
 .nd-links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .nd-svc { display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: #fff; border: 2px outset #fff; text-decoration: none; color: #000; }
@@ -555,6 +653,7 @@ a:hover { color: #d00000; }
   #nd-tasks { overflow-x: auto; }
   .nd-resize, .nd-max { display: none !important; } /* resizing/maximizing is moot on mobile — windows are already fixed full-screen */
   #nd-arrange { display: none; } /* dragging is off on mobile, so "arrange" has nothing to do */
+  #nd-toggle-all { display: none; } /* windows start closed on mobile (new_desktop.js) — a "show all" would just re-stack every full-screen window at once */
 }
 
 @media (prefers-reduced-motion: reduce) {
