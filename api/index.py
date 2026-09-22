@@ -139,14 +139,24 @@ def github_stats():
 
 @app.get("/api/steam")
 def steam_stats():
+    # Screenshots live on their own endpoint (see /api/steam/screenshots)
+    # rather than being bundled in here: the frontend retries that one much
+    # harder (its scrape is the flaky part), and bundling it in this endpoint
+    # too would mean every one of those retries also re-runs the inventory's
+    # market-price lookups — the part that's actually rate-limited — instead
+    # of just leaving them alone once they've loaded.
     return {
         "profile": steam_sync.get_profile(),
         "extra": steam_sync.get_extra_stats(),
         "recent_games": steam_sync.get_recently_played(),
         "top_games": steam_sync.get_top_games(),
-        "screenshots": steam_sync.get_recent_screenshots(count=12),
         "cs_inventory": steam_sync.get_cs_inventory(),
     }
+
+
+@app.get("/api/steam/screenshots")
+def steam_screenshots():
+    return {"screenshots": steam_sync.get_recent_screenshots(count=12)}
 
 
 @app.get("/api/faceit")

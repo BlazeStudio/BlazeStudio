@@ -20,7 +20,7 @@
 <symbol id="ico-screens" viewBox="0 0 40 40"><rect x="4" y="7" width="32" height="26" fill="#1b2838"/><path d="M4 28l9-9 7 7 6-5 10 9" fill="none" stroke="#66c0f4" stroke-width="2"/><circle cx="28" cy="14" r="3" fill="#66c0f4"/></symbol>
 <symbol id="ico-video" viewBox="0 0 40 40"><rect x="4" y="9" width="24" height="22" rx="3" fill="#1b2838"/><path d="M28 15.5l8-5v19l-8-5z" fill="#66c0f4"/></symbol>
 <symbol id="ico-games" viewBox="0 0 40 40"><rect x="4" y="12" width="32" height="18" rx="8" fill="#6a4ad8"/><path d="M12 17v8M8 21h8" fill="none" stroke="#fff" stroke-width="2"/><circle cx="26" cy="19" r="2" fill="#fff"/><circle cx="31" cy="23" r="2" fill="#fff"/></symbol>
-<symbol id="ico-music" viewBox="0 0 40 40"><rect x="5" y="5" width="30" height="30" fill="#232323"/><path d="M10 28V18M15 28V12M20 28V20M25 28V10M30 28V16" fill="none" stroke="#3cff3c" stroke-width="3"/></symbol>
+<symbol id="ico-music" viewBox="0 0 40 40"><path d="M20 2 L38 20 L20 38 L2 20 Z" fill="none" stroke="#141414" stroke-width="2.6" stroke-linejoin="round"/><path d="M24 5 L12 22 L18 22 L14 35 L29 17 L21 17 Z" fill="#ff9500" stroke="#141414" stroke-width="1.6" stroke-linejoin="round"/></symbol>
 <symbol id="ico-links" viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#2a63d8"/><path d="M5 20h30M20 5c-8 8-8 22 0 30M20 5c8 8 8 22 0 30" fill="none" stroke="#fff" stroke-width="2"/></symbol>
 <symbol id="ico-github" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#161b22"/><path fill="#fff" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></symbol>
 <symbol id="ico-hh" viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="6" fill="#d6001c"/><text x="9" y="27" font-family="Verdana" font-weight="bold" font-size="17" fill="#fff">hh</text></symbol>
@@ -57,7 +57,7 @@
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-screens"></use></svg>
         <span data-ru="Скриншоты" data-en="Screenshots">Скриншоты</span>
       </button>
-      <button class="nd-ico" data-win="explorer" data-tab="videos">
+      <button class="nd-ico" data-win="videos">
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-video"></use></svg>
         <span data-ru="Видео" data-en="Video">Видео</span>
       </button>
@@ -148,7 +148,6 @@
               <button class="nd-tabbtn" data-tab="pdf"><span data-ru="Резюме (PDF)" data-en="Résumé (PDF)">Резюме (PDF)</span></button>
               <button class="nd-tabbtn" data-tab="projects"><span data-ru="Проекты" data-en="Projects">Проекты</span></button>
               <button class="nd-tabbtn" data-tab="screens"><span data-ru="Скриншоты Steam" data-en="Steam screenshots">Скриншоты Steam</span></button>
-              <button class="nd-tabbtn" data-tab="videos"><span data-ru="Видео" data-en="Video">Видео</span></button>
               <button class="nd-tabbtn" data-tab="links"><span data-ru="Сервисы" data-en="Services">Сервисы</span></button>
               <div class="nd-hint" data-ru="Подсказка: окна можно двигать за заголовок. «Расставить» вернёт их на места." data-en="Hint: drag windows by their title bar. “Arrange” puts them back.">Подсказка: окна можно двигать за заголовок. «Расставить» вернёт их на места.</div>
             </div>
@@ -208,6 +207,12 @@
     <div class="nd-win nd-hidden" id="nd-win-games">
       <div class="nd-tb"><span class="nd-cap" data-ru="Мини-игры" data-en="Mini-games">Мини-игры</span><button class="nd-max" aria-label="Развернуть окно Мини-игры"><svg width="14" height="14" aria-hidden="true"><use href="#ico-maximize"></use></svg></button><button class="nd-min" aria-label="Свернуть окно Мини-игры">_</button><button class="nd-x" aria-label="Закрыть окно Мини-игры">×</button></div>
       <div class="nd-body" id="nd-games-body"></div>
+      <div class="nd-resize" aria-hidden="true"></div>
+    </div>
+
+    <div class="nd-win nd-hidden" id="nd-win-videos">
+      <div class="nd-tb"><span class="nd-cap" data-ru="Видео" data-en="Video">Видео</span><button class="nd-max" aria-label="Развернуть окно Видео"><svg width="14" height="14" aria-hidden="true"><use href="#ico-maximize"></use></svg></button><button class="nd-min" aria-label="Свернуть окно Видео">_</button><button class="nd-x" aria-label="Закрыть окно Видео">×</button></div>
+      <div class="nd-body" id="nd-videos-body"></div>
       <div class="nd-resize" aria-hidden="true"></div>
     </div>
 

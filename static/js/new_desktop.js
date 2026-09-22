@@ -21,7 +21,7 @@
      fixed box; "Расставить" clears all detached state and lets
      everything fall back into the grid.
      ========================================================= */
-  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts', 'music', 'games'];
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts', 'music', 'games', 'videos'];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
@@ -33,6 +33,7 @@
     contacts: () => t('Контакты', 'Contacts'),
     music: () => 'Winamp',
     games: () => t('Мини-игры', 'Mini-games'),
+    videos: () => t('Видео', 'Video'),
   };
   const WIN_ICON = {
     avatar: 'ico-avatar',
@@ -45,6 +46,7 @@
     contacts: 'ico-contacts',
     music: 'ico-music',
     games: 'ico-games',
+    videos: 'ico-video',
   };
   const MIN_WIN_W = 200;
   const MIN_WIN_H = 140;
@@ -283,7 +285,14 @@
       const min = el.querySelector('.nd-min');
       if (min) min.addEventListener('click', () => toggleWin(id));
       const close = el.querySelector('.nd-x');
-      if (close) close.addEventListener('click', () => toggleWin(id));
+      if (close) {
+        close.addEventListener('click', () => {
+          // Real Winamp behavior: closing it stops playback, minimizing it
+          // (to the taskbar, same as every other window here) doesn't.
+          if (id === 'music') stopMusicPlayback();
+          toggleWin(id);
+        });
+      }
       const maxBtn = el.querySelector('.nd-max');
       if (maxBtn) maxBtn.addEventListener('click', () => toggleMaximize(id));
       const resizeHandle = el.querySelector('.nd-resize');
@@ -334,7 +343,6 @@
     pdf: { ru: 'Резюме (PDF)', en: 'Résumé (PDF)' },
     projects: { ru: 'Проекты', en: 'Projects' },
     screens: { ru: 'Скриншоты Steam', en: 'Steam screenshots' },
-    videos: { ru: 'Видео', en: 'Video' },
     links: { ru: 'Сервисы', en: 'Services' },
   };
 
@@ -365,9 +373,6 @@
     else if (tab === 'screens') {
       panel.innerHTML = screensHtml();
       loadScreens(panel);
-    } else if (tab === 'videos') {
-      panel.innerHTML = videosHtml();
-      loadVideos(panel);
     } else if (tab === 'links') panel.innerHTML = linksHtml(l);
   }
 
@@ -506,7 +511,7 @@
     };
     document.addEventListener('keydown', screenKeyHandler);
     try {
-      const data = await fetchSteam();
+      const data = await fetchScreenshots();
       const shots = (data.screenshots && data.screenshots.screenshots) || [];
       screenState.shots = shots;
       screenState.index = 0;
@@ -526,66 +531,86 @@
   }
 
   /* =========================================================
-     Videos — whatever's dropped into static/video/ (read server-side by
-     api/video_sync.py), same "just drop files in" idea as Winamp's playlist.
+     Video — its own standalone window (like Winamp/mini-games), not an
+     Explorer tab. Whatever's dropped into static/video/ (read server-side
+     by api/video_sync.py, titles overridden via api/data/video_titles.py)
+     shows up as a large-icons grid on open; picking one swaps the grid for
+     a player, with a way back to the grid instead of a separate window.
      ========================================================= */
-  function videosHtml() {
-    return `<div class="nd-screens">
-      <div class="nd-big-shot-row">
-        <button type="button" class="nd-shot-nav" id="nd-vid-prev" aria-label="${t('Предыдущее видео', 'Previous video')}">‹</button>
-        <div class="nd-big-shot" id="nd-big-video">${t('Загрузка…', 'Loading…')}</div>
-        <button type="button" class="nd-shot-nav" id="nd-vid-next" aria-label="${t('Следующее видео', 'Next video')}">›</button>
-      </div>
-      <div class="nd-video-list" id="nd-videos-list"></div>
+  const videoState = { videos: [], index: -1 };
+
+  function videoIconsHtml(videos) {
+    return `<div class="nd-videos-grid">${videos
+      .map(
+        (v, i) => `
+      <button type="button" class="nd-video-icon" data-i="${i}">
+        <svg width="40" height="40" aria-hidden="true"><use href="#ico-video"></use></svg>
+        <span>${v.title}</span>
+      </button>`
+      )
+      .join('')}</div>`;
+  }
+
+  function videoPlayerHtml(v) {
+    return `<div class="nd-video-player">
+      <button type="button" class="nd-btn98 nd-video-back">${t('‹ К списку', '‹ Back to list')}</button>
+      <video src="${v.url}" controls autoplay></video>
+      <div class="nd-video-title">${v.title}</div>
     </div>`;
   }
 
-  const videoState = { videos: [], index: 0 };
-
-  function paintBigVideo(bigEl, v) {
-    bigEl.innerHTML = `<video src="${v.url}" controls preload="metadata"></video><div class="nd-big-shot-hint">${v.title}</div>`;
+  function renderVideoView() {
+    const app = document.getElementById('nd-videos-app');
+    if (!app) return;
+    if (videoState.index === -1) {
+      app.innerHTML = videoIconsHtml(videoState.videos);
+      app.querySelectorAll('.nd-video-icon').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          videoState.index = Number(btn.dataset.i);
+          renderVideoView();
+        });
+      });
+    } else {
+      app.innerHTML = videoPlayerHtml(videoState.videos[videoState.index]);
+      const back = app.querySelector('.nd-video-back');
+      if (back) {
+        back.addEventListener('click', () => {
+          videoState.index = -1;
+          renderVideoView();
+        });
+      }
+    }
   }
 
-  function showVideo(index) {
-    const videos = videoState.videos;
-    if (!videos.length) return;
-    const i = ((index % videos.length) + videos.length) % videos.length;
-    videoState.index = i;
-    const bigEl = document.getElementById('nd-big-video');
-    if (bigEl) paintBigVideo(bigEl, videos[i]);
-    document.querySelectorAll('#nd-videos-list .nd-video-item').forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.i) === i));
-  }
-
-  async function loadVideos(root) {
-    const bigEl = document.getElementById('nd-big-video');
-    const listEl = document.getElementById('nd-videos-list');
-    if (!bigEl || !listEl) return;
-    const prevBtn = root.querySelector('#nd-vid-prev');
-    const nextBtn = root.querySelector('#nd-vid-next');
-    if (prevBtn) prevBtn.addEventListener('click', () => showVideo(videoState.index - 1));
-    if (nextBtn) nextBtn.addEventListener('click', () => showVideo(videoState.index + 1));
+  async function loadVideos() {
+    const app = document.getElementById('nd-videos-app');
+    if (!app) return;
     try {
       const res = await fetch('/api/video');
       const data = await res.json();
-      const videos = (data && data.videos) || [];
-      videoState.videos = videos;
-      videoState.index = 0;
-      if (!videos.length) {
-        bigEl.textContent = t(
+      videoState.videos = (data && data.videos) || [];
+    } catch (e) {
+      videoState.videos = [];
+    }
+    videoState.index = -1;
+    if (!videoState.videos.length) {
+      app.innerHTML = `<div class="nd-music-empty">
+        <div class="nd-wa-art nd-wa-art-empty">🎬</div>
+        <p>${t(
           'Видео пока нет. Положи mp4/webm файлы в static/video/ — они появятся здесь сами.',
           "No videos yet. Drop mp4/webm files into static/video/ and they'll show up here on their own."
-        );
-        listEl.innerHTML = '';
-        return;
-      }
-      showVideo(0);
-      listEl.innerHTML = videos.map((v, i) => `<button type="button" class="nd-video-item${i === 0 ? ' active' : ''}" data-i="${i}">▶ ${v.title}</button>`).join('');
-      listEl.querySelectorAll('.nd-video-item').forEach((btn) => {
-        btn.addEventListener('click', () => showVideo(Number(btn.dataset.i)));
-      });
-    } catch (e) {
-      bigEl.textContent = t('Не удалось загрузить видео.', 'Could not load videos.');
+        )}</p>
+      </div>`;
+      return;
     }
+    renderVideoView();
+  }
+
+  function initVideosWin() {
+    const body = document.getElementById('nd-videos-body');
+    if (!body) return;
+    body.innerHTML = `<div id="nd-videos-app">${t('Загрузка…', 'Loading…')}</div>`;
+    loadVideos();
   }
 
   /* =========================================================
@@ -887,6 +912,15 @@
     paintMusic();
   }
 
+  function stopMusicPlayback() {
+    if (!musicAudioEl) return;
+    musicAudioEl.pause();
+    musicAudioEl.currentTime = 0;
+    musicState.playing = false;
+    updateMusicTime();
+    paintMusic();
+  }
+
   function mountMusic() {
     if (!musicTracks.length) return;
     musicAudioEl = document.getElementById('nd-music-audio');
@@ -930,14 +964,7 @@
       });
     }
     if (stop) {
-      stop.addEventListener('click', () => {
-        if (!musicAudioEl) return;
-        musicAudioEl.pause();
-        musicAudioEl.currentTime = 0;
-        musicState.playing = false;
-        updateMusicTime();
-        paintMusic();
-      });
+      stop.addEventListener('click', stopMusicPlayback);
     }
     if (prev) prev.addEventListener('click', () => playTrack(musicState.track - 1));
     if (next) next.addEventListener('click', () => playTrack(musicState.track + 1));
@@ -1027,36 +1054,32 @@
     if (heatWrap) heatWrap.scrollLeft = heatWrap.scrollWidth; // scrolled to the most recent weeks by default
   }
 
-  /* One shared fetch of /api/steam for both the Steam window (profile +
-     recent games) and the Explorer's Screenshots tab, instead of hitting
-     the endpoint twice. profile.synced is the one reliable "did Steam
-     actually connect" signal, and screenshots.synced is checked the same
-     way — both can fail transiently on a cold request (the profile API
-     timing out, or the screenshots page scrape hiccuping) independently of
-     each other. Rather than give up after a couple of tries, this retries
-     up to STEAM_MAX_ATTEMPTS times total, still without ever reloading the
-     page. (An account with genuinely zero public screenshots looks the same
-     as "failed to load" here and pays for the full retry budget too — an
-     acceptable tradeoff since this profile does have public screenshots.) */
-  const STEAM_MAX_ATTEMPTS = 10;
-  const STEAM_RETRY_DELAY_MS = 1500;
+  /* /api/steam (profile + extra stats + recent/top games + CS inventory)
+     backs the Steam window. profile.synced is the one reliable "did Steam
+     actually connect" signal, so a false there gets a couple of quick
+     retries — covers a transient hiccup on the very first cold request —
+     before settling into the "not connected" state. Screenshots are
+     deliberately NOT part of this: they live on their own endpoint with
+     their own (much longer) retry below, so hammering that one never
+     re-triggers this endpoint's inventory pricing (rate-limited by Steam's
+     Market, and the whole reason this used to feel slow when both were
+     bundled together). */
+  const STEAM_RETRY_DELAYS_MS = [1500, 3000];
   let steamData = null;
   let steamPromise = null;
   function fetchSteamOnce() {
     return fetch('/api/steam')
       .then((res) => res.json())
-      .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, screenshots: { screenshots: [] }, cs_inventory: { items: [] } }));
-  }
-  function steamLooksLoaded(data) {
-    return !!(data && data.profile && data.profile.synced && data.screenshots && data.screenshots.synced);
+      .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] }, cs_inventory: { items: [] } }));
   }
   function fetchSteam() {
     if (steamData) return Promise.resolve(steamData);
     if (!steamPromise) {
       steamPromise = (async () => {
         let data = await fetchSteamOnce();
-        for (let attempt = 1; attempt < STEAM_MAX_ATTEMPTS && !steamLooksLoaded(data); attempt++) {
-          await new Promise((resolve) => setTimeout(resolve, STEAM_RETRY_DELAY_MS));
+        for (const delay of STEAM_RETRY_DELAYS_MS) {
+          if (data && data.profile && data.profile.synced) break;
+          await new Promise((resolve) => setTimeout(resolve, delay));
           data = await fetchSteamOnce();
         }
         return data;
@@ -1064,6 +1087,41 @@
     }
     return steamPromise.then((data) => {
       steamData = data;
+      return data;
+    });
+  }
+
+  /* /api/steam/screenshots backs only the Explorer's Screenshots tab. Its
+     scrape (a community-profile page fetch plus one detail-page fetch per
+     screenshot) is the genuinely flaky part, so this is the one that gets
+     the long, patient retry — up to SCREENSHOTS_MAX_ATTEMPTS — without ever
+     touching the Steam window's data or its rate-limited inventory pricing.
+     (An account with genuinely zero public screenshots looks the same as
+     "failed to load" here and pays for the full retry budget too — an
+     acceptable tradeoff since this profile does have public screenshots.) */
+  const SCREENSHOTS_MAX_ATTEMPTS = 10;
+  const SCREENSHOTS_RETRY_DELAY_MS = 1500;
+  let screenshotsData = null;
+  let screenshotsPromise = null;
+  function fetchScreenshotsOnce() {
+    return fetch('/api/steam/screenshots')
+      .then((res) => res.json())
+      .catch(() => ({ screenshots: { synced: false, screenshots: [] } }));
+  }
+  function fetchScreenshots() {
+    if (screenshotsData) return Promise.resolve(screenshotsData);
+    if (!screenshotsPromise) {
+      screenshotsPromise = (async () => {
+        let data = await fetchScreenshotsOnce();
+        for (let attempt = 1; attempt < SCREENSHOTS_MAX_ATTEMPTS && !(data && data.screenshots && data.screenshots.synced); attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, SCREENSHOTS_RETRY_DELAY_MS));
+          data = await fetchScreenshotsOnce();
+        }
+        return data;
+      })();
+    }
+    return screenshotsPromise.then((data) => {
+      screenshotsData = data;
       return data;
     });
   }
@@ -1398,11 +1456,12 @@
      ========================================================= */
   document.addEventListener('DOMContentLoaded', () => {
     initWindows();
-    // Winamp and mini-games are standalone floating windows, but unlike the
-    // rest they start closed even on desktop — opened on demand from their
-    // icon/Start menu entry, on top of whatever else is already open.
+    // Winamp, mini-games and Video are standalone floating windows, but
+    // unlike the rest they start closed even on desktop — opened on demand
+    // from their icon/Start menu entry, on top of whatever else is open.
     setHidden('music', true);
     setHidden('games', true);
+    setHidden('videos', true);
     // Mobile: windows render as fixed full-screen overlays (see the
     // max-width: 900px rules below), so starting with all of them open would
     // stack full-screen panels on load with no way back to the desktop icons.
@@ -1420,6 +1479,7 @@
     initConsoleWindow();
     initGamesWin();
     renderMusicWin();
+    initVideosWin();
     loadGithub();
     loadSteamWin();
     loadFaceit();
