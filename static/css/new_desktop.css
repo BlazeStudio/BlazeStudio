@@ -681,6 +681,15 @@ a:hover { color: #d00000; }
 
 /* ============ responsive ============ */
 @media (max-width: 900px) {
+  /* Every window becomes a fixed, full-screen, pixel-positioned overlay
+     below (see .nd-win) — a layout that a pinch- or double-tap-zoom can
+     throw out of sync with real touch coordinates on some mobile browsers
+     (fixed-position elements don't always track a zoomed visual viewport
+     correctly), which reads as "nothing is tappable anymore" until the
+     zoom resets. Zooming this fake-desktop UI was never useful anyway
+     (same reasoning as dragging/resizing already being JS-disabled here),
+     so heading it off with touch-action is cheap insurance. */
+  #nd-desktop { touch-action: manipulation; }
   #nd-surface { display: block; overflow-y: auto; } /* icons stack above the (fixed, full-screen) windows, so this one scroll is fine */
   #nd-icons { flex-direction: row; flex-wrap: wrap; padding: 8px; }
   /* display:contents drops the grid/column boxes from layout without hiding

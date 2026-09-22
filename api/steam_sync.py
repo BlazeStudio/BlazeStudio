@@ -140,13 +140,29 @@ _SCREENSHOT_RE = re.compile(r"background-image:\s*url\('(https://images\.steamus
 _UGC_ID_RE = re.compile(r"images\.steamusercontent\.com/ugc/(\d+)/([0-9A-Fa-f]+)/")
 
 
-def _screenshot_full_res(published_id: str) -> str | None:
+# Getting a full-res image means fetching each screenshot's OWN detail page
+# (see _screenshot_full_res) on top of the one grid-page request — up to
+# `count` extra hits on steamcommunity.com, which rate-limits this kind of
+# anonymous scraping much harder than the official (API-key'd) endpoints
+# get_profile()/get_extra_stats()/etc. use. Bounded the same way
+# get_cs_inventory() bounds its market-price lookups: a short per-request
+# timeout, a total wall-clock budget, and backing off after a few
+# consecutive failures — so a slow or already-throttled Steam can't stall
+# the whole request, and a batch of failures degrades to lower-res
+# thumbnails instead of losing every screenshot that hasn't been upgraded
+# yet.
+SCREENSHOT_DETAIL_TIMEOUT = 2.5
+SCREENSHOT_DETAIL_BUDGET_SECONDS = 6.0
+SCREENSHOT_DETAIL_MAX_CONSECUTIVE_FAILURES = 3
+
+
+def _screenshot_full_res(published_id: str, timeout: float = TIMEOUT) -> str | None:
     """The grid page's own background-image is a small pre-baked thumbnail —
     a genuinely different (and much smaller, ~10KB vs ~220KB) asset, not just
     a CSS-scaled crop of the original. The screenshot's own detail page
     references the real high-res asset id, so that page is fetched once per
     screenshot (and cached) to build a properly sized image URL instead."""
-    html = _cached(f"steam:shot_detail:{published_id}", f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}", parse="text")
+    html = _cached(f"steam:shot_detail:{published_id}", f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}", parse="text", timeout=timeout)
     if not html:
         return None
     m = _UGC_ID_RE.search(html)
@@ -171,14 +187,25 @@ def get_recent_screenshots(count: int = 6) -> dict:
     if not html or "This profile is private" in html:
         return {"synced": False, "screenshots": []}
     shots = []
-    for _grid_url, published_id in _SCREENSHOT_RE.findall(html)[:count]:
-        base = _screenshot_full_res(published_id)
-        if not base:
-            continue
+    deadline = time.time() + SCREENSHOT_DETAIL_BUDGET_SECONDS
+    consecutive_failures = 0
+    for grid_url, published_id in _SCREENSHOT_RE.findall(html)[:count]:
+        base = None
+        if time.time() < deadline and consecutive_failures < SCREENSHOT_DETAIL_MAX_CONSECUTIVE_FAILURES:
+            base = _screenshot_full_res(published_id, timeout=SCREENSHOT_DETAIL_TIMEOUT)
+            consecutive_failures = 0 if base else consecutive_failures + 1
+        if base:
+            full = f"{base}?imw=1920&imh=1080&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false"
+            thumb = f"{base}?imw=320&imh=180&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false"
+        else:
+            # Detail page timed out, failed, or the budget above is already
+            # spent — fall back to the grid's own pre-baked thumbnail rather
+            # than dropping the screenshot entirely. Lower-res beats missing.
+            full = thumb = grid_url
         shots.append(
             {
-                "full": f"{base}?imw=1920&imh=1080&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
-                "thumb": f"{base}?imw=320&imh=180&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false",
+                "full": full,
+                "thumb": thumb,
                 "title": "",
                 "view_url": f"https://steamcommunity.com/sharedfiles/filedetails/?id={published_id}",
             }

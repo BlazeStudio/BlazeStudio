@@ -300,8 +300,11 @@
       if (close) {
         close.addEventListener('click', () => {
           // Real Winamp behavior: closing it stops playback, minimizing it
-          // (to the taskbar, same as every other window here) doesn't.
+          // (to the taskbar, same as every other window here) doesn't. Video
+          // gets the same treatment — closing the player shouldn't leave it
+          // playing in the background.
           if (id === 'music') stopMusicPlayback();
+          else if (id === 'videos') stopVideoPlayback();
           toggleWin(id);
         });
       }
@@ -623,6 +626,15 @@
     if (!body) return;
     body.innerHTML = `<div id="nd-videos-app">${t('Загрузка…', 'Loading…')}</div>`;
     loadVideos();
+  }
+
+  function stopVideoPlayback() {
+    const app = document.getElementById('nd-videos-app');
+    const video = app && app.querySelector('video');
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+    }
   }
 
   /* =========================================================
