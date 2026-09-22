@@ -1079,15 +1079,22 @@
   }
 
   /* /api/steam (profile + extra stats + recent/top games + CS inventory)
-     backs the Steam window. profile.synced is the one reliable "did Steam
-     actually connect" signal, so a false there gets a couple of quick
-     retries — covers a transient hiccup on the very first cold request —
-     before settling into the "not connected" state. Screenshots are
-     deliberately NOT part of this: they live on their own endpoint with
-     their own (much longer) retry below, so hammering that one never
-     re-triggers this endpoint's inventory pricing (rate-limited by Steam's
-     Market, and the whole reason this used to feel slow when both were
-     bundled together). */
+     backs the Steam window. profile.synced (the official, API-key'd Web API
+     call) is reliable — but cs_inventory comes from scraping
+     steamcommunity.com's anonymous inventory endpoint, which Steam
+     rate-limits much harder and can fail on its own even when the profile
+     call in the very same request succeeded fine. This used to break out of
+     the retry loop the moment profile.synced was true, so a profile that
+     connects instantly (the common case) left a merely-transient inventory
+     failure with no second chance at all — permanently showing "no
+     inventory" for the rest of the page's life even though retry machinery
+     right here would have caught it. Now it keeps retrying (still capped at
+     the same two attempts) until BOTH have come through, or until the
+     budget's spent. Screenshots are deliberately NOT part of this: they live
+     on their own endpoint with their own (much longer) retry below, so
+     hammering that one never re-triggers this endpoint's inventory pricing
+     (rate-limited by Steam's Market, and the whole reason this used to feel
+     slow when both were bundled together). */
   const STEAM_RETRY_DELAYS_MS = [1500, 3000];
   let steamData = null;
   let steamPromise = null;
@@ -1096,13 +1103,16 @@
       .then((res) => res.json())
       .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] }, cs_inventory: { items: [] } }));
   }
+  function steamLooksComplete(data) {
+    return !!(data && data.profile && data.profile.synced && data.cs_inventory && data.cs_inventory.synced);
+  }
   function fetchSteam() {
     if (steamData) return Promise.resolve(steamData);
     if (!steamPromise) {
       steamPromise = (async () => {
         let data = await fetchSteamOnce();
         for (const delay of STEAM_RETRY_DELAYS_MS) {
-          if (data && data.profile && data.profile.synced) break;
+          if (steamLooksComplete(data)) break;
           await new Promise((resolve) => setTimeout(resolve, delay));
           data = await fetchSteamOnce();
         }
