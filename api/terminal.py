@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import random
 
+import log_sync
 from data.profile import PROFILE
 from data.projects import PROJECTS
 
@@ -18,6 +19,8 @@ COMMANDS = [
     "projects",
     "contact",
     "sudo hire-anton",
+    "sudo su",
+    "tail",
     "matrix",
     "bsod",
     "shutdown",
@@ -34,6 +37,8 @@ COMMANDS = [
     "cowsay",
     "clear",
 ]
+
+MAX_TAIL_LINES = 200
 
 # Ключ — короткое имя книги (без главы:стиха).
 # Значение: (русский текст, английский текст)
@@ -235,7 +240,7 @@ def _bible_frame(verse: str, book: str, lang: str) -> str:
 """
 
 
-def run_command(raw: str, lang: str = "ru") -> dict:
+def run_command(raw: str, lang: str = "ru", elevated_password: str = "") -> dict:
     lang = lang if lang in ("ru", "en") else "ru"
     cmd = (raw or "").strip()
     if not cmd:
@@ -273,6 +278,56 @@ def run_command(raw: str, lang: str = "ru") -> dict:
             else "[sudo] password for recruiter: ********\naccess granted. Ready to start."
         )
         return {"output": msg, "effect": {"type": "confetti"}}
+
+    if name == "sudo" and arg.split(" ", 1)[0:1] == ["su"]:
+        password = arg[len("su"):].strip()
+        if log_sync.check_password(password):
+            msg = (
+                "Пароль принят. Теперь root — веди себя прилично.\nПодсказка: 'tail' покажет лог сайта."
+                if lang == "ru"
+                else "Password accepted. You're root now — behave.\nHint: 'tail' shows the site log."
+            )
+            return {"output": msg, "effect": {"type": "elevate"}}
+        msg = (
+            f"[sudo] пароль для {PROFILE['name']['ru'].split()[-1].lower()}: \nSorry, try again."
+            if lang == "ru"
+            else "[sudo] password: \nSorry, try again."
+        )
+        return {"output": msg, "effect": None}
+
+    if name in ("tail", "log"):
+        if not log_sync.check_password(elevated_password):
+            msg = (
+                "tail: невозможно открыть «site.log»: Отказано в доступе\nПодсказка: сначала 'sudo su <пароль>'"
+                if lang == "ru"
+                else "tail: cannot open 'site.log': Permission denied\nHint: 'sudo su <password>' first"
+            )
+            return {"output": msg, "effect": None}
+        n = 20
+        follow = False
+        tokens = arg.split()
+        i = 0
+        while i < len(tokens):
+            tok = tokens[i]
+            if tok == "-f":
+                follow = True
+            elif tok == "-n" and i + 1 < len(tokens) and tokens[i + 1].lstrip("-").isdigit():
+                n = int(tokens[i + 1])
+                i += 1
+            elif tok.startswith("-n") and tok[2:].isdigit():
+                n = int(tok[2:])
+            i += 1
+        n = max(1, min(n, MAX_TAIL_LINES))
+        entries = log_sync.tail(n=n)
+        lines = [log_sync.format_entry(e) for e in entries]
+        body = "\n".join(lines) if lines else ("(пусто)" if lang == "ru" else "(empty)")
+        if follow:
+            hint = "\n(живой хвост — остановится на следующей команде)" if lang == "ru" else "\n(live-tailing — stops on your next command)"
+            body += hint
+            effect = {"type": "tail", "follow": True, "next_id": entries[-1]["id"] if entries else -1}
+        else:
+            effect = None
+        return {"output": body, "effect": effect}
 
     if name == "sudo":
         msg = (
@@ -452,6 +507,8 @@ def _help(lang: str) -> str:
             ("projects", "opens the projects window"),
             ("contact", "opens the contact window"),
             ("sudo hire-anton", "???"),
+            ("sudo su <password>", "elevate (needed for 'tail')"),
+            ("tail [-n N] [-f]", "site log — root only"),
             ("matrix", "green rain, obviously"),
             ("bsod", "classic blue screen of death"),
             ("shutdown", "does what it says"),
@@ -477,6 +534,8 @@ def _help(lang: str) -> str:
             ("projects", "открывает окно проектов"),
             ("contact", "открывает окно контактов"),
             ("sudo hire-anton", "???"),
+            ("sudo su <пароль>", "повышение прав (нужно для 'tail')"),
+            ("tail [-n N] [-f]", "лог сайта — только для root"),
             ("matrix", "зелёный дождь, а как же без него"),
             ("bsod", "классический синий экран смерти"),
             ("shutdown", "делает ровно то, что написано"),

@@ -1078,6 +1078,27 @@
     if (heatWrap) heatWrap.scrollLeft = heatWrap.scrollWidth; // scrolled to the most recent weeks by default
   }
 
+  /* Shared fetch helper for all three /api/steam* endpoints: logs to the
+     console on any failure (bad status, network error, or a hang) instead
+     of failing silently into "stuck on loading forever" with nothing to go
+     on, and aborts a request that's taking too long rather than leaving a
+     dangling fetch() that (fetch has no default timeout) could otherwise
+     wait forever on a server that never responds. */
+  function fetchJsonSafe(url, fallback, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`${url} responded ${res.status}`);
+        return res.json();
+      })
+      .catch((err) => {
+        console.error(`[steam] request to ${url} failed:`, err);
+        return fallback;
+      })
+      .finally(() => clearTimeout(timer));
+  }
+
   /* /api/steam (profile + extra stats + recent/top games) backs the bulk of
      the Steam window. It's all the official, API-key'd Web API, so
      profile.synced is a reliable "did this actually connect" signal and a
@@ -1086,9 +1107,7 @@
   let steamData = null;
   let steamPromise = null;
   function fetchSteamOnce() {
-    return fetch('/api/steam')
-      .then((res) => res.json())
-      .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] } }));
+    return fetchJsonSafe('/api/steam', { profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] } }, 12000);
   }
   function fetchSteam() {
     if (steamData) return Promise.resolve(steamData);
@@ -1099,6 +1118,9 @@
           if (data && data.profile && data.profile.synced) break;
           await new Promise((resolve) => setTimeout(resolve, delay));
           data = await fetchSteamOnce();
+        }
+        if (!data || !data.profile || !data.profile.synced) {
+          console.error('[steam] /api/steam never synced after retries — giving up. Last response:', data);
         }
         return data;
       })();
@@ -1126,9 +1148,7 @@
   let inventoryData = null;
   let inventoryPromise = null;
   function fetchInventoryOnce() {
-    return fetch('/api/steam/inventory')
-      .then((res) => res.json())
-      .catch(() => ({ cs_inventory: { synced: false, items: [] } }));
+    return fetchJsonSafe('/api/steam/inventory', { cs_inventory: { synced: false, items: [] } }, 12000);
   }
   function fetchInventory() {
     if (inventoryData) return Promise.resolve(inventoryData);
@@ -1139,6 +1159,9 @@
           if (data && data.cs_inventory && data.cs_inventory.synced) break;
           await new Promise((resolve) => setTimeout(resolve, delay));
           data = await fetchInventoryOnce();
+        }
+        if (!data || !data.cs_inventory || !data.cs_inventory.synced) {
+          console.error('[steam] CS inventory never synced after retries — giving up. Last response:', data);
         }
         return data;
       })();
@@ -1162,9 +1185,7 @@
   let screenshotsData = null;
   let screenshotsPromise = null;
   function fetchScreenshotsOnce() {
-    return fetch('/api/steam/screenshots')
-      .then((res) => res.json())
-      .catch(() => ({ screenshots: { synced: false, screenshots: [] } }));
+    return fetchJsonSafe('/api/steam/screenshots', { screenshots: { synced: false, screenshots: [] } }, 12000);
   }
   function fetchScreenshots() {
     if (screenshotsData) return Promise.resolve(screenshotsData);
@@ -1174,6 +1195,9 @@
         for (let attempt = 1; attempt < SCREENSHOTS_MAX_ATTEMPTS && !(data && data.screenshots && data.screenshots.synced); attempt++) {
           await new Promise((resolve) => setTimeout(resolve, SCREENSHOTS_RETRY_DELAY_MS));
           data = await fetchScreenshotsOnce();
+        }
+        if (!data || !data.screenshots || !data.screenshots.synced) {
+          console.error('[steam] screenshots never synced after retries — giving up. Last response:', data);
         }
         return data;
       })();

@@ -42,6 +42,29 @@ var settings = {
   rotatoraudiosizefactor:   0,
 }
 
+// The sketch's sizes/speeds (rotatorsize, particle size & speed) are all
+// absolute pixel values, tuned for Wallpaper Engine's assumption of a fixed
+// monitor resolution. Embedded in an iframe that can be any size, those
+// absolute values stayed exactly the same pixel count regardless of the
+// canvas's actual dimensions — so the black hole and particle motion looked
+// proportionally bigger/faster on a small window and smaller/slower on a
+// big one, instead of scaling with it. applyResponsiveScale() rescales them
+// by the ratio between the actual canvas area and this reference area
+// (1920x1080, a common desktop resolution) every time the canvas resizes,
+// so the whole composition's proportions stay consistent at any size.
+var REFERENCE_WIDTH = 1920;
+var REFERENCE_HEIGHT = 1080;
+var BASE_ROTATOR_SIZE = settings.rotatorsize;
+var BASE_PARTICLESPEED_MIN = settings.particlespeed_min;
+var BASE_PARTICLESPEED_MAX = settings.particlespeed_max;
+
+function applyResponsiveScale() {
+  var scaleFactor = Math.sqrt((windowWidth * windowHeight) / (REFERENCE_WIDTH * REFERENCE_HEIGHT));
+  settings.rotatorsize = BASE_ROTATOR_SIZE * scaleFactor;
+  settings.particlespeed_min = BASE_PARTICLESPEED_MIN * scaleFactor;
+  settings.particlespeed_max = BASE_PARTICLESPEED_MAX * scaleFactor;
+}
+
 var wp_audio_array = [0];
 
 function getAudioMagnitude(){
@@ -65,12 +88,14 @@ function setup() {
   // windowResized() below instead.
   createCanvas(windowWidth, windowHeight);
   background(settings.backgroundcolor);
+  applyResponsiveScale();
 
   ps = new ParticleSystem(settings.numberofparticles, settings.numberofattractors, settings.numberofrotators);
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+  applyResponsiveScale();
 }
 
 function draw() {

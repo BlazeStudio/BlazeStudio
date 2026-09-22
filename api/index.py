@@ -22,6 +22,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import faceit_sync
 import github_sync
+import log_sync
 import music_sync
 import steam_sync
 import terminal
@@ -54,6 +55,23 @@ class NoCacheStaticMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class AccessLogMiddleware(BaseHTTPMiddleware):
+    """Feeds the terminal's `tail`/`log` easter egg (see log_sync.py) — a
+    minimal access log of method + path + status, deliberately nothing else
+    (no query string, no IP, no user agent), since this ends up readable by
+    anyone the site owner hands the TERMINAL_ROOT_PASSWORD to. /static/* is
+    excluded as pure noise, and the log endpoint itself is excluded so a
+    `tail -f` polling loop doesn't spend its time logging its own polling."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if not path.startswith("/static/") and path != "/api/terminal/log":
+            log_sync.record(f"{request.method} {path} -> {response.status_code}")
+        return response
+
+
+app.add_middleware(AccessLogMiddleware)
 app.add_middleware(NoCacheStaticMiddleware)
 
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
@@ -222,9 +240,34 @@ def video_list():
 class TerminalRequest(BaseModel):
     cmd: str = ""
     lang: str = "ru"
+    elevated_password: str = ""
+
+
+def _redact_cmd(cmd: str) -> str:
+    """A 'sudo su <password>' the log records verbatim would defeat the
+    point of gating tail behind that same password — so this is the one
+    command whose argument never reaches the log."""
+    parts = cmd.strip().split(maxsplit=2)
+    if len(parts) >= 2 and parts[0].lower() == "sudo" and parts[1].lower() == "su":
+        return "sudo su ********"
+    return cmd
 
 
 @app.post("/api/terminal")
 def terminal_command(payload: TerminalRequest):
-    result = terminal.run_command(payload.cmd, payload.lang)
+    result = terminal.run_command(payload.cmd, payload.lang, payload.elevated_password)
+    if payload.cmd.strip():
+        log_sync.record(f"term: {_redact_cmd(payload.cmd)}")
     return JSONResponse(result)
+
+
+@app.get("/api/terminal/log")
+def terminal_log(password: str = "", since: int = -1, n: int = 20):
+    if not log_sync.check_password(password):
+        return JSONResponse({"error": "permission denied"}, status_code=403)
+    n = max(1, min(n, terminal.MAX_TAIL_LINES))
+    entries = log_sync.tail(since=since) if since >= 0 else log_sync.tail(n=n)
+    return {
+        "lines": [log_sync.format_entry(e) for e in entries],
+        "next_id": entries[-1]["id"] if entries else since,
+    }
