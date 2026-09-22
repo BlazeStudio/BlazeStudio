@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
 import faceit_sync
 import github_sync
@@ -34,6 +35,26 @@ START_TIME = time.time()
 ASSET_VERSION = str(int(START_TIME))  # busts browser cache for static/* on every (re)deploy
 
 app = FastAPI(title="Anton Vasiliev", docs_url=None, redoc_url=None)
+
+
+class NoCacheStaticMiddleware(BaseHTTPMiddleware):
+    """/static/* URLs are versioned with ?v=<ASSET_VERSION>, but that only
+    changes on a server (re)start — editing a CSS/JS/template file mid-session
+    doesn't bump it. Without an explicit Cache-Control, browsers apply their
+    own heuristic freshness lifetime to that unchanged URL and can silently
+    keep serving the pre-edit file for a while. "no-cache" (not "no-store")
+    just forces a revalidation round-trip every time — StaticFiles already
+    answers those with 304s when the file hasn't actually changed, so this
+    costs nothing but a cheap conditional request, not the whole payload."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+app.add_middleware(NoCacheStaticMiddleware)
 
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 

@@ -111,7 +111,19 @@
     const ph = document.getElementById(placeholderIdFor(id));
     if (ph) ph.remove();
   }
+  // Winamp/mini-games/Video live directly under #nd-surface, not inside a
+  // #nd-grid column — they're always position:absolute (see CSS) even before
+  // their first drag, so there's no column slot to preserve. Giving them a
+  // placeholder anyway inserted a flex-grow:1 sibling straight into
+  // #nd-surface's OWN row flex (icons + grid), squeezing #nd-grid every time
+  // one of these was dragged or maximized — worse with each one, since each
+  // left its own leftover placeholder competing for the same row.
+  const FLOATING_WIN_IDS = new Set(['music', 'games', 'videos']);
   function syncPlaceholder(id) {
+    if (FLOATING_WIN_IDS.has(id)) {
+      hidePlaceholder(id);
+      return;
+    }
     if (state.detached[id] || isMaximized(id)) showPlaceholder(id);
     else hidePlaceholder(id);
   }
@@ -544,7 +556,7 @@
       .map(
         (v, i) => `
       <button type="button" class="nd-video-icon" data-i="${i}">
-        <svg width="40" height="40" aria-hidden="true"><use href="#ico-video"></use></svg>
+        ${v.icon ? `<img src="${v.icon}" alt="" width="40" height="40">` : `<svg width="40" height="40" aria-hidden="true"><use href="#ico-video"></use></svg>`}
         <span>${v.title}</span>
       </button>`
       )

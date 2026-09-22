@@ -345,11 +345,17 @@ a:hover { color: #d00000; }
 /* ---- Video app (large-icons grid, like a Windows Explorer icon view) ---- */
 .nd-videos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 12px; align-content: start; }
 .nd-video-icon { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; color: #000; text-align: center; font-size: 12px; border-radius: 4px; }
-.nd-video-icon svg { flex: none; }
+.nd-video-icon svg, .nd-video-icon img { flex: none; object-fit: cover; border-radius: 2px; }
 .nd-video-icon span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
 .nd-video-icon:hover, .nd-video-icon:focus-visible { background: rgba(10, 79, 208, 0.12); outline: 1px dotted var(--nd-blue-4); }
-.nd-video-player { display: flex; flex-direction: column; gap: 10px; }
-.nd-video-player video { width: 100%; max-height: 60vh; background: #000; }
+/* Video's window body is its own flex column (unlike the generic .nd-body)
+   so the player can flex-grow to fill however big the window currently is —
+   a flat max-height cap meant the video stayed small even when the window
+   was maximized, letterboxed inside a box much bigger than it needed. */
+#nd-videos-body { display: flex; flex-direction: column; }
+#nd-videos-app { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.nd-video-player { display: flex; flex-direction: column; gap: 10px; flex: 1 1 auto; min-height: 0; }
+.nd-video-player video { flex: 1 1 auto; min-height: 0; width: 100%; object-fit: contain; background: #000; }
 .nd-video-back { align-self: flex-start; }
 .nd-video-title { font-size: 12.5px; text-align: center; }
 
@@ -711,6 +717,11 @@ a:hover { color: #d00000; }
      kept working). Dragging is already JS-disabled below 900px, so it's
      safe to hand touch-action back to the buttons here. */
   .nd-tb { touch-action: manipulation; }
+  /* Belt-and-suspenders: force every interactive element inside a window to
+     the same permissive value directly, rather than relying on it merely
+     not being restricted by an ancestor — removes any doubt on real devices
+     this environment can't fully emulate for verification. */
+  .nd-win button, .nd-win input, .nd-win a { touch-action: manipulation; }
 }
 
 @media (prefers-reduced-motion: reduce) {
