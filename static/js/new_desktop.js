@@ -21,7 +21,7 @@
      fixed box; "Расставить" clears all detached state and lets
      everything fall back into the grid.
      ========================================================= */
-  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts'];
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts', 'music', 'games'];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
@@ -31,6 +31,8 @@
     hh: () => 'hh.ru',
     console: () => t('Консоль', 'Console'),
     contacts: () => t('Контакты', 'Contacts'),
+    music: () => 'Winamp',
+    games: () => t('Мини-игры', 'Mini-games'),
   };
   const WIN_ICON = {
     avatar: 'ico-avatar',
@@ -41,6 +43,8 @@
     hh: 'ico-hh',
     console: 'ico-console',
     contacts: 'ico-contacts',
+    music: 'ico-music',
+    games: 'ico-games',
   };
   const MIN_WIN_W = 200;
   const MIN_WIN_H = 140;
@@ -330,17 +334,9 @@
     pdf: { ru: 'Резюме (PDF)', en: 'Résumé (PDF)' },
     projects: { ru: 'Проекты', en: 'Projects' },
     screens: { ru: 'Скриншоты Steam', en: 'Steam screenshots' },
-    games: { ru: 'Мини-игры', en: 'Mini-games' },
-    music: { ru: 'Winamp', en: 'Winamp' },
+    videos: { ru: 'Видео', en: 'Video' },
     links: { ru: 'Сервисы', en: 'Services' },
   };
-
-  function cleanupGame(key) {
-    if (window.XP.gameCleanup && window.XP.gameCleanup[key]) {
-      window.XP.gameCleanup[key]();
-      delete window.XP.gameCleanup[key];
-    }
-  }
 
   function setTab(tab) {
     state.tab = tab;
@@ -359,11 +355,7 @@
   }
 
   function renderTabPanel(tab) {
-    cleanupGame('nd-mines');
-    cleanupGame('nd-slots');
-    cleanupGame('nd-snake');
     cleanupScreenNav();
-    cleanupMusic();
     const panel = document.getElementById('nd-explorer-panel');
     if (!panel) return;
     const l = lang();
@@ -373,12 +365,9 @@
     else if (tab === 'screens') {
       panel.innerHTML = screensHtml();
       loadScreens(panel);
-    } else if (tab === 'games') {
-      panel.innerHTML = gamesHtml(l);
-      mountGames();
-    } else if (tab === 'music') {
-      panel.innerHTML = musicHtml(l);
-      mountMusic();
+    } else if (tab === 'videos') {
+      panel.innerHTML = videosHtml();
+      loadVideos(panel);
     } else if (tab === 'links') panel.innerHTML = linksHtml(l);
   }
 
@@ -533,6 +522,69 @@
       });
     } catch (e) {
       bigEl.textContent = t('Не удалось загрузить скриншоты.', 'Could not load screenshots.');
+    }
+  }
+
+  /* =========================================================
+     Videos — whatever's dropped into static/video/ (read server-side by
+     api/video_sync.py), same "just drop files in" idea as Winamp's playlist.
+     ========================================================= */
+  function videosHtml() {
+    return `<div class="nd-screens">
+      <div class="nd-big-shot-row">
+        <button type="button" class="nd-shot-nav" id="nd-vid-prev" aria-label="${t('Предыдущее видео', 'Previous video')}">‹</button>
+        <div class="nd-big-shot" id="nd-big-video">${t('Загрузка…', 'Loading…')}</div>
+        <button type="button" class="nd-shot-nav" id="nd-vid-next" aria-label="${t('Следующее видео', 'Next video')}">›</button>
+      </div>
+      <div class="nd-video-list" id="nd-videos-list"></div>
+    </div>`;
+  }
+
+  const videoState = { videos: [], index: 0 };
+
+  function paintBigVideo(bigEl, v) {
+    bigEl.innerHTML = `<video src="${v.url}" controls preload="metadata"></video><div class="nd-big-shot-hint">${v.title}</div>`;
+  }
+
+  function showVideo(index) {
+    const videos = videoState.videos;
+    if (!videos.length) return;
+    const i = ((index % videos.length) + videos.length) % videos.length;
+    videoState.index = i;
+    const bigEl = document.getElementById('nd-big-video');
+    if (bigEl) paintBigVideo(bigEl, videos[i]);
+    document.querySelectorAll('#nd-videos-list .nd-video-item').forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.i) === i));
+  }
+
+  async function loadVideos(root) {
+    const bigEl = document.getElementById('nd-big-video');
+    const listEl = document.getElementById('nd-videos-list');
+    if (!bigEl || !listEl) return;
+    const prevBtn = root.querySelector('#nd-vid-prev');
+    const nextBtn = root.querySelector('#nd-vid-next');
+    if (prevBtn) prevBtn.addEventListener('click', () => showVideo(videoState.index - 1));
+    if (nextBtn) nextBtn.addEventListener('click', () => showVideo(videoState.index + 1));
+    try {
+      const res = await fetch('/api/video');
+      const data = await res.json();
+      const videos = (data && data.videos) || [];
+      videoState.videos = videos;
+      videoState.index = 0;
+      if (!videos.length) {
+        bigEl.textContent = t(
+          'Видео пока нет. Положи mp4/webm файлы в static/video/ — они появятся здесь сами.',
+          "No videos yet. Drop mp4/webm files into static/video/ and they'll show up here on their own."
+        );
+        listEl.innerHTML = '';
+        return;
+      }
+      showVideo(0);
+      listEl.innerHTML = videos.map((v, i) => `<button type="button" class="nd-video-item${i === 0 ? ' active' : ''}" data-i="${i}">▶ ${v.title}</button>`).join('');
+      listEl.querySelectorAll('.nd-video-item').forEach((btn) => {
+        btn.addEventListener('click', () => showVideo(Number(btn.dataset.i)));
+      });
+    } catch (e) {
+      bigEl.textContent = t('Не удалось загрузить видео.', 'Could not load videos.');
     }
   }
 
@@ -698,10 +750,18 @@
     void l;
   }
 
+  function initGamesWin() {
+    const body = document.getElementById('nd-games-body');
+    if (!body) return;
+    body.innerHTML = gamesHtml(lang());
+    mountGames();
+  }
+
   /* =========================================================
      Winamp — real playback of whatever's dropped into static/music/
-     (title/artist/cover read server-side by api/music_sync.py). Playback
-     stops when the Winamp tab is left, same as the mini-games do.
+     (title/artist/cover read server-side by api/music_sync.py). The window
+     is standalone now (not an Explorer tab), so playback just keeps going
+     regardless of what else is open, like a real Winamp instance would.
      ========================================================= */
   const MUSIC_HUES = [165, 265, 25, 200, 330]; // fallback "art" tile color when a track has no embedded cover
   const musicState = { playing: false, track: 0 };
@@ -718,7 +778,14 @@
       musicTracks = [];
     }
     musicTracksLoaded = true;
-    if (state.tab === 'music') renderTabPanel('music'); // refresh if the user's already looking at the (until-now loading) tab
+    renderMusicWin(); // refresh out of the (until-now loading) placeholder
+  }
+
+  function renderMusicWin() {
+    const body = document.getElementById('nd-music-body');
+    if (!body) return;
+    body.innerHTML = musicHtml();
+    if (musicTracksLoaded) mountMusic();
   }
 
   function musicHtml() {
@@ -884,14 +951,6 @@
     paintMusic();
   }
 
-  function cleanupMusic() {
-    if (musicAudioEl) {
-      musicAudioEl.pause();
-      musicAudioEl = null;
-    }
-    musicState.playing = false;
-  }
-
   function linksHtml(l) {
     const c = PROFILE.contacts;
     const items = [
@@ -971,11 +1030,16 @@
   /* One shared fetch of /api/steam for both the Steam window (profile +
      recent games) and the Explorer's Screenshots tab, instead of hitting
      the endpoint twice. profile.synced is the one reliable "did Steam
-     actually connect" signal (screenshots/inventory can legitimately come
-     back empty rather than failed), so a false there gets a couple of quick
-     retries — covers a transient hiccup on the very first cold request —
-     before settling into the "not connected" state. */
-  const STEAM_RETRY_DELAYS_MS = [1500, 3000];
+     actually connect" signal, and screenshots.synced is checked the same
+     way — both can fail transiently on a cold request (the profile API
+     timing out, or the screenshots page scrape hiccuping) independently of
+     each other. Rather than give up after a couple of tries, this retries
+     up to STEAM_MAX_ATTEMPTS times total, still without ever reloading the
+     page. (An account with genuinely zero public screenshots looks the same
+     as "failed to load" here and pays for the full retry budget too — an
+     acceptable tradeoff since this profile does have public screenshots.) */
+  const STEAM_MAX_ATTEMPTS = 10;
+  const STEAM_RETRY_DELAY_MS = 1500;
   let steamData = null;
   let steamPromise = null;
   function fetchSteamOnce() {
@@ -983,14 +1047,16 @@
       .then((res) => res.json())
       .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, screenshots: { screenshots: [] }, cs_inventory: { items: [] } }));
   }
+  function steamLooksLoaded(data) {
+    return !!(data && data.profile && data.profile.synced && data.screenshots && data.screenshots.synced);
+  }
   function fetchSteam() {
     if (steamData) return Promise.resolve(steamData);
     if (!steamPromise) {
       steamPromise = (async () => {
         let data = await fetchSteamOnce();
-        for (const delay of STEAM_RETRY_DELAYS_MS) {
-          if (data && data.profile && data.profile.synced) break;
-          await new Promise((resolve) => setTimeout(resolve, delay));
+        for (let attempt = 1; attempt < STEAM_MAX_ATTEMPTS && !steamLooksLoaded(data); attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, STEAM_RETRY_DELAY_MS));
           data = await fetchSteamOnce();
         }
         return data;
@@ -1076,35 +1142,31 @@
     }
   }
 
-  /* FACEIT's real skill levels are 1-10 (plus an unranked "Challenger" tier
-     at 2001+ / top 1000), tiered into 5 color bands, shown on faceit.com as
-     a dark circular badge with a progress ring that fills up across 1-10.
-     Drawn locally (matching that look) instead of hotlinking FACEIT's own
-     CDN icons. */
+  /* FACEIT's real skill levels are 1-10, tiered into 5 color bands — grey,
+     green, yellow, orange, red — shown on faceit.com as a flat dark circular
+     badge with a solid ring in the tier's color (not a proportional
+     progress meter; the "how close to the next level" figure is its own
+     separate text, see faceitNextLevelHtml). Bracket cutoffs and colors are
+     sampled straight from FACEIT's own level-icon legend so the badge here
+     actually matches theirs, drawn locally instead of hotlinking their CDN. */
   const FACEIT_ELO_BRACKETS = [null, 100, 501, 751, 901, 1051, 1201, 1351, 1531, 1751, 2001];
   function faceitTier(level) {
     const tiers = [
-      { max: 2, color: '#c7c7c7' },
-      { max: 4, color: '#ffc115' },
-      { max: 6, color: '#ff6d00' },
-      { max: 8, color: '#f52d2d' },
-      { max: 10, color: '#b80707' },
+      { max: 1, color: '#c7c7c7' },
+      { max: 3, color: '#48e46c' },
+      { max: 7, color: '#fccc24' },
+      { max: 9, color: '#fc6c24' },
+      { max: 10, color: '#e40024' },
     ];
     return tiers.find((tr) => level <= tr.max) || tiers[tiers.length - 1];
   }
   function faceitLevelIcon(level) {
-    const lvl = Math.max(0, Math.min(10, Number(level) || 0));
-    const tier = faceitTier(lvl || 1);
-    const r = 14;
-    const circumference = 2 * Math.PI * r;
-    const offset = circumference * (1 - lvl / 10);
+    const lvl = Math.max(1, Math.min(10, Number(level) || 1));
+    const tier = faceitTier(lvl);
     return `<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true" class="nd-faceit-lvl-ico">
       <circle cx="16" cy="16" r="15" fill="#141414"/>
-      <circle cx="16" cy="16" r="${r}" fill="none" stroke="#333" stroke-width="2.4"/>
-      <circle cx="16" cy="16" r="${r}" fill="none" stroke="${tier.color}" stroke-width="2.4" stroke-linecap="round"
-        stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
-        transform="rotate(-90 16 16)"/>
-      <text x="16" y="21" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="${tier.color}">${lvl || '?'}</text>
+      <circle cx="16" cy="16" r="13" fill="none" stroke="${tier.color}" stroke-width="2.6"/>
+      <text x="16" y="20.5" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="13" fill="${tier.color}">${lvl}</text>
     </svg>`;
   }
   function faceitNextLevelHtml(level, elo) {
@@ -1181,7 +1243,9 @@
              const cls = m.result === 'win' ? 'win' : m.result === 'loss' ? 'loss' : 'unknown';
              const label = m.result === 'win' ? 'W' : m.result === 'loss' ? 'L' : '?';
              const date = m.finished_at ? new Date(m.finished_at * 1000).toLocaleDateString() : '';
-             return `<a class="nd-faceit-dot ${cls}" href="${m.faceit_url || '#'}" target="_blank" rel="noopener" title="${date}">${label}</a>`;
+             const kd = Number(m.kd);
+             const kdLabel = Number.isFinite(kd) ? kd.toFixed(2) : '—';
+             return `<a class="nd-faceit-match ${cls}" href="${m.faceit_url || '#'}" target="_blank" rel="noopener" title="${date}"><span>${label}</span><span class="nd-faceit-match-kd">${kdLabel}</span></a>`;
            })
            .join('')}</div>`
       : '';
@@ -1334,9 +1398,14 @@
      ========================================================= */
   document.addEventListener('DOMContentLoaded', () => {
     initWindows();
+    // Winamp and mini-games are standalone floating windows, but unlike the
+    // rest they start closed even on desktop — opened on demand from their
+    // icon/Start menu entry, on top of whatever else is already open.
+    setHidden('music', true);
+    setHidden('games', true);
     // Mobile: windows render as fixed full-screen overlays (see the
-    // max-width: 900px rules below), so starting with all 8 open would stack
-    // full-screen panels on load with no way back to the desktop icons.
+    // max-width: 900px rules below), so starting with all of them open would
+    // stack full-screen panels on load with no way back to the desktop icons.
     // Start from a clean "home screen" instead — one tap opens what's wanted.
     if (window.innerWidth <= 900) {
       WIN_ORDER.forEach((id) => setHidden(id, true));
@@ -1349,6 +1418,8 @@
     renderHh();
     renderContacts();
     initConsoleWindow();
+    initGamesWin();
+    renderMusicWin();
     loadGithub();
     loadSteamWin();
     loadFaceit();
@@ -1375,7 +1446,7 @@
       const l = lang();
       if (title) title.textContent = TAB_NAME[state.tab][l] + ' — ' + t('Мои документы', 'My Documents');
       if (addr) addr.textContent = 'C:\\' + t('Мои документы', 'My Documents') + '\\' + TAB_NAME[state.tab][l];
-      if (state.tab !== 'games' && state.tab !== 'music') renderTabPanel(state.tab); // a running game or a playing track keeps its own state, like windows.js's "stateful" windows
+      renderTabPanel(state.tab);
     });
   });
 })();

@@ -24,6 +24,7 @@ import github_sync
 import music_sync
 import steam_sync
 import terminal
+import video_sync
 from config import RESUME_SOURCE
 from data.profile import PROFILE
 from data.projects import CATEGORIES, PROJECTS
@@ -169,6 +170,11 @@ def music_cover(filename: str):
         return Response(status_code=404)
     data, mime = result
     return Response(content=data, media_type=mime, headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/api/video")
+def video_list():
+    return video_sync.get_videos()
 
 
 class TerminalRequest(BaseModel):

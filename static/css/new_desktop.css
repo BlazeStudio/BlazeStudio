@@ -104,6 +104,15 @@ a:hover { color: #d00000; }
   max-height: none !important;
 }
 
+/* Winamp / mini-games live outside #nd-grid (they start closed and float
+   over the desktop instead of sharing a column with the always-open
+   windows), so they need their own default box instead of one handed out
+   by the responsive grid — new_desktop.js only takes over with inline
+   left/top/width/height once the window is actually dragged or resized. */
+#nd-win-music, #nd-win-games { position: absolute; }
+#nd-win-music { left: 40px; top: 56px; width: 300px; height: 460px; }
+#nd-win-games { left: 320px; top: 36px; width: 540px; height: 540px; }
+
 .nd-resize {
   position: absolute;
   right: 0;
@@ -222,10 +231,11 @@ a:hover { color: #d00000; }
 .nd-faceit-country { font-size: 11.5px; color: #b8b8b8; }
 .nd-faceit-matches-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #b8b8b8; margin: 10px 0 4px; }
 .nd-faceit-matches { display: flex; gap: 5px; margin-bottom: 4px; }
-.nd-faceit-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: bold 11px Tahoma, Verdana, sans-serif; color: #fff; text-decoration: none; }
-.nd-faceit-dot.win { background: #2e8f3e; }
-.nd-faceit-dot.loss { background: #b03a3a; }
-.nd-faceit-dot.unknown { background: #4a4a50; }
+.nd-faceit-match { width: 34px; height: 34px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: bold 11px Tahoma, Verdana, sans-serif; color: #fff; text-decoration: none; }
+.nd-faceit-match.win { background: #2e8f3e; }
+.nd-faceit-match.loss { background: #b03a3a; }
+.nd-faceit-match.unknown { background: #4a4a50; }
+.nd-faceit-match-kd { font: 9.5px 'Courier New', monospace; font-weight: normal; opacity: 0.9; }
 .nd-faceit-level-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .nd-faceit-lvl-ico { flex: none; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
 .nd-faceit-next { font-size: 10.5px; color: #8fd18f; background: rgba(46, 143, 62, 0.25); border: 1px solid #2e8f3e; border-radius: 3px; padding: 1px 5px; }
@@ -325,6 +335,13 @@ a:hover { color: #d00000; }
 .nd-shot:hover, .nd-shot:focus-visible { outline: 2px solid var(--nd-accent); }
 .nd-shot.active { border-color: var(--nd-accent); outline: 2px solid var(--nd-accent); }
 .nd-shot img { width: 100%; height: 56px; object-fit: cover; display: block; }
+
+/* ---- videos tab (reuses .nd-screens/.nd-big-shot-row from screenshots) ---- */
+.nd-big-shot video { flex: 1 1 auto; width: 100%; min-height: 0; }
+.nd-video-list { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+.nd-video-item { text-align: left; padding: 6px 10px; border: 2px solid var(--nd-blue-4); background: #000; color: #7dff7d; font: 12px 'Courier New', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nd-video-item:hover, .nd-video-item:focus-visible { outline: 2px solid var(--nd-accent); }
+.nd-video-item.active { border-color: var(--nd-accent); outline: 2px solid var(--nd-accent); }
 
 /* ---- fullscreen lightbox (screenshots) ---- */
 #nd-lightbox {
@@ -666,6 +683,14 @@ a:hover { color: #d00000; }
   .nd-resize, .nd-max { display: none !important; } /* resizing/maximizing is moot on mobile — windows are already fixed full-screen */
   #nd-arrange { display: none; } /* dragging is off on mobile, so "arrange" has nothing to do */
   #nd-toggle-all { display: none; } /* windows start closed on mobile (new_desktop.js) — a "show all" would just re-stack every full-screen window at once */
+  /* .nd-tb sets touch-action:none so a titlebar drag on a touchscreen
+     desktop doesn't fight the browser's own panning — but the used
+     touch-action for a tap is the INTERSECTION of the target and all its
+     ancestors, so that none was silently swallowing taps on the close/
+     minimize buttons nested inside it too (only "Пуск", outside .nd-tb,
+     kept working). Dragging is already JS-disabled below 900px, so it's
+     safe to hand touch-action back to the buttons here. */
+  .nd-tb { touch-action: manipulation; }
 }
 
 @media (prefers-reduced-motion: reduce) {
