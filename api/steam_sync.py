@@ -235,7 +235,7 @@ _RARITY_RANK = {
 PRICE_CURRENCY = "5"  # RUB
 PRICE_CACHE_TTL = 3600  # prices move slowly enough that an hour-old figure is fine
 PRICE_TIMEOUT = 1.5  # the market endpoint is aggressively rate-limited — fail fast rather than stall the page
-PRICE_BUDGET_SECONDS = 6.0  # total wall-clock time this request may spend pricing items
+PRICE_BUDGET_SECONDS = 4.5  # total wall-clock time this request may spend pricing items — kept a couple seconds under a typical 10s serverless function limit, on top of the inventory fetch itself
 PRICE_MAX_CONSECUTIVE_FAILURES = 3  # stop hammering an endpoint that's already started rate-limiting us
 
 _PRICE_NUM_RE = re.compile(r"[\d][\d\s  ]*(?:[.,]\d+)?")

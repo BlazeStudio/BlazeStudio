@@ -160,24 +160,35 @@ def github_stats():
 
 @app.get("/api/steam")
 def steam_stats():
-    # Screenshots live on their own endpoint (see /api/steam/screenshots)
-    # rather than being bundled in here: the frontend retries that one much
-    # harder (its scrape is the flaky part), and bundling it in this endpoint
-    # too would mean every one of those retries also re-runs the inventory's
-    # market-price lookups — the part that's actually rate-limited — instead
-    # of just leaving them alone once they've loaded.
+    # Screenshots and the CS inventory both live on their own endpoints
+    # (see below) rather than being bundled in here, for the same reason in
+    # both cases: this endpoint's profile/extra/games calls are the official,
+    # API-key'd Web API and answer near-instantly, while inventory pricing
+    # and the screenshot scrape each hit steamcommunity.com directly and can
+    # legitimately take several seconds (or get rate-limited and fail) on
+    # their own. Bundling either into this one meant a slow/failing one of
+    # them held the whole response hostage — worst case actually timing out
+    # the request outright on a serverless deploy's function-duration limit —
+    # so profile/stats never even rendered even though they'd been ready
+    # instantly. Splitting them out means each piece loads (or fails) on its
+    # own, on its own retry schedule, without blocking or re-triggering the
+    # others.
     return {
         "profile": steam_sync.get_profile(),
         "extra": steam_sync.get_extra_stats(),
         "recent_games": steam_sync.get_recently_played(),
         "top_games": steam_sync.get_top_games(),
-        "cs_inventory": steam_sync.get_cs_inventory(),
     }
 
 
 @app.get("/api/steam/screenshots")
 def steam_screenshots():
     return {"screenshots": steam_sync.get_recent_screenshots(count=12)}
+
+
+@app.get("/api/steam/inventory")
+def steam_inventory():
+    return {"cs_inventory": steam_sync.get_cs_inventory()}
 
 
 @app.get("/api/faceit")

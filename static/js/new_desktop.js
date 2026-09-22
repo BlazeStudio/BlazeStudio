@@ -1078,33 +1078,17 @@
     if (heatWrap) heatWrap.scrollLeft = heatWrap.scrollWidth; // scrolled to the most recent weeks by default
   }
 
-  /* /api/steam (profile + extra stats + recent/top games + CS inventory)
-     backs the Steam window. profile.synced (the official, API-key'd Web API
-     call) is reliable — but cs_inventory comes from scraping
-     steamcommunity.com's anonymous inventory endpoint, which Steam
-     rate-limits much harder and can fail on its own even when the profile
-     call in the very same request succeeded fine. This used to break out of
-     the retry loop the moment profile.synced was true, so a profile that
-     connects instantly (the common case) left a merely-transient inventory
-     failure with no second chance at all — permanently showing "no
-     inventory" for the rest of the page's life even though retry machinery
-     right here would have caught it. Now it keeps retrying (still capped at
-     the same two attempts) until BOTH have come through, or until the
-     budget's spent. Screenshots are deliberately NOT part of this: they live
-     on their own endpoint with their own (much longer) retry below, so
-     hammering that one never re-triggers this endpoint's inventory pricing
-     (rate-limited by Steam's Market, and the whole reason this used to feel
-     slow when both were bundled together). */
+  /* /api/steam (profile + extra stats + recent/top games) backs the bulk of
+     the Steam window. It's all the official, API-key'd Web API, so
+     profile.synced is a reliable "did this actually connect" signal and a
+     couple of quick retries is enough for a transient hiccup. */
   const STEAM_RETRY_DELAYS_MS = [1500, 3000];
   let steamData = null;
   let steamPromise = null;
   function fetchSteamOnce() {
     return fetch('/api/steam')
       .then((res) => res.json())
-      .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] }, cs_inventory: { items: [] } }));
-  }
-  function steamLooksComplete(data) {
-    return !!(data && data.profile && data.profile.synced && data.cs_inventory && data.cs_inventory.synced);
+      .catch(() => ({ profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] } }));
   }
   function fetchSteam() {
     if (steamData) return Promise.resolve(steamData);
@@ -1112,7 +1096,7 @@
       steamPromise = (async () => {
         let data = await fetchSteamOnce();
         for (const delay of STEAM_RETRY_DELAYS_MS) {
-          if (steamLooksComplete(data)) break;
+          if (data && data.profile && data.profile.synced) break;
           await new Promise((resolve) => setTimeout(resolve, delay));
           data = await fetchSteamOnce();
         }
@@ -1121,6 +1105,46 @@
     }
     return steamPromise.then((data) => {
       steamData = data;
+      return data;
+    });
+  }
+
+  /* /api/steam/inventory is its own endpoint on purpose: it scrapes
+     steamcommunity.com's anonymous inventory listing AND prices each item
+     via the Market (rate-limited hard by Steam, up to a several-second
+     budget server-side — see PRICE_BUDGET_SECONDS in steam_sync.py). Bundled
+     into /api/steam like it used to be, a slow or rate-limited inventory
+     held the whole response hostage — on a real deploy, sometimes past a
+     serverless function's time limit, which killed the request outright and
+     took profile/stats down with it even though those were ready instantly.
+     Split out, a slow inventory just means the inventory section takes a
+     moment (or, after retrying, stays empty) while the rest of the window
+     works fine. Retries are capped at two (not screenshots' ten): retrying
+     re-runs the same rate-limited price lookups, so hammering it harder
+     would fight the very throttling that's slowing it down. */
+  const INVENTORY_RETRY_DELAYS_MS = [1500, 3000];
+  let inventoryData = null;
+  let inventoryPromise = null;
+  function fetchInventoryOnce() {
+    return fetch('/api/steam/inventory')
+      .then((res) => res.json())
+      .catch(() => ({ cs_inventory: { synced: false, items: [] } }));
+  }
+  function fetchInventory() {
+    if (inventoryData) return Promise.resolve(inventoryData);
+    if (!inventoryPromise) {
+      inventoryPromise = (async () => {
+        let data = await fetchInventoryOnce();
+        for (const delay of INVENTORY_RETRY_DELAYS_MS) {
+          if (data && data.cs_inventory && data.cs_inventory.synced) break;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          data = await fetchInventoryOnce();
+        }
+        return data;
+      })();
+    }
+    return inventoryPromise.then((data) => {
+      inventoryData = data;
       return data;
     });
   }
@@ -1163,7 +1187,43 @@
   async function loadSteamWin() {
     await fetchSteam();
     renderSteamWin();
+    loadInventory(); // independent of the above — never blocks profile/stats, and never gets blocked by them
   }
+
+  function invHtml(inv) {
+    if (!inv || !inv.synced) return '';
+    return `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS · по ценности', 'CS inventory · by value')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
+      <div class="nd-steam-inv-grid">${inv.items
+        .map((it, i) => {
+          const priceLabel = it.price_rub != null ? ` · ${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽` : '';
+          const title = `${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}${priceLabel}`;
+          const inner = it.icon ? `<img src="${it.icon}" alt="" loading="lazy">` : '';
+          const style = `style="--inv-color:${it.rarity_color || '#4b69ff'}"`;
+          return `<button type="button" class="nd-steam-inv-item" ${style} title="${title}" data-i="${i}">${inner}</button>`;
+        })
+        .join('')}</div>`;
+  }
+
+  function renderInventorySlot(inv) {
+    const slot = document.getElementById('nd-steam-inv-slot');
+    if (!slot) return; // the Steam window re-rendered (e.g. language toggle) before this resolved
+    slot.outerHTML = invHtml(inv); // may be '' — an inventory that never synced just leaves no trace, same as before the split
+    if (inv && inv.synced) {
+      document.querySelectorAll('.nd-steam-inv-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const it = inv.items[Number(btn.dataset.i)];
+          if (!it) return;
+          openItemPopup(it);
+        });
+      });
+    }
+  }
+
+  async function loadInventory() {
+    const data = await fetchInventory();
+    renderInventorySlot(data && data.cs_inventory);
+  }
+
   function renderSteamWin() {
     const body = document.getElementById('nd-steam-body');
     if (!body) return;
@@ -1191,20 +1251,6 @@
            )
            .join('')}</ul>`
       : `<p class="nd-steam-dim">${t('недавних игр нет', 'no recent games')}</p>`;
-    const inv = steamData.cs_inventory;
-    const invHtml =
-      inv && inv.synced
-        ? `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS · по ценности', 'CS inventory · by value')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
-           <div class="nd-steam-inv-grid">${inv.items
-             .map((it, i) => {
-               const priceLabel = it.price_rub != null ? ` · ${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽` : '';
-               const title = `${it.name}${it.exterior ? ' (' + it.exterior + ')' : ''} — ${it.rarity || ''}${priceLabel}`;
-               const inner = it.icon ? `<img src="${it.icon}" alt="" loading="lazy">` : '';
-               const style = `style="--inv-color:${it.rarity_color || '#4b69ff'}"`;
-               return `<button type="button" class="nd-steam-inv-item" ${style} title="${title}" data-i="${i}">${inner}</button>`;
-             })
-             .join('')}</div>`
-        : '';
     const topGames = (steamData.top_games && steamData.top_games.games) || [];
     const topGamesHtml = topGames.length
       ? `<div class="nd-steam-games-label">${t('Больше всего наиграно', 'Most played')}</div>
@@ -1219,19 +1265,11 @@
       </div>
       ${statsHtml}
       ${gamesHtml}
-      ${invHtml}
+      <div id="nd-steam-inv-slot"><p class="nd-steam-dim">${t('Загружаем инвентарь…', 'Loading inventory…')}</p></div>
       ${topGamesHtml}
       <a class="nd-btn98 nd-block" href="${p.profile_url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
-    if (inv && inv.synced) {
-      body.querySelectorAll('.nd-steam-inv-item').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const it = inv.items[Number(btn.dataset.i)];
-          if (!it) return;
-          openItemPopup(it);
-        });
-      });
-    }
+    if (inventoryData) renderInventorySlot(inventoryData.cs_inventory); // already loaded (e.g. restoring after a language toggle) — fill it in immediately instead of waiting on loadInventory() again
   }
 
   /* FACEIT's real skill levels are 1-10, tiered into 5 color bands — grey,
