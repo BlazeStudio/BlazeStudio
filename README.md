@@ -92,10 +92,9 @@
 <br>
 <img src="https://codewars-stats-ignacio-cuadra.vercel.app/?username=BlazeStudio&theme=dark" height="150" alt="Codewars Stats" />
 <br>
-<img src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=BlazeStudio&theme=tokyonight" height="180" />
-<img src="https://github-profile-summary-cards.vercel.app/api/cards/productive-time?username=BlazeStudio&theme=tokyonight&utcOffset=3" height="180" />
-
-<img src="https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=BlazeStudio&theme=tokyonight" alt="Profile Details" />
+<img src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=BlazeStudio&theme=dark" height="180" />
+<img src="https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=BlazeStudio&theme=dark" height="180" />
+<img src="https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=BlazeStudio&theme=dark" alt="Profile Details" />
 <br>
 
 <br><br>
