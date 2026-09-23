@@ -88,7 +88,7 @@
 
 <div align="center">
 
-<img src="https://www.codewars.com/users/blaze_blaze/badges/large" alt="Codewars Badge" />
+<img src="https://www.codewars.com/users/BlazeStudio/badges/large" alt="Codewars Badge" />
 <br>
 <img src="https://codewars-stats-ignacio-cuadra.vercel.app/?username=BlazeStudio&theme=dark" height="150" alt="Codewars Stats" />
 <br>
@@ -99,12 +99,6 @@
 <br>
 
 <br><br>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/BlazeStudio/BlazeStudio/output/github-contribution-grid-snake-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/BlazeStudio/BlazeStudio/output/github-contribution-grid-snake.svg">
-  <img alt="github contribution snake" src="https://raw.githubusercontent.com/BlazeStudio/BlazeStudio/output/github-contribution-grid-snake.svg">
-</picture>
 
 
 
