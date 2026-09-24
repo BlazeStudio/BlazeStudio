@@ -899,7 +899,7 @@
      regardless of what else is open, like a real Winamp instance would.
      ========================================================= */
   const MUSIC_HUES = [165, 265, 25, 200, 330]; // fallback "art" tile color when a track has no embedded cover
-  const musicState = { playing: false, track: 0 };
+  const musicState = { playing: false, track: 0, repeat: false };
   let musicTracks = [];
   let musicTracksLoaded = false;
   let musicAudioEl = null;
@@ -946,16 +946,18 @@
               <div class="nd-music-time" id="nd-music-time">00:00</div>
               <div class="nd-music-bars" id="nd-music-bars">${bars}</div>
             </div>
-            <div class="nd-wa-seek" id="nd-music-seek-track"><div class="nd-wa-seek-fill" id="nd-music-seek"></div></div>
+            <div class="nd-wa-seek" id="nd-music-seek-track" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="nd-wa-seek-fill" id="nd-music-seek"></div></div>
           </div>
         </div>
         <div class="nd-music-ticker"><span class="nd-tick" id="nd-music-track"></span></div>
         <div class="nd-music-controls">
+
           <button class="nd-wbtn" id="nd-music-prev" aria-label="${t('Предыдущий трек', 'Previous track')}">◀◀</button>
           <button class="nd-wbtn" id="nd-music-play" aria-label="${t('Играть', 'Play')}">▶</button>
           <button class="nd-wbtn" id="nd-music-stop" aria-label="${t('Стоп', 'Stop')}">■</button>
           <button class="nd-wbtn" id="nd-music-next" aria-label="${t('Следующий трек', 'Next track')}">▶▶</button>
-        </div>
+          <button class="nd-wbtn" id="nd-music-repeat" aria-label="${t('Повтор трека', 'Repeat track')}" title="${t('Повтор трека', 'Repeat track')}">🔁</button>
+                </div>
         <div class="nd-wa-volume-row">
           <span class="nd-wa-volume-ico" aria-hidden="true">🔊</span>
           <input type="range" id="nd-music-volume" class="nd-wa-volume" min="0" max="100" value="80" aria-label="${t('Громкость', 'Volume')}">
@@ -983,6 +985,15 @@
     playBtn.textContent = musicState.playing ? '❚❚' : '▶';
     playBtn.setAttribute('aria-label', musicState.playing ? t('Пауза', 'Pause') : t('Играть', 'Play'));
     barsEl.classList.toggle('on', musicState.playing);
+    const repeatBtn = document.getElementById('nd-music-repeat');
+    if (repeatBtn) {
+      repeatBtn.classList.toggle('active', !!musicState.repeat);
+      repeatBtn.setAttribute('aria-pressed', musicState.repeat ? 'true' : 'false');
+      repeatBtn.setAttribute(
+        'aria-label',
+        musicState.repeat ? t('Повтор включён', 'Repeat on') : t('Повтор трека', 'Repeat track')
+      );
+    }
     if (artEl) {
       if (track.cover_url) {
         artEl.style.background = `center / cover no-repeat url("${track.cover_url}")`;
@@ -1046,7 +1057,18 @@
       musicAudioEl.volume = (Number.isFinite(savedVolume) ? Math.min(100, Math.max(0, savedVolume)) : 80) / 100;
       musicAudioEl.addEventListener('timeupdate', updateMusicTime);
       musicAudioEl.addEventListener('loadedmetadata', updateMusicTime);
-      musicAudioEl.addEventListener('ended', () => playTrack(musicState.track + 1));
+      musicAudioEl.addEventListener('ended', () => {
+        if (musicState.repeat) {
+          // Replay the same track (audio.loop can glitch with some formats on iOS)
+          musicAudioEl.currentTime = 0;
+          musicAudioEl.play().catch(() => {
+            musicState.playing = false;
+            paintMusic();
+          });
+        } else {
+          playTrack(musicState.track + 1);
+        }
+      });
     }
     const volumeInput = document.getElementById('nd-music-volume');
     if (volumeInput && musicAudioEl) {
@@ -1079,10 +1101,51 @@
     if (prev) prev.addEventListener('click', () => playTrack(musicState.track - 1));
     if (next) next.addEventListener('click', () => playTrack(musicState.track + 1));
     if (seekTrack) {
-      seekTrack.addEventListener('click', (e) => {
-        if (!musicAudioEl || !musicAudioEl.duration) return;
+      // Click + drag (mouse) and touch-drag — the old click-only path used
+      // clientX on a 7px bar which is nearly impossible to hit on a phone.
+      const seekFromEvent = (e) => {
+        if (!musicAudioEl || !Number.isFinite(musicAudioEl.duration) || musicAudioEl.duration <= 0) return;
+        const point = e.touches && e.touches[0] ? e.touches[0] : e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : e;
         const rect = seekTrack.getBoundingClientRect();
-        musicAudioEl.currentTime = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)) * musicAudioEl.duration;
+        const ratio = Math.min(1, Math.max(0, (point.clientX - rect.left) / rect.width));
+        musicAudioEl.currentTime = ratio * musicAudioEl.duration;
+        updateMusicTime();
+      };
+      let seeking = false;
+      const startSeek = (e) => {
+        seeking = true;
+        seekFromEvent(e);
+        e.preventDefault();
+      };
+      const moveSeek = (e) => {
+        if (!seeking) return;
+        seekFromEvent(e);
+        e.preventDefault();
+      };
+      const endSeek = (e) => {
+        if (!seeking) return;
+        seeking = false;
+        seekFromEvent(e);
+      };
+      seekTrack.addEventListener('pointerdown', (e) => {
+        seekTrack.setPointerCapture(e.pointerId);
+        startSeek(e);
+      });
+      seekTrack.addEventListener('pointermove', moveSeek);
+      seekTrack.addEventListener('pointerup', endSeek);
+      seekTrack.addEventListener('pointercancel', () => { seeking = false; });
+      // Fallback for older iOS that is flaky with pointer events on custom divs
+      seekTrack.addEventListener('touchstart', startSeek, { passive: false });
+      seekTrack.addEventListener('touchmove', moveSeek, { passive: false });
+      seekTrack.addEventListener('touchend', endSeek, { passive: false });
+      seekTrack.addEventListener('click', seekFromEvent);
+    }
+    const repeatBtn = document.getElementById('nd-music-repeat');
+    if (repeatBtn) {
+      onTap(repeatBtn, () => {
+        musicState.repeat = !musicState.repeat;
+        if (musicAudioEl) musicAudioEl.loop = false; // we handle loop in 'ended'
+        paintMusic();
       });
     }
     paintMusic();
