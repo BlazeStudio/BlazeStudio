@@ -61,6 +61,30 @@
     return { w: (m && m.w) || MIN_WIN_W, h: (m && m.h) || MIN_WIN_H };
   }
 
+
+  // Reliable tap on iOS/Android: click alone often fails on small titlebar
+  // buttons when ancestors use touch-action:none / pointer handlers.
+  // pointerup (touch/pen) + click, with a short guard against double-fire.
+  function onTap(el, handler) {
+    if (!el) return;
+    let last = 0;
+    const run = (e) => {
+      const now = Date.now();
+      if (now - last < 350) return;
+      last = now;
+      handler(e);
+    };
+    el.addEventListener('click', run);
+    el.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+        e.preventDefault();
+        e.stopPropagation();
+        run(e);
+      }
+    }, { passive: false });
+  }
+
+
   const state = { hidden: {}, detached: {}, preMax: {}, z: {}, tab: 'resume' };
   let zOrder = []; // back-to-front stacking order, kept short so z-index never has to grow unbounded (and stays well under the taskbar's)
 
@@ -181,6 +205,16 @@
   function show(id) {
     if (state.hidden[id]) setHidden(id, false);
     raise(id);
+    // iOS: virtual keyboard / caret only appear after an explicit focus
+    // following a user gesture; reopen console with input ready.
+    if (id === 'console') {
+      setTimeout(() => {
+        const input = document.getElementById('term-input');
+        if (input) {
+          try { input.focus({ preventScroll: false }); } catch (_) { input.focus(); }
+        }
+      }, 60);
+    }
   }
 
   function isMaximized(id) {
@@ -295,21 +329,19 @@
       const tb = el.querySelector('.nd-tb');
       if (tb) tb.addEventListener('pointerdown', startDrag(id));
       const min = el.querySelector('.nd-min');
-      if (min) min.addEventListener('click', () => toggleWin(id));
+      onTap(min, () => toggleWin(id));
       const close = el.querySelector('.nd-x');
-      if (close) {
-        close.addEventListener('click', () => {
-          // Real Winamp behavior: closing it stops playback, minimizing it
-          // (to the taskbar, same as every other window here) doesn't. Video
-          // gets the same treatment — closing the player shouldn't leave it
-          // playing in the background.
-          if (id === 'music') stopMusicPlayback();
-          else if (id === 'videos') stopVideoPlayback();
-          toggleWin(id);
-        });
-      }
+      onTap(close, () => {
+        // Real Winamp behavior: closing it stops playback, minimizing it
+        // (to the taskbar, same as every other window here) doesn't. Video
+        // gets the same treatment — closing the player shouldn't leave it
+        // playing in the background.
+        if (id === 'music') stopMusicPlayback();
+        else if (id === 'videos') stopVideoPlayback();
+        toggleWin(id);
+      });
       const maxBtn = el.querySelector('.nd-max');
-      if (maxBtn) maxBtn.addEventListener('click', () => toggleMaximize(id));
+      onTap(maxBtn, () => toggleMaximize(id));
       const resizeHandle = el.querySelector('.nd-resize');
       if (resizeHandle) resizeHandle.addEventListener('pointerdown', startResize(id));
       el.addEventListener('pointerdown', () => raise(id));
@@ -328,7 +360,7 @@
       btn.innerHTML = `<svg aria-hidden="true"><use href="#${WIN_ICON[id]}"></use></svg>`;
       btn.title = WIN_LABEL[id]();
       btn.setAttribute('aria-label', (hidden ? t('Показать окно ', 'Show window ') : t('Скрыть окно ', 'Hide window ')) + WIN_LABEL[id]());
-      btn.addEventListener('click', () => toggleWin(id));
+      onTap(btn, () => toggleWin(id));
       bar.appendChild(btn);
     });
     const allBtn = document.getElementById('nd-toggle-all');
@@ -1498,7 +1530,7 @@
   }
 
   function initIcons() {
-    document.querySelectorAll('.nd-ico').forEach((btn) => btn.addEventListener('click', () => openWinOrTab(btn)));
+    document.querySelectorAll('.nd-ico').forEach((btn) => onTap(btn, () => openWinOrTab(btn)));
   }
 
   /* =========================================================
@@ -1581,7 +1613,7 @@
     loadFaceit();
     loadMusicTracks();
 
-    document.querySelectorAll('.nd-tabbtn').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+    document.querySelectorAll('.nd-tabbtn').forEach((b) => onTap(b, () => setTab(b.dataset.tab)));
 
     const arrangeBtn = document.getElementById('nd-arrange');
     if (arrangeBtn) arrangeBtn.addEventListener('click', arrange);

@@ -766,6 +766,31 @@ a:hover { color: #d00000; }
      not being restricted by an ancestor — removes any doubt on real devices
      this environment can't fully emulate for verification. */
   .nd-win button, .nd-win input, .nd-win a { touch-action: manipulation; }
+  /* iPhone: 22×22 titlebar buttons are nearly impossible to hit reliably.
+     Grow the close/minimize hit targets; hide max (already display:none). */
+  .nd-tb button {
+    width: 40px;
+    height: 32px;
+    min-width: 40px;
+    min-height: 32px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nd-tabbtn {
+    padding: 10px 14px;
+    min-height: 40px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nd-ico {
+    min-height: 64px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Keep console input above the iOS keyboard / home indicator when focused */
+  #nd-win-console .nd-body { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  #term-input {
+    font-size: 16px; /* prevents iOS zoom-on-focus */
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
