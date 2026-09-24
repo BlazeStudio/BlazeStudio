@@ -15,7 +15,8 @@ filename (with extension) as it sits in static/video/.
 VIDEO_META: dict[str, dict] = {
     "o0ZCiCAi2IV51KQwXPBI6mEfKJ85BvKAyDh1MH.mp4": {"title": "Nostalgia.mp4", "order": 1, "icon": "videoframe_7849.png"}, 
     "zYhlZCjmhSgvRPmymKWVkritZNDQMMxJ.mp4": {"title": "ES.mp4", "order": 2, "icon": "videoframe_512.png"}, 
-    "mqYPUKgoQfkAhjkizQutUqIrSINGESNg.mp4": {"title": "thatfeel.mp4", "order": 3, "icon": "videoframe_0.png"}, 
-    "MszBsYrVFYwiGrBZnxiYtMrXFaShSfct.mp4": {"title": "Suffocation.mp4", "order": 4, "icon": "videoframe_2850.png"}, 
-    "RpDnDnHaOsycMjcZaLgDYAyVHvbXMrcw.mp4": {"title": "God.mp4", "order": 5, "icon": "videoframe_15451.png"}, 
+    "WuUSKuxnLTEKpRufFHVXxNQOMgBiehsn.mp4": {"title": "icouldntsleep.mp4", "order": 3, "icon": "videoframe_1.png"}, 
+    "mqYPUKgoQfkAhjkizQutUqIrSINGESNg.mp4": {"title": "thatfeel.mp4", "order": 4, "icon": "videoframe_0.png"}, 
+    "MszBsYrVFYwiGrBZnxiYtMrXFaShSfct.mp4": {"title": "Suffocation.mp4", "order": 5, "icon": "videoframe_2850.png"}, 
+    "RpDnDnHaOsycMjcZaLgDYAyVHvbXMrcw.mp4": {"title": "God.mp4", "order": 6, "icon": "videoframe_15451.png"}, 
 }

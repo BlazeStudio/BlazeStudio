@@ -524,17 +524,34 @@
 
   function paintBigShot(bigEl, s) {
     const linkHtml = s.view_url ? `<div class="nd-big-shot-link"><a href="${s.view_url}" target="_blank" rel="noopener">${t('Открыть на Steam ↗', 'Open on Steam ↗')}</a></div>` : '';
-    bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}"><div class="nd-big-shot-hint">${t('нажмите, чтобы открыть на весь экран', 'click to open full screen')}</div>${linkHtml}`;
-    const openShot = () => openLightbox(s.full, s.view_url, true);
-    const img = bigEl.querySelector('img');
-    if (img) {
-      img.addEventListener('click', openShot);
-      img.addEventListener('touchend', (e) => { e.preventDefault(); openShot(); }, { passive: false });
-    }
-    bigEl.addEventListener('click', (e) => {
-      if (e.target.closest && e.target.closest('a')) return;
-      openShot();
-    });
+    bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}" draggable="false"><div class="nd-big-shot-hint">${t('нажмите, чтобы открыть на весь экран', 'click to open full screen')}</div>${linkHtml}`;
+    bigEl.setAttribute('role', 'button');
+    bigEl.setAttribute('tabindex', '0');
+    bigEl.title = t('Открыть на весь экран', 'Open full screen');
+    // Replace previous handlers (showShot re-paints often)
+    bigEl.onclick = null;
+    bigEl.onkeydown = null;
+    const openShot = (e) => {
+      if (e && e.target && e.target.closest && e.target.closest('a')) return;
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      openLightbox(s.full, s.view_url, true);
+    };
+    bigEl.onclick = openShot;
+    bigEl.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openShot(e);
+      }
+    };
+    // Dedicated touch path — some iOS builds drop click on non-<button> divs
+    bigEl.ontouchend = (e) => {
+      if (e.target && e.target.closest && e.target.closest('a')) return;
+      e.preventDefault();
+      openShot(e);
+    };
   }
 
   function showShot(index) {
@@ -705,24 +722,36 @@
   }
   function openLightbox(src, viewUrl, nav) {
     const overlay = document.getElementById('nd-lightbox');
-    if (!overlay) return;
+    if (!overlay) {
+      console.warn('[lightbox] #nd-lightbox missing from DOM');
+      return;
+    }
     setLightboxImage(src, viewUrl);
     overlay.dataset.nav = nav ? 'screens' : '';
     const prevBtn = document.getElementById('nd-lightbox-prev');
     const nextBtn = document.getElementById('nd-lightbox-next');
     if (prevBtn) prevBtn.hidden = !nav;
     if (nextBtn) nextBtn.hidden = !nav;
-    overlay.hidden = false;
-    // iOS: ensure overlay is painted above fixed windows
-    overlay.style.zIndex = '500';
-    overlay.style.display = 'flex';
+    // Remove [hidden] entirely — CSS uses #nd-lightbox[hidden]{display:none!important}
+    // which beats an inline display:flex unless the attribute is gone.
+    overlay.removeAttribute('hidden');
+    overlay.style.setProperty('display', 'flex', 'important');
+    overlay.style.setProperty('z-index', '9999', 'important');
+    overlay.style.setProperty('position', 'fixed', 'important');
+    overlay.style.setProperty('inset', '0', 'important');
+    // Move to <body> so no ancestor transform/overflow can clip or trap it
+    if (overlay.parentElement !== document.body) {
+      document.body.appendChild(overlay);
+    }
   }
   function closeLightbox() {
     const overlay = document.getElementById('nd-lightbox');
-    if (overlay) {
-      overlay.hidden = true;
-      overlay.style.display = '';
-    }
+    if (!overlay) return;
+    overlay.setAttribute('hidden', '');
+    overlay.style.removeProperty('display');
+    overlay.style.removeProperty('z-index');
+    overlay.style.removeProperty('position');
+    overlay.style.removeProperty('inset');
   }
   function initLightbox() {
     const overlay = document.getElementById('nd-lightbox');

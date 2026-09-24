@@ -371,9 +371,47 @@ a:hover { color: #d00000; }
    without it, a maximized (very wide) window stretches this to the full
    window width while height stays capped, producing huge empty letterbox
    bars on either side of the image. */
-.nd-big-shot { flex: 1 1 auto; min-width: 0; min-height: 380px; max-height: 62vh; max-width: 960px; margin: 0 auto; background: #000; border: 3px solid var(--nd-blue-4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #7dff7d; font: 14px 'Courier New', monospace; text-align: center; padding: 10px; box-sizing: border-box; }
-.nd-big-shot img { flex: 1 1 auto; width: 100%; min-height: 0; object-fit: contain; cursor: zoom-in; }
-.nd-big-shot-hint { flex: none; font-size: 11px; color: #5a5; }
+.nd-big-shot {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 200px;
+  max-height: 62vh;
+  max-width: 960px;
+  margin: 0 auto;
+  background: #000;
+  border: 3px solid var(--nd-blue-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #7dff7d;
+  font: 14px 'Courier New', monospace;
+  text-align: center;
+  padding: 10px;
+  box-sizing: border-box;
+  cursor: zoom-in;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(125, 255, 125, 0.25);
+}
+.nd-big-shot img {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  object-fit: contain;
+  /* clicks go to the parent .nd-big-shot so one handler covers img + hint */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.nd-big-shot-hint {
+  flex: none;
+  font-size: 11px;
+  color: #5a5;
+  pointer-events: none;
+  user-select: none;
+}
+.nd-big-shot-link { pointer-events: auto; } /* keep Steam link tappable */
 .nd-big-shot-link { flex: none; font-size: 12px; }
 .nd-big-shot-link a { color: #7dff7d; }
 .nd-shot-nav { flex: none; align-self: center; width: 36px; height: 56px; background: var(--nd-panel); border: 2px outset #fff; font: bold 20px Tahoma, Verdana, sans-serif; color: #000; }
@@ -412,7 +450,7 @@ a:hover { color: #d00000; }
   width: 100vw;
   height: 100vh;
   margin: 0;
-  z-index: 450;
+  z-index: 9999;
   background: rgba(0, 0, 0, 0.92);
   display: flex;
   flex-direction: column;
@@ -705,11 +743,12 @@ a:hover { color: #d00000; }
 .mines-grid {
   display: grid;
   gap: 3px;
-  /* Fixed track size — with 1fr + emoji/number content, iOS/desktop grid
-     items grow their min-content on every reveal and the whole board "puffs up". */
-  grid-template-columns: repeat(9, 28px) !important;
-  width: max-content;
-  max-width: 100%;
+  /* minmax(0,1fr) is the key: plain 1fr lets emoji/numbers expand min-content
+     and the board grows on every reveal. minmax(0,…) caps that. Width tracks
+     the parent so shrinking the games window also shrinks the board. */
+  grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+  width: 100%;
+  max-width: 288px;
   margin: 10px auto;
   background: var(--nd-blue-4);
   padding: 5px;
@@ -717,13 +756,15 @@ a:hover { color: #d00000; }
   box-sizing: border-box;
 }
 .mines-cell {
-  width: 28px;
-  height: 28px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1;
   box-sizing: border-box;
   border: 2px outset #fff;
   background: var(--nd-panel);
   font-family: 'Courier New', monospace;
-  font-size: 12px;
+  font-size: clamp(9px, 2.8vw, 13px);
   font-weight: 700;
   line-height: 1;
   display: flex;
@@ -732,11 +773,8 @@ a:hover { color: #d00000; }
   cursor: pointer;
   padding: 0;
   overflow: hidden;
-  flex: none;
 }
 .mines-cell.revealed {
-  /* Keep same outer box — only change style, not border width (2→1 used to
-     shift layout slightly; fixed 28×28 already contains it). */
   border: 2px solid #b9b6a5;
   background: #fff;
   cursor: default;
