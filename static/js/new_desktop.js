@@ -409,6 +409,13 @@
     setTab(tab || state.tab);
   }
 
+  function wirePanelTaps(root) {
+    // Kept as a no-op hook: the document-level pointerup→click safety net
+    // (see DOMContentLoaded) covers explorer/games content without double-firing.
+    // CSS fix (#nd-surface overflow:visible on mobile) is the real cure.
+    void root;
+  }
+
   function renderTabPanel(tab) {
     cleanupScreenNav();
     const panel = document.getElementById('nd-explorer-panel');
@@ -421,6 +428,7 @@
       panel.innerHTML = screensHtml();
       loadScreens(panel);
     } else if (tab === 'links') panel.innerHTML = linksHtml(l);
+    wirePanelTaps(panel);
   }
 
   function tasksHtml(tasks) {
@@ -802,6 +810,7 @@
         <div class="mines-grid" id="mines-grid"></div>
       `;
       window.XP.initGame('mines', minesRoot, 'nd-mines');
+      wirePanelTaps(minesRoot);
     }
     if (slotsRoot) {
       slotsRoot.innerHTML = `
@@ -816,6 +825,7 @@
         </div>
       `;
       window.XP.initGame('slots', slotsRoot, 'nd-slots');
+      wirePanelTaps(slotsRoot);
     }
     const snakeRoot = document.getElementById('nd-snake-root');
     if (snakeRoot) {
@@ -1505,30 +1515,32 @@
     const promptEl = root.querySelector('.prompt');
     if (promptEl) promptEl.textContent = window.XP.termPrompt;
     window.XP.initConsole(root, false);
-    // iOS: the input only gets focus from a real user gesture on the field
-    // (or its row). Tapping the output area used to do nothing, which felt
-    // like "console is not clickable". Focus the input on any tap inside.
-    const focusInput = () => {
-      const input = document.getElementById('term-input');
-      if (input) {
-        try { input.focus({ preventScroll: false }); } catch (_) { input.focus(); }
-      }
-    };
-    root.addEventListener('pointerdown', (e) => {
-      // don't steal taps from buttons (close lives outside root anyway)
-      if (e.target && e.target.closest && e.target.closest('button')) return;
-      // defer focus slightly so the same gesture still registers as a click
-      setTimeout(focusInput, 0);
-    });
+
     const input = document.getElementById('term-input');
-    if (input) {
-      // Enter on mobile software keyboard
-      input.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') {
-          // keydown handler in terminal.js already runs the command;
-          // this is a safety net for some iOS keyboards that only fire keyup
-        }
-      });
+    const focusInput = () => {
+      if (!input) return;
+      try { input.focus({ preventScroll: false }); } catch (_) { input.focus(); }
+    };
+
+    // touchstart fires before the 300ms click delay / callout — single tap
+    // must open the keyboard immediately (no press-and-hold to "select").
+    const maybeFocus = (e) => {
+      if (!e.target) return;
+      if (e.target.closest && e.target.closest('a, button')) return;
+      // already on the input — leave it alone
+      if (e.target === input) return;
+      focusInput();
+    };
+    root.addEventListener('touchstart', maybeFocus, { passive: true });
+    root.addEventListener('pointerdown', maybeFocus);
+    // Also the whole window chrome body (padding around the black box)
+    const win = document.getElementById('nd-win-console');
+    if (win) {
+      const body = win.querySelector('.nd-body') || win;
+      body.addEventListener('touchstart', (e) => {
+        if (e.target.closest && e.target.closest('button, .nd-tb')) return;
+        focusInput();
+      }, { passive: true });
     }
   }
 
@@ -1656,6 +1668,44 @@
      Init
      ========================================================= */
   document.addEventListener('DOMContentLoaded', () => {
+    // Global iOS safety net for window content: only synthesize a click when
+    // the browser fails to deliver one after a touch (fixed-in-overflow quirk).
+    // If a real click arrives, cancel the pending synthetic one — never double-fire.
+    let pending = null;
+    document.addEventListener('pointerup', (e) => {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      const t = e.target;
+      if (!t || !t.closest) return;
+      const win = t.closest('.nd-win');
+      if (!win || win.classList.contains('nd-hidden')) return;
+      if (t.closest('.nd-tb')) return;
+      const clickable = t.closest(
+        'button, .nd-btn98, .mines-cell, .nd-shot, .nd-tabbtn, .nd-ico, .nd-plrow, .nd-video-icon, .nd-steam-inv-item, a.nd-btn98'
+      );
+      if (!clickable) return;
+      if (clickable.tagName === 'A' && clickable.getAttribute('href') && !clickable.classList.contains('nd-btn98')) return;
+      if (pending) {
+        clearTimeout(pending.timer);
+        pending = null;
+      }
+      const el = clickable;
+      pending = {
+        el,
+        timer: setTimeout(() => {
+          // No click arrived in time — synthesize one.
+          pending = null;
+          try { el.click(); } catch (_) {}
+        }, 300),
+      };
+    }, { passive: true });
+    document.addEventListener('click', (e) => {
+      if (!pending) return;
+      if (pending.el === e.target || (e.target.closest && pending.el.contains(e.target)) || pending.el === e.target.closest('button, .nd-btn98, .mines-cell, .nd-shot, .nd-tabbtn, .nd-ico, .nd-plrow, .nd-video-icon, .nd-steam-inv-item, a.nd-btn98')) {
+        clearTimeout(pending.timer);
+        pending = null;
+      }
+    }, true);
+
     initWindows();
     // Winamp, mini-games and Video are standalone floating windows, but
     // unlike the rest they start closed even on desktop — opened on demand

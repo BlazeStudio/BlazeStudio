@@ -720,7 +720,22 @@ a:hover { color: #d00000; }
      (same reasoning as dragging/resizing already being JS-disabled here),
      so heading it off with touch-action is cheap insurance. */
   #nd-desktop { touch-action: manipulation; }
-  #nd-surface { display: block; overflow-y: auto; } /* icons stack above the (fixed, full-screen) windows, so this one scroll is fine */
+  /* CRITICAL (iOS Safari): a position:fixed window that is a DESCENDANT of
+     an overflow:auto/scroll container gets broken hit-testing — taps land on
+     the scrolling ancestor instead of buttons/links inside the window. That
+     is exactly "titlebar works, content buttons don't". Keep #nd-surface
+     non-scrolling; only the icon column scrolls if needed. */
+  #nd-surface {
+    display: block;
+    overflow: visible;
+    touch-action: manipulation;
+  }
+  #nd-icons {
+    max-height: calc(100% - 8px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
   /* A 1500-particle canvas animation is a lot to ask of a phone GPU/battery
      for a purely decorative background — same reasoning as dragging/resizing
      already being off below this breakpoint. Windows go full-screen here
@@ -765,7 +780,22 @@ a:hover { color: #d00000; }
      the same permissive value directly, rather than relying on it merely
      not being restricted by an ancestor — removes any doubt on real devices
      this environment can't fully emulate for verification. */
-  .nd-win button, .nd-win input, .nd-win a { touch-action: manipulation; }
+  .nd-win, .nd-win * { touch-action: manipulation; }
+  .nd-win button, .nd-win input, .nd-win a, .nd-win .nd-btn98, .nd-win .mines-cell {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(10, 79, 208, 0.25);
+    pointer-events: auto;
+  }
+  .nd-body {
+    -webkit-overflow-scrolling: touch;
+    pointer-events: auto;
+    /* stop iOS long-press callout from eating the first tap */
+    -webkit-touch-callout: none;
+  }
+  .nd-body a, .nd-body button, .nd-btn98, .mines-cell, .nd-tabbtn, .nd-shot, .nd-video-icon {
+    cursor: pointer;
+    pointer-events: auto;
+  }
   /* iPhone: 22×22 titlebar buttons are nearly impossible to hit reliably.
      Grow the close/minimize hit targets; hide max (already display:none). */
   .nd-tb button {
@@ -791,24 +821,41 @@ a:hover { color: #d00000; }
     touch-action: manipulation;
   }
   #nd-console-root { -webkit-overflow-scrolling: touch; }
-  #term-output { -webkit-overflow-scrolling: touch; }
+  #term-output {
+    -webkit-overflow-scrolling: touch;
+    /* Without this, iOS treats the first long-ish tap as "select text" and
+       never focuses the input — user had to press-and-hold to type. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
   .term-input-row {
-    min-height: 44px;
-    padding: 10px 0 6px;
+    min-height: 48px;
+    padding: 12px 4px 8px;
+    /* whole row is a big hit target */
+    cursor: text;
   }
   #term-input {
     font-size: 16px; /* prevents iOS zoom-on-focus */
     -webkit-user-select: text;
     user-select: text;
-    min-height: 28px;
+    min-height: 32px;
+    width: 100%;
+    /* make the caret/tap target obvious */
+    caret-color: #3cff3c;
   }
   /* Make links printed in the terminal easy to hit */
   #term-output a {
     color: #7dff7d;
     text-decoration: underline;
     word-break: break-all;
+    -webkit-user-select: auto;
+    user-select: auto;
+    pointer-events: auto;
+    padding: 2px 0;
   }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
