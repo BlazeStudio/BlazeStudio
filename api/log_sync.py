@@ -41,7 +41,5 @@ def format_entry(entry: dict[str, Any]) -> str:
 
 
 def check_password(password: str) -> bool:
-    expected = 'os.environ.get("TERMINAL_ROOT_PASSWORD", "")'
-    # No password configured means this feature is off, not "anyone with an
-    # empty password gets in" — an unset env var must never be a backdoor.
+    expected = os.environ.get("TERMINAL_ROOT_PASSWORD", "")
     return bool(expected) and password == expected
