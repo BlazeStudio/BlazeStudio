@@ -1247,7 +1247,13 @@
   }
 
   function invHtml(inv) {
-    if (!inv || !inv.synced) return '';
+    if (!inv || !inv.synced || !inv.items || !inv.items.length) {
+      return `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS', 'CS inventory')}</span></div>
+        <p class="nd-steam-dim" id="nd-steam-inv-fail">${t(
+          'Не удалось загрузить инвентарь (Steam rate-limit / приватный профиль / таймаут).',
+          'Could not load inventory (Steam rate-limit / private profile / timeout).'
+        )} <button type="button" class="nd-btn98" id="nd-steam-inv-retry" style="margin-top:6px">${t('Повторить', 'Retry')}</button></p>`;
+    }
     return `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS · по ценности', 'CS inventory · by value')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
       <div class="nd-steam-inv-grid">${inv.items
         .map((it, i) => {
@@ -1263,14 +1269,30 @@
   function renderInventorySlot(inv) {
     const slot = document.getElementById('nd-steam-inv-slot');
     if (!slot) return; // the Steam window re-rendered (e.g. language toggle) before this resolved
-    slot.outerHTML = invHtml(inv); // may be '' — an inventory that never synced just leaves no trace, same as before the split
-    if (inv && inv.synced) {
-      document.querySelectorAll('.nd-steam-inv-item').forEach((btn) => {
-        btn.addEventListener('click', () => {
+    // Keep a stable id on the wrapper so later retries can find it again
+    // after outerHTML replaces the node.
+    const html = invHtml(inv);
+    const wrap = document.createElement('div');
+    wrap.id = 'nd-steam-inv-slot';
+    wrap.innerHTML = html;
+    // invHtml may already be a full block — use outer content
+    slot.replaceWith(wrap);
+    // If invHtml returned a fragment starting with the label, the id is on wrap
+    if (inv && inv.synced && inv.items && inv.items.length) {
+      wrap.querySelectorAll('.nd-steam-inv-item').forEach((btn) => {
+        onTap(btn, () => {
           const it = inv.items[Number(btn.dataset.i)];
           if (!it) return;
           openItemPopup(it);
         });
+      });
+    } else {
+      const retry = wrap.querySelector('#nd-steam-inv-retry');
+      onTap(retry, () => {
+        inventoryData = null;
+        inventoryPromise = null;
+        wrap.innerHTML = `<p class="nd-steam-dim">${t('Загружаем инвентарь…', 'Loading inventory…')}</p>`;
+        loadInventory();
       });
     }
   }
@@ -1483,6 +1505,31 @@
     const promptEl = root.querySelector('.prompt');
     if (promptEl) promptEl.textContent = window.XP.termPrompt;
     window.XP.initConsole(root, false);
+    // iOS: the input only gets focus from a real user gesture on the field
+    // (or its row). Tapping the output area used to do nothing, which felt
+    // like "console is not clickable". Focus the input on any tap inside.
+    const focusInput = () => {
+      const input = document.getElementById('term-input');
+      if (input) {
+        try { input.focus({ preventScroll: false }); } catch (_) { input.focus(); }
+      }
+    };
+    root.addEventListener('pointerdown', (e) => {
+      // don't steal taps from buttons (close lives outside root anyway)
+      if (e.target && e.target.closest && e.target.closest('button')) return;
+      // defer focus slightly so the same gesture still registers as a click
+      setTimeout(focusInput, 0);
+    });
+    const input = document.getElementById('term-input');
+    if (input) {
+      // Enter on mobile software keyboard
+      input.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          // keydown handler in terminal.js already runs the command;
+          // this is a safety net for some iOS keyboards that only fire keyup
+        }
+      });
+    }
   }
 
   function trashEasterEgg() {
@@ -1501,9 +1548,35 @@
      three targets terminal.py's effect payloads use onto this
      page's actual windows/tabs. */
   window.XP.open = function (id) {
-    if (id === 'resume') openExplorer('resume');
-    else if (id === 'projects') openExplorer('projects');
-    else if (id === 'contact') show('contacts');
+    // Targets come from terminal.py effect payloads (cv/projects/contact/…)
+    // and a few aliases for convenience / future commands.
+    const openers = {
+      resume: () => openExplorer('resume'),
+      projects: () => openExplorer('projects'),
+      screens: () => openExplorer('screens'),
+      screenshots: () => openExplorer('screens'),
+      links: () => openExplorer('links'),
+      pdf: () => openExplorer('pdf'),
+      contact: () => show('contacts'),
+      contacts: () => show('contacts'),
+      explorer: () => openExplorer(state.tab || 'resume'),
+      github: () => show('github'),
+      steam: () => show('steam'),
+      faceit: () => show('faceit'),
+      console: () => show('console'),
+      music: () => show('music'),
+      games: () => show('games'),
+      videos: () => show('videos'),
+      hh: () => show('hh'),
+      avatar: () => show('avatar'),
+      // easter-egg "apps" that don't have their own window — land on console
+      taskmgr: () => show('console'),
+      calc: () => show('console'),
+      notepad: () => show('console'),
+    };
+    const fn = openers[id];
+    if (fn) fn();
+    else console.warn('[XP.open] unknown target:', id);
   };
 
   /* =========================================================
