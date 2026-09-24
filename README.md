@@ -4,10 +4,18 @@
 
 <br><br>
 
-[![Portfolio](https://img.shields.io/badge/🌐_Portfolio-anton--vasiliev--dev.vercel.app-00D9FF?style=for-the-badge)](https://anton-vasiliev-dev.vercel.app)
-[![Resume](https://img.shields.io/badge/📄_Resume-Dossier-7B2CBF?style=for-the-badge)](https://anton-vasiliev-dev.vercel.app/dossier)
-[![GitHub](https://img.shields.io/badge/GitHub-BlazeStudio-181717?style=for-the-badge&logo=github)](https://github.com/BlazeStudio)
-[![Email](https://img.shields.io/badge/📧_praim916@mail.ru-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:praim916@mail.ru)
+<a href="https://anton-vasiliev-dev.vercel.app" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/🌐_Portfolio-anton--vasiliev--dev.vercel.app-00D9FF?style=for-the-badge" alt="Portfolio">
+</a>
+<a href="https://anton-vasiliev-dev.vercel.app/dossier" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/📄_Resume-Dossier-7B2CBF?style=for-the-badge" alt="Resume">
+</a>
+<a href="https://github.com/BlazeStudio" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/GitHub-BlazeStudio-181717?style=for-the-badge&logo=github" alt="GitHub">
+</a>
+<a href="mailto:praim916@mail.ru">
+  <img src="https://img.shields.io/badge/📧_praim916@mail.ru-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email">
+</a>
 
 </div>
 
@@ -95,16 +103,6 @@
 <img src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=BlazeStudio&theme=dark" height="180" />
 <img src="https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=BlazeStudio&theme=dark" height="180" />
 <img src="https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=BlazeStudio&theme=dark" alt="Profile Details" />
-<br>
-
-<br><br>
-
-
-
-
-<br><br>
-
-![Profile views](https://komarev.com/ghpvc/?username=BlazeStudio&style=for-the-badge&color=00D9FF&label=Profile+Views)
 
 </div>
 
@@ -112,19 +110,15 @@
 
 ### 🌐 Где меня найти
 
-- 🖥️ **Портфолио**: [anton-vasiliev-dev.vercel.app](https://anton-vasiliev-dev.vercel.app)
-- 📄 **Резюме**: [Dossier](https://anton-vasiliev-dev.vercel.app/dossier)
-- 💬 **Telegram**: [@terminallover](https://t.me/terminallover)
-- 📧 **Email**: praim916@mail.ru
-
----
+<ul>
+  <li>🖥️ <strong>Портфолио</strong>: <a href="https://anton-vasiliev-dev.vercel.app" target="_blank" rel="noopener noreferrer">anton-vasiliev-dev.vercel.app</a></li>
+  <li>📄 <strong>Резюме</strong>: <a href="https://anton-vasiliev-dev.vercel.app/dossier" target="_blank" rel="noopener noreferrer">Dossier</a></li>
+  <li>💬 <strong>Telegram</strong>: <a href="https://t.me/terminallover" target="_blank" rel="noopener noreferrer">@terminallover</a></li>
+  <li>📧 <strong>Email</strong>: <a href="mailto:praim916@mail.ru">praim916@mail.ru</a></li>
+</ul>
 
 <div align="center">
 
-### 💡 Сейчас изучаю
-
-`LLM` · `RAG` · `AI Agents` · `Advanced Data Engineering`
-
-<br>
+![Profile views](https://komarev.com/ghpvc/?username=BlazeStudio&style=for-the-badge&color=00D9FF&label=Profile+Views)
 
 </div>
