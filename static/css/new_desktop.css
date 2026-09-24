@@ -786,10 +786,27 @@ a:hover { color: #d00000; }
   }
   /* Keep console input above the iOS keyboard / home indicator when focused */
   #nd-win-console .nd-body { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  #nd-win-console, #nd-console-root, #term-output, .term-input-row, #term-input {
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
+  #nd-console-root { -webkit-overflow-scrolling: touch; }
+  #term-output { -webkit-overflow-scrolling: touch; }
+  .term-input-row {
+    min-height: 44px;
+    padding: 10px 0 6px;
+  }
   #term-input {
     font-size: 16px; /* prevents iOS zoom-on-focus */
     -webkit-user-select: text;
     user-select: text;
+    min-height: 28px;
+  }
+  /* Make links printed in the terminal easy to hit */
+  #term-output a {
+    color: #7dff7d;
+    text-decoration: underline;
+    word-break: break-all;
   }
 }
 

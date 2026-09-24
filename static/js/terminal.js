@@ -9,13 +9,31 @@
   const PROMPT = 'anton@blaze-studio:~$';
   window.XP.termPrompt = PROMPT;
 
+  const URL_RE = /(https?:\/\/[^\s<>"']+|\b(?:github\.com|t\.me|linkedin\.com)\/[^\s<>"']+)/gi;
+
+  function linkify(text) {
+    // Escape HTML then turn URLs into anchors so contact/cv output is tappable.
+    const esc = String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return esc.replace(URL_RE, (raw) => {
+      const href = raw.startsWith('http') ? raw : 'https://' + raw;
+      return `<a href="${href}" target="_blank" rel="noopener">${raw}</a>`;
+    });
+  }
+
   function printLine(output, text, isCmd) {
     const row = document.createElement('div');
     if (isCmd) {
       row.className = 'cmd-line';
       row.textContent = `${PROMPT} ${text}`;
     } else {
-      row.textContent = text;
+      // Preserve newlines; linkify each line independently
+      row.innerHTML = String(text)
+        .split('\n')
+        .map((line) => linkify(line))
+        .join('<br>');
     }
     output.appendChild(row);
     output.scrollTop = output.scrollHeight;
@@ -105,11 +123,24 @@
     const input = root.querySelector('#term-input');
     printLine(output, WELCOME[window.XP.lang()]);
 
+    let submitting = false;
+    function submit() {
+      if (submitting) return;
+      const cmd = input.value;
+      if (!cmd.trim()) return;
+      submitting = true;
+      input.value = '';
+      Promise.resolve(runCommand(output, cmd)).finally(() => {
+        submitting = false;
+        // keep focus for the next command (esp. important on desktop)
+        try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
+      });
+    }
+
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        const cmd = input.value;
-        input.value = '';
-        if (cmd.trim()) runCommand(output, cmd);
+        e.preventDefault();
+        submit();
       } else if (e.key === 'ArrowUp') {
         if (historyPos > 0) {
           historyPos -= 1;
@@ -125,6 +156,13 @@
           input.value = '';
         }
         e.preventDefault();
+      }
+    });
+    // Some iOS keyboards only fire keyup for Enter on contenteditable-like fields
+    input.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submit();
       }
     });
 

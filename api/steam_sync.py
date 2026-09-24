@@ -25,13 +25,32 @@ CACHE_TTL = 600  # seconds
 _cache: dict[str, tuple[float, Any]] = {}
 
 
+# Browser-like UA — steamcommunity.com/inventory occasionally 403s bare
+# scrapers and odd product strings (e.g. "vasiliev-inc-site") from some
+# datacenter IP ranges. Looking like a normal browser doesn't guarantee
+# success on every Vercel region, but it recovers a lot of otherwise-empty
+# inventory responses.
+_BROWSER_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/122.0.0.0 Safari/537.36"
+)
+
+
 def _get(url: str, parse: str = "json", timeout: float = TIMEOUT) -> Any | None:
-    req = urllib.request.Request(url, headers={"User-Agent": "vasiliev-inc-site"})
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": _BROWSER_UA,
+            "Accept": "application/json,text/plain,*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read()
             return json.loads(raw) if parse == "json" else raw.decode("utf-8", "ignore")
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, json.JSONDecodeError):
         return None
 
 
@@ -238,7 +257,7 @@ PRICE_TIMEOUT = 1.5  # the market endpoint is aggressively rate-limited — fail
 PRICE_BUDGET_SECONDS = 4.5  # total wall-clock time this request may spend pricing items — kept a couple seconds under a typical 10s serverless function limit, on top of the inventory fetch itself
 PRICE_MAX_CONSECUTIVE_FAILURES = 3  # stop hammering an endpoint that's already started rate-limiting us
 
-_PRICE_NUM_RE = re.compile(r"[\d][\d\s  ]*(?:[.,]\d+)?")
+_PRICE_NUM_RE = re.compile(r"[\d][\d\s  ]*(?:[.,]\d+)?")
 
 
 def _parse_price(price_str: str | None) -> float | None:
@@ -250,7 +269,7 @@ def _parse_price(price_str: str | None) -> float | None:
     m = _PRICE_NUM_RE.search(price_str)
     if not m:
         return None
-    raw = re.sub(r"[\s  ]", "", m.group(0))
+    raw = re.sub(r"[\s  ]", "", m.group(0))
     raw = raw.replace(",", ".")
     try:
         return float(raw)
@@ -285,8 +304,14 @@ def get_cs_inventory(count: int = 12) -> dict:
     if not STEAM_ID:
         return {"synced": False, "items": [], "total": None}
     url = f"https://steamcommunity.com/inventory/{STEAM_ID}/730/2?l=english&count=200"
-    data = _cached("steam:cs_inventory", url)
-    if not data or not data.get("success"):
+    # Inventory scrape is slower and flakier than the official Web API calls —
+    # give it a longer per-request timeout and a dedicated cache key TTL so a
+    # single Vercel cold-start timeout doesn't poison the next few minutes.
+    data = _cached("steam:cs_inventory", url, ttl=CACHE_TTL, timeout=max(TIMEOUT, 8.0))
+    # Steam usually returns success=1, but some edge responses only carry
+    # assets/descriptions. Accept either shape so a valid payload isn't
+    # discarded as "not synced".
+    if not data or not (data.get("success") or data.get("assets")):
         return {"synced": False, "items": [], "total": None}
     descriptions = {(d.get("classid"), d.get("instanceid")): d for d in data.get("descriptions", [])}
     items = []
@@ -345,4 +370,7 @@ def get_cs_inventory(count: int = 12) -> dict:
     for it in top:
         del it["rarity_rank"]
         it["price_rub"] = round(it["price_rub"], 2) if it["price_rub"] is not None else None
+    # Show the grid even if market pricing timed out — skins without a price
+    # still render; synced used to stay False when PRICE_BUDGET ran out before
+    # any lookup succeeded, which looked like "inventory disappeared".
     return {"synced": bool(top), "items": top, "total": data.get("total_inventory_count")}
