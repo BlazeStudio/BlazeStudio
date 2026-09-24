@@ -525,7 +525,16 @@
   function paintBigShot(bigEl, s) {
     const linkHtml = s.view_url ? `<div class="nd-big-shot-link"><a href="${s.view_url}" target="_blank" rel="noopener">${t('Открыть на Steam ↗', 'Open on Steam ↗')}</a></div>` : '';
     bigEl.innerHTML = `<img src="${s.full}" alt="${s.title || ''}"><div class="nd-big-shot-hint">${t('нажмите, чтобы открыть на весь экран', 'click to open full screen')}</div>${linkHtml}`;
-    bigEl.querySelector('img').addEventListener('click', () => openLightbox(s.full, s.view_url, true));
+    const openShot = () => openLightbox(s.full, s.view_url, true);
+    const img = bigEl.querySelector('img');
+    if (img) {
+      img.addEventListener('click', openShot);
+      img.addEventListener('touchend', (e) => { e.preventDefault(); openShot(); }, { passive: false });
+    }
+    bigEl.addEventListener('click', (e) => {
+      if (e.target.closest && e.target.closest('a')) return;
+      openShot();
+    });
   }
 
   function showShot(index) {
@@ -704,10 +713,16 @@
     if (prevBtn) prevBtn.hidden = !nav;
     if (nextBtn) nextBtn.hidden = !nav;
     overlay.hidden = false;
+    // iOS: ensure overlay is painted above fixed windows
+    overlay.style.zIndex = '500';
+    overlay.style.display = 'flex';
   }
   function closeLightbox() {
     const overlay = document.getElementById('nd-lightbox');
-    if (overlay) overlay.hidden = true;
+    if (overlay) {
+      overlay.hidden = true;
+      overlay.style.display = '';
+    }
   }
   function initLightbox() {
     const overlay = document.getElementById('nd-lightbox');
@@ -1680,10 +1695,26 @@
       if (!win || win.classList.contains('nd-hidden')) return;
       if (t.closest('.nd-tb')) return;
       const clickable = t.closest(
-        'button, .nd-btn98, .mines-cell, .nd-shot, .nd-tabbtn, .nd-ico, .nd-plrow, .nd-video-icon, .nd-steam-inv-item, a.nd-btn98'
+        'button, .nd-btn98, .mines-cell, .nd-shot, .nd-tabbtn, .nd-ico, .nd-plrow, .nd-video-icon, .nd-steam-inv-item, a.nd-btn98, .nd-card-links a, a.nd-win-link, #nd-big-shot img, #nd-lightbox-close, .nd-lightbox-nav, #nd-shot-prev, #nd-shot-next'
       );
       if (!clickable) return;
-      if (clickable.tagName === 'A' && clickable.getAttribute('href') && !clickable.classList.contains('nd-btn98')) return;
+      // External links: open explicitly on touch (iOS sometimes swallows <a target=_blank>)
+      if (clickable.tagName === 'A' && clickable.getAttribute('href')) {
+        const href = clickable.getAttribute('href');
+        if (href && !href.startsWith('#') && (clickable.target === '_blank' || href.startsWith('http'))) {
+          if (pending) { clearTimeout(pending.timer); pending = null; }
+          // Let the browser handle it if it will; also schedule open as backup
+          const url = clickable.href;
+          pending = {
+            el: clickable,
+            timer: setTimeout(() => {
+              pending = null;
+              try { window.open(url, '_blank', 'noopener'); } catch (_) { location.href = url; }
+            }, 300),
+          };
+          return;
+        }
+      }
       if (pending) {
         clearTimeout(pending.timer);
         pending = null;

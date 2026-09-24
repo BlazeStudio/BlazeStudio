@@ -55,6 +55,10 @@ def _get(url: str, parse: str = "json", timeout: float = TIMEOUT) -> Any | None:
 
 
 def _cached(key: str, url: str, parse: str = "json", ttl: float = CACHE_TTL, timeout: float = TIMEOUT) -> Any | None:
+    """Return cached value if fresh. On network failure, prefer a STALE
+    success over nothing — Steam inventory is flaky from serverless IPs, and
+    serving a 10‑minute‑old grid is better than an empty one. Failures are
+    never written into the cache, so a single 403 doesn't poison the key."""
     now = time.time()
     if key in _cache:
         ts, value = _cache[key]
@@ -64,7 +68,12 @@ def _cached(key: str, url: str, parse: str = "json", ttl: float = CACHE_TTL, tim
     if value is not None:
         _cache[key] = (now, value)
         return value
-    return _cache[key][1] if key in _cache else None
+    # Stale fallback (up to 6h) — only if we previously had a real payload
+    if key in _cache:
+        ts, value = _cache[key]
+        if now - ts < 6 * 3600 and value is not None:
+            return value
+    return None
 
 
 def get_profile() -> dict:
@@ -254,7 +263,7 @@ _RARITY_RANK = {
 PRICE_CURRENCY = "5"  # RUB
 PRICE_CACHE_TTL = 3600  # prices move slowly enough that an hour-old figure is fine
 PRICE_TIMEOUT = 1.5  # the market endpoint is aggressively rate-limited — fail fast rather than stall the page
-PRICE_BUDGET_SECONDS = 4.5  # total wall-clock time this request may spend pricing items — kept a couple seconds under a typical 10s serverless function limit, on top of the inventory fetch itself
+PRICE_BUDGET_SECONDS = 2.5  # total wall-clock time this request may spend pricing items — kept a couple seconds under a typical 10s serverless function limit, on top of the inventory fetch itself
 PRICE_MAX_CONSECUTIVE_FAILURES = 3  # stop hammering an endpoint that's already started rate-limiting us
 
 _PRICE_NUM_RE = re.compile(r"[\d][\d\s  ]*(?:[.,]\d+)?")
@@ -304,13 +313,17 @@ def get_cs_inventory(count: int = 12) -> dict:
     if not STEAM_ID:
         return {"synced": False, "items": [], "total": None}
     url = f"https://steamcommunity.com/inventory/{STEAM_ID}/730/2?l=english&count=200"
-    # Inventory scrape is slower and flakier than the official Web API calls —
-    # give it a longer per-request timeout and a dedicated cache key TTL so a
-    # single Vercel cold-start timeout doesn't poison the next few minutes.
-    data = _cached("steam:cs_inventory", url, ttl=CACHE_TTL, timeout=max(TIMEOUT, 8.0))
-    # Steam usually returns success=1, but some edge responses only carry
-    # assets/descriptions. Accept either shape so a valid payload isn't
-    # discarded as "not synced".
+    # Inventory from steamcommunity.com is the flaky part: official Web API
+    # (profile/games) is stable, but inventory is often rate-limited or blocked
+    # for cloud/datacenter IPs (Vercel). Cache successes for 30 min; on failure
+    # _cached falls back to a stale copy so the grid doesn't "disappear".
+    data = _cached("steam:cs_inventory", url, ttl=1800, timeout=max(TIMEOUT, 10.0))
+    if not data or not (data.get("success") or data.get("assets")):
+        # One immediate retry with a fresh UA path (no cache write on fail)
+        time.sleep(0.4)
+        data = _get(url, parse="json", timeout=10.0) or data
+        if data and (data.get("success") or data.get("assets")):
+            _cache["steam:cs_inventory"] = (time.time(), data)
     if not data or not (data.get("success") or data.get("assets")):
         return {"synced": False, "items": [], "total": None}
     descriptions = {(d.get("classid"), d.get("instanceid")): d for d in data.get("descriptions", [])}

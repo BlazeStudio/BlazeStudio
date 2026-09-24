@@ -351,6 +351,19 @@ a:hover { color: #d00000; }
 .nd-card-desc { font-size: 12.5px; }
 .nd-card-note { font-size: 11.5px; color: #a45a00; }
 .nd-card-links a { font-size: 12px; margin-right: 10px; }
+.nd-card-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.nd-card-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  background: var(--nd-panel);
+  border: 2px outset #fff;
+  text-decoration: none;
+  color: #000;
+  font-weight: 700;
+}
+.nd-card-links a:active { border-style: inset; }
 
 .nd-screens { display: flex; flex-direction: column; gap: 12px; }
 .nd-big-shot-row { display: flex; align-items: stretch; gap: 8px; }
@@ -689,9 +702,45 @@ a:hover { color: #d00000; }
 .nd-btn98:disabled { color: #888; cursor: default; }
 .nd-btn98:disabled:hover { background: var(--nd-panel); }
 .nd-btn-row { display: flex; gap: 8px; margin-top: 12px; }
-.mines-grid { display: grid; gap: 4px; max-width: 280px; margin: 10px auto; background: var(--nd-blue-4); padding: 5px; border: 2px inset #808080; }
-.mines-cell { aspect-ratio: 1; border: 2px outset #fff; background: var(--nd-panel); font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
-.mines-cell.revealed { border: 1px solid #b9b6a5; background: #fff; cursor: default; }
+.mines-grid {
+  display: grid;
+  gap: 3px;
+  /* Fixed track size — with 1fr + emoji/number content, iOS/desktop grid
+     items grow their min-content on every reveal and the whole board "puffs up". */
+  grid-template-columns: repeat(9, 28px) !important;
+  width: max-content;
+  max-width: 100%;
+  margin: 10px auto;
+  background: var(--nd-blue-4);
+  padding: 5px;
+  border: 2px inset #808080;
+  box-sizing: border-box;
+}
+.mines-cell {
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 2px outset #fff;
+  background: var(--nd-panel);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  flex: none;
+}
+.mines-cell.revealed {
+  /* Keep same outer box — only change style, not border width (2→1 used to
+     shift layout slightly; fixed 28×28 already contains it). */
+  border: 2px solid #b9b6a5;
+  background: #fff;
+  cursor: default;
+}
 .mines-cell.revealed.mine { background: #e88; }
 .mines-cell.revealed.hit { background: #ff5f5f; }
 .mines-cell.flagged { background: #ffe6a8; }
@@ -853,6 +902,32 @@ a:hover { color: #d00000; }
     user-select: auto;
     pointer-events: auto;
     padding: 2px 0;
+  }
+  /* Links inside explorer cards — real buttons on phone */
+  .nd-card-links a {
+    min-height: 44px;
+    padding: 10px 14px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(10, 79, 208, 0.3);
+  }
+  /* Lightbox must sit above fixed full-screen windows (z~10–30) and taskbar */
+  #nd-lightbox, #nd-item-popup {
+    z-index: 500 !important;
+    touch-action: manipulation;
+  }
+  #nd-lightbox-close, .nd-lightbox-nav {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+    touch-action: manipulation;
+  }
+  #nd-big-shot, #nd-big-shot img {
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  .nd-shot {
+    min-height: 44px;
+    touch-action: manipulation;
   }
 }
 
