@@ -5,7 +5,7 @@
 <br><br>
 
 <a href="https://www.anton-vas.digital/" target="_blank" rel="noopener noreferrer">
-  <img src="https://img.shields.io/badge/🌐_Portfolio-anton--vas--.digital-00D9FF?style=for-the-badge" alt="Portfolio">
+  <img src="https://img.shields.io/badge/🌐_Portfolio-anton--vas.digital-00D9FF?style=for-the-badge" alt="Portfolio">
 </a>
 <a href="https://anton-vas.digital/dossier" target="_blank" rel="noopener noreferrer">
   <img src="https://img.shields.io/badge/📄_Resume-Dossier-7B2CBF?style=for-the-badge" alt="Resume">
