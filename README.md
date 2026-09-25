@@ -4,10 +4,10 @@
 
 <br><br>
 
-<a href="https://anton-vasiliev-dev.vercel.app" target="_blank" rel="noopener noreferrer">
-  <img src="https://img.shields.io/badge/🌐_Portfolio-anton--vasiliev--dev.vercel.app-00D9FF?style=for-the-badge" alt="Portfolio">
+<a href="https://www.anton-vas.digital/" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/badge/🌐_Portfolio-anton--vas--.digital-00D9FF?style=for-the-badge" alt="Portfolio">
 </a>
-<a href="https://anton-vasiliev-dev.vercel.app/dossier" target="_blank" rel="noopener noreferrer">
+<a href="https://anton-vas.digital/dossier" target="_blank" rel="noopener noreferrer">
   <img src="https://img.shields.io/badge/📄_Resume-Dossier-7B2CBF?style=for-the-badge" alt="Resume">
 </a>
 <a href="https://github.com/BlazeStudio" target="_blank" rel="noopener noreferrer">
@@ -111,8 +111,8 @@
 ### 🌐 Где меня найти
 
 <ul>
-  <li>🖥️ <strong>Портфолио</strong>: <a href="https://anton-vasiliev-dev.vercel.app" target="_blank" rel="noopener noreferrer">anton-vasiliev-dev.vercel.app</a></li>
-  <li>📄 <strong>Резюме</strong>: <a href="https://anton-vasiliev-dev.vercel.app/dossier" target="_blank" rel="noopener noreferrer">Dossier</a></li>
+  <li>🖥️ <strong>Портфолио</strong>: <a href="https://anton-vas.digital" target="_blank" rel="noopener noreferrer">anton-vas.digital</a></li>
+  <li>📄 <strong>Резюме</strong>: <a href="https://anton-vas.digital/dossier" target="_blank" rel="noopener noreferrer">Dossier</a></li>
   <li>💬 <strong>Telegram</strong>: <a href="https://t.me/terminallover" target="_blank" rel="noopener noreferrer">@terminallover</a></li>
   <li>📧 <strong>Email</strong>: <a href="mailto:praim916@mail.ru">praim916@mail.ru</a></li>
 </ul>
