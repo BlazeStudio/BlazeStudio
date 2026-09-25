@@ -295,50 +295,71 @@ def _get_market_price(market_hash_name: str) -> float | None:
 
 
 def get_cs_inventory(count: int = 12) -> dict:
-    """Public CS2 inventory (appid 730, context 2) — no API key needed, but the
-    profile's inventory privacy has to be set to public. Pre-ranked by rarity
-    (highest first, a cheap stand-in for value), then the top of that pool is
-    priced for real via the Steam Market so the final order reflects actual
-    value — matching "sorted by price" on steamcommunity.com's own inventory
-    page — instead of just the rarity tier. Capped at `count` items so a big
-    inventory doesn't try to render hundreds of cards; `total` carries the
-    real size so the frontend can show "showing N of total". Each marketable
-    item links out to its Steam Community Market listing.
+    """Public CS2 inventory (appid 730, context 2). Returns items plus a
+    `debug` list of step-by-step log lines so the frontend / browser console
+    can show *why* a fetch failed (missing STEAM_ID, empty body, rate-limit,
+    no marketable items, etc.)."""
+    debug: list[str] = []
+    t0 = time.time()
 
-    Real-time pricing is bounded (PRICE_BUDGET_SECONDS wall clock, and it
-    backs off after a few consecutive failures) since the market endpoint
-    rate-limits hard — any item that couldn't be priced in time just falls
-    back to the rarity order instead of stalling the page.
-    """
+    def log(msg: str) -> None:
+        elapsed = f"{time.time() - t0:.2f}s"
+        line = f"[{elapsed}] {msg}"
+        debug.append(line)
+        # Also print server-side (Vercel function logs)
+        print(f"[steam:inventory] {line}", flush=True)
+
+    log(f"start get_cs_inventory(count={count})")
     if not STEAM_ID:
-        return {"synced": False, "items": [], "total": None}
+        log("FAIL: STEAM_ID64 env is empty — set it in Vercel project settings")
+        return {"synced": False, "items": [], "total": None, "debug": debug}
+
+    log(f"STEAM_ID64 present (…{STEAM_ID[-4:]})")
     url = f"https://steamcommunity.com/inventory/{STEAM_ID}/730/2?l=english&count=200"
-    # Inventory from steamcommunity.com is the flaky part: official Web API
-    # (profile/games) is stable, but inventory is often rate-limited or blocked
-    # for cloud/datacenter IPs (Vercel). Cache successes for 30 min; on failure
-    # _cached falls back to a stale copy so the grid doesn't "disappear".
+    log(f"GET {url} (cache ttl=1800s, timeout=10s)")
+
     data = _cached("steam:cs_inventory", url, ttl=1800, timeout=max(TIMEOUT, 10.0))
+    if data is None:
+        log("cache/network: first fetch returned None (timeout, HTTP error, or non-JSON)")
+    elif data.get("success") or data.get("assets"):
+        n_assets = len(data.get("assets") or [])
+        log(f"first fetch OK: success={data.get('success')!r} assets={n_assets} total_inventory_count={data.get('total_inventory_count')}")
+    else:
+        keys = list(data.keys())[:12] if isinstance(data, dict) else type(data).__name__
+        log(f"first fetch unexpected shape: keys={keys!r}")
+
     if not data or not (data.get("success") or data.get("assets")):
-        # One immediate retry with a fresh UA path (no cache write on fail)
+        log("retry after 0.4s without relying on cache write…")
         time.sleep(0.4)
-        data = _get(url, parse="json", timeout=10.0) or data
-        if data and (data.get("success") or data.get("assets")):
-            _cache["steam:cs_inventory"] = (time.time(), data)
+        fresh = _get(url, parse="json", timeout=10.0)
+        if fresh is None:
+            log("retry: still None — Steam likely blocked this IP / rate-limited / timed out")
+        elif fresh.get("success") or fresh.get("assets"):
+            log(f"retry OK: assets={len(fresh.get('assets') or [])}")
+            _cache["steam:cs_inventory"] = (time.time(), fresh)
+            data = fresh
+        else:
+            log(f"retry unexpected shape: {list(fresh.keys())[:12] if isinstance(fresh, dict) else fresh!r}")
+            data = fresh or data
+
     if not data or not (data.get("success") or data.get("assets")):
-        return {"synced": False, "items": [], "total": None}
+        log("FAIL: no usable inventory payload after retries")
+        return {"synced": False, "items": [], "total": None, "debug": debug}
+
     descriptions = {(d.get("classid"), d.get("instanceid")): d for d in data.get("descriptions", [])}
+    log(f"parsed descriptions={len(descriptions)} assets={len(data.get('assets') or [])}")
+
     items = []
     seen_names = set()
+    skipped_unmarketable = 0
+    skipped_no_desc = 0
     for a in data.get("assets", []):
         d = descriptions.get((a.get("classid"), a.get("instanceid")))
         if not d:
+            skipped_no_desc += 1
             continue
-        # Service medals, operation coins and other profile trinkets aren't
-        # tradeable or sellable — they carry no real value, so they'd only
-        # clutter a "by value" list (and some carry a flashy but meaningless
-        # rarity tag that could otherwise outrank actual skins). Only show
-        # what can actually be sold on the Market.
         if not d.get("marketable"):
+            skipped_unmarketable += 1
             continue
         name = d.get("market_hash_name") or d.get("name")
         if not name or name in seen_names:
@@ -361,14 +382,24 @@ def get_cs_inventory(count: int = 12) -> dict:
                 "_mhn": name,
             }
         )
-    # Price every item in the (already marketable-only) list, not just a
-    # rarity-prefiltered slice — stickers/patches/music kits carry real value
-    # but often don't have a "Rarity" tag at all (rarity_rank 0), and would
-    # otherwise never be considered next to a common weapon skin that does
-    # have one. Attempts run in the inventory's own (unbiased) order and are
-    # bounded purely by the wall-clock budget and the failure backoff below.
+
+    log(
+        f"marketable unique items={len(items)} "
+        f"(skipped unmarketable={skipped_unmarketable}, no-desc={skipped_no_desc})"
+    )
+    if not items:
+        log("FAIL: inventory payload had no marketable items (private? empty CS2 inv?)")
+        return {
+            "synced": False,
+            "items": [],
+            "total": data.get("total_inventory_count"),
+            "debug": debug,
+        }
+
     deadline = time.time() + PRICE_BUDGET_SECONDS
     consecutive_failures = 0
+    priced_ok = 0
+    priced_fail = 0
     for it in items:
         mhn = it.pop("_mhn")
         if time.time() >= deadline or consecutive_failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
@@ -376,14 +407,25 @@ def get_cs_inventory(count: int = 12) -> dict:
             continue
         price = _get_market_price(mhn)
         it["price_rub"] = price
-        consecutive_failures = 0 if price is not None else consecutive_failures + 1
+        if price is not None:
+            priced_ok += 1
+            consecutive_failures = 0
+        else:
+            priced_fail += 1
+            consecutive_failures += 1
+
+    log(f"pricing done: ok={priced_ok} fail={priced_fail} budget={PRICE_BUDGET_SECONDS}s")
 
     items.sort(key=lambda it: (it["price_rub"] is not None, it["price_rub"] or 0, it["rarity_rank"]), reverse=True)
     top = items[:count]
     for it in top:
         del it["rarity_rank"]
         it["price_rub"] = round(it["price_rub"], 2) if it["price_rub"] is not None else None
-    # Show the grid even if market pricing timed out — skins without a price
-    # still render; synced used to stay False when PRICE_BUDGET ran out before
-    # any lookup succeeded, which looked like "inventory disappeared".
-    return {"synced": bool(top), "items": top, "total": data.get("total_inventory_count")}
+
+    log(f"DONE synced={bool(top)} showing={len(top)} total={data.get('total_inventory_count')}")
+    return {
+        "synced": bool(top),
+        "items": top,
+        "total": data.get("total_inventory_count"),
+        "debug": debug,
+    }

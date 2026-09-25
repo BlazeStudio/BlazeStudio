@@ -1296,21 +1296,51 @@
   const INVENTORY_RETRY_DELAYS_MS = [1500, 3000];
   let inventoryData = null;
   let inventoryPromise = null;
-  function fetchInventoryOnce() {
-    return fetchJsonSafe('/api/steam/inventory', { cs_inventory: { synced: false, items: [] } }, 12000);
+  let inventoryLastDebug = [];
+
+  function logInv(...args) {
+    console.log('[steam:inventory]', ...args);
+  }
+
+  function fetchInventoryOnce(attempt) {
+    const label = `attempt ${attempt}`;
+    logInv(`${label}: GET /api/steam/inventory …`);
+    const t0 = performance.now();
+    return fetchJsonSafe('/api/steam/inventory', { cs_inventory: { synced: false, items: [], debug: ['client: fetch failed / timed out'] } }, 20000)
+      .then((data) => {
+        const ms = Math.round(performance.now() - t0);
+        const inv = data && data.cs_inventory;
+        const dbg = (inv && inv.debug) || [];
+        inventoryLastDebug = dbg;
+        logInv(`${label}: done in ${ms}ms synced=${!!(inv && inv.synced)} items=${inv && inv.items ? inv.items.length : 0}`);
+        if (dbg.length) {
+          logInv(`${label}: server debug (${dbg.length} lines):`);
+          dbg.forEach((line) => console.log('  ', line));
+        }
+        return data;
+      });
   }
   function fetchInventory() {
-    if (inventoryData) return Promise.resolve(inventoryData);
+    if (inventoryData) {
+      logInv('using cached inventoryData');
+      return Promise.resolve(inventoryData);
+    }
     if (!inventoryPromise) {
       inventoryPromise = (async () => {
-        let data = await fetchInventoryOnce();
+        logInv('start (fresh)');
+        let data = await fetchInventoryOnce(1);
+        let attempt = 1;
         for (const delay of INVENTORY_RETRY_DELAYS_MS) {
           if (data && data.cs_inventory && data.cs_inventory.synced) break;
+          logInv(`not synced — wait ${delay}ms then retry`);
           await new Promise((resolve) => setTimeout(resolve, delay));
-          data = await fetchInventoryOnce();
+          attempt += 1;
+          data = await fetchInventoryOnce(attempt);
         }
         if (!data || !data.cs_inventory || !data.cs_inventory.synced) {
-          console.error('[steam] CS inventory never synced after retries — giving up. Last response:', data);
+          console.error('[steam:inventory] giving up after retries. Last response:', data);
+        } else {
+          logInv('SUCCESS');
         }
         return data;
       })();
@@ -1365,11 +1395,17 @@
 
   function invHtml(inv) {
     if (!inv || !inv.synced || !inv.items || !inv.items.length) {
+      const dbgLines = (inv && inv.debug && inv.debug.length ? inv.debug : inventoryLastDebug) || [];
+      const dbgHtml = dbgLines.length
+        ? `<pre class="nd-steam-inv-debug">${dbgLines.map((l) => String(l).replace(/</g, '&lt;')).join('\n')}</pre>`
+        : '';
       return `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS', 'CS inventory')}</span></div>
         <p class="nd-steam-dim" id="nd-steam-inv-fail">${t(
           'Не удалось загрузить инвентарь (Steam rate-limit / приватный профиль / таймаут).',
           'Could not load inventory (Steam rate-limit / private profile / timeout).'
-        )} <button type="button" class="nd-btn98" id="nd-steam-inv-retry" style="margin-top:6px">${t('Повторить', 'Retry')}</button></p>`;
+        )}</p>
+        ${dbgHtml}
+        <button type="button" class="nd-btn98" id="nd-steam-inv-retry" style="margin-top:6px">${t('Повторить', 'Retry')}</button>`;
     }
     return `<div class="nd-steam-inv-label"><span>${t('Инвентарь CS · по ценности', 'CS inventory · by value')}</span><span>${t('показано', 'showing')} ${inv.items.length}${inv.total ? ' / ' + inv.total : ''}</span></div>
       <div class="nd-steam-inv-grid">${inv.items
@@ -1406,8 +1442,10 @@
     } else {
       const retry = wrap.querySelector('#nd-steam-inv-retry');
       onTap(retry, () => {
+        logInv('manual retry clicked');
         inventoryData = null;
         inventoryPromise = null;
+        inventoryLastDebug = [];
         wrap.innerHTML = `<p class="nd-steam-dim">${t('Загружаем инвентарь…', 'Loading inventory…')}</p>`;
         loadInventory();
       });
