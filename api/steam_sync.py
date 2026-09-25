@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 import log_sync
@@ -25,6 +26,62 @@ TIMEOUT = 4.0
 CACHE_TTL = 600  # seconds
 
 _cache: dict[str, tuple[float, Any]] = {}
+
+# Static inventory snapshot (checked into the repo). Used when live
+# steamcommunity.com/inventory returns 429 from datacenter IPs (Vercel).
+# Refresh: open the inventory URL in a home browser, save JSON, rebuild
+# static/data/cs_inventory.json (knife / high-rarity first).
+_STATIC_INV_PATH = Path(__file__).resolve().parent.parent / "static" / "data" / "cs_inventory.json"
+
+
+def _load_static_inventory(count: int = 12) -> dict | None:
+    """Return pre-built showcase items from the committed snapshot, or None."""
+    try:
+        if not _STATIC_INV_PATH.is_file():
+            return None
+        payload = json.loads(_STATIC_INV_PATH.read_text(encoding="utf-8"))
+        items = list(payload.get("items") or [])
+        if not items:
+            items = list(payload.get("all_marketable") or [])
+            items.sort(
+                key=lambda it: (
+                    bool(it.get("is_knife")),
+                    bool(it.get("is_gloves")),
+                    int(it.get("rarity_rank") or 0),
+                    it.get("price_rub") is not None,
+                    float(it.get("price_rub") or 0),
+                ),
+                reverse=True,
+            )
+        clean = []
+        for it in items[:count]:
+            clean.append(
+                {
+                    "name": it.get("name"),
+                    "icon": it.get("icon"),
+                    "rarity": it.get("rarity"),
+                    "rarity_color": it.get("rarity_color"),
+                    "exterior": it.get("exterior"),
+                    "market_url": it.get("market_url"),
+                    "price_rub": it.get("price_rub"),
+                }
+            )
+        if not clean:
+            return None
+        return {
+            "synced": True,
+            "items": clean,
+            "total": payload.get("total"),
+            "source": "static_snapshot",
+        }
+    except Exception as e:
+        try:
+            log_sync.record(f"steam/inventory: static snapshot load failed: {e}")
+        except Exception:
+            pass
+        return None
+
+
 
 
 # Browser-like UA — steamcommunity.com/inventory occasionally 403s bare
@@ -39,10 +96,39 @@ _BROWSER_UA = (
 )
 
 
-def _get(url: str, parse: str = "json", timeout: float = TIMEOUT) -> Any | None:
+def _inventory_headers() -> dict[str, str]:
+    # Closest to what steamcommunity.com itself sends for the inventory XHR.
+    # Still often rate-limited (HTTP 429) from cloud/datacenter IPs (Vercel,
+    # GitHub Actions, etc.) even when the same URL works in a home browser.
+    return {
+        "User-Agent": _BROWSER_UA,
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Accept-Language": "en-US,en;q=0.9,ru;q=0.8",
+        "Referer": f"https://steamcommunity.com/profiles/{STEAM_ID}/inventory" if STEAM_ID else "https://steamcommunity.com/",
+        "Origin": "https://steamcommunity.com",
+        "X-Requested-With": "XMLHttpRequest",
+        # Avoid opaque gzip failures on some runtimes; identity is fine for JSON.
+        "Accept-Encoding": "identity",
+        "Connection": "close",
+    }
+
+
+def _get(url: str, parse: str = "json", timeout: float = TIMEOUT, headers: dict[str, str] | None = None) -> Any | None:
+    data, _err = _get_with_status(url, parse=parse, timeout=timeout, headers=headers)
+    return data
+
+
+def _get_with_status(
+    url: str,
+    parse: str = "json",
+    timeout: float = TIMEOUT,
+    headers: dict[str, str] | None = None,
+) -> tuple[Any | None, str | None]:
+    """Return (parsed_body, error_message). error_message is None on success."""
     req = urllib.request.Request(
         url,
-        headers={
+        headers=headers
+        or {
             "User-Agent": _BROWSER_UA,
             "Accept": "application/json,text/plain,*/*",
             "Accept-Language": "en-US,en;q=0.9",
@@ -51,9 +137,29 @@ def _get(url: str, parse: str = "json", timeout: float = TIMEOUT) -> Any | None:
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read()
-            return json.loads(raw) if parse == "json" else raw.decode("utf-8", "ignore")
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, json.JSONDecodeError):
-        return None
+            if parse != "json":
+                return raw.decode("utf-8", "ignore"), None
+            if not raw:
+                return None, f"HTTP {resp.status}: empty body"
+            try:
+                return json.loads(raw), None
+            except json.JSONDecodeError as e:
+                snippet = raw[:120].decode("utf-8", "replace")
+                return None, f"HTTP {resp.status}: non-JSON body ({e}): {snippet!r}"
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read()[:160].decode("utf-8", "replace")
+        except Exception:
+            pass
+        # 429 = rate limit / datacenter block — the usual failure mode on Vercel
+        return None, f"HTTP {e.code} {e.reason}" + (f" body={body!r}" if body else "")
+    except urllib.error.URLError as e:
+        return None, f"URLError: {e.reason!r}"
+    except TimeoutError:
+        return None, f"TimeoutError after {timeout}s"
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"
 
 
 def _cached(key: str, url: str, parse: str = "json", ttl: float = CACHE_TTL, timeout: float = TIMEOUT) -> Any | None:
@@ -313,26 +419,46 @@ def get_cs_inventory(count: int = 12) -> dict:
         return {"synced": False, "items": [], "total": None}
 
     log(f"STEAM_ID64 present (…{STEAM_ID[-4:]})")
-    url = f"https://steamcommunity.com/inventory/{STEAM_ID}/730/2?l=english&count=200"
-    log(f"GET {url} (cache ttl=1800s, timeout=10s)")
+    # Smaller count = smaller payload; Steam still rate-limits the endpoint
+    # itself, so count doesn't avoid 429 but speeds up a successful reply.
+    url = f"https://steamcommunity.com/inventory/{STEAM_ID}/730/2?l=english&count=75"
+    log(f"GET {url}")
 
-    data = _cached("steam:cs_inventory", url, ttl=1800, timeout=max(TIMEOUT, 10.0))
-    if data is None:
-        log("cache/network: first fetch returned None (timeout, HTTP error, or non-JSON)")
-    elif data.get("success") or data.get("assets"):
-        n_assets = len(data.get("assets") or [])
-        log(f"first fetch OK: success={data.get('success')!r} assets={n_assets} total_inventory_count={data.get('total_inventory_count')}")
+    # Serve warm cache first (successes only — failures never written)
+    if "steam:cs_inventory" in _cache:
+        ts, cached = _cache["steam:cs_inventory"]
+        age = time.time() - ts
+        if age < 1800 and cached and (cached.get("success") or cached.get("assets")):
+            log(f"cache HIT age={age:.0f}s assets={len(cached.get('assets') or [])}")
+            data = cached
+        else:
+            data = None
     else:
-        keys = list(data.keys())[:12] if isinstance(data, dict) else type(data).__name__
-        log(f"first fetch unexpected shape: keys={keys!r}")
+        data = None
+
+    if data is None:
+        data, err = _get_with_status(url, parse="json", timeout=10.0, headers=_inventory_headers())
+        if err:
+            log(f"first fetch FAIL: {err}")
+            if err.startswith("HTTP 429"):
+                log("hint: HTTP 429 = Steam rate-limit on this server IP (Vercel/datacenter). Same URL works from a home browser.")
+        elif data and (data.get("success") or data.get("assets")):
+            n_assets = len(data.get("assets") or [])
+            log(f"first fetch OK: success={data.get('success')!r} assets={n_assets} total={data.get('total_inventory_count')}")
+            _cache["steam:cs_inventory"] = (time.time(), data)
+        else:
+            keys = list(data.keys())[:12] if isinstance(data, dict) else type(data).__name__
+            log(f"first fetch unexpected shape: keys={keys!r}")
+            data = None
 
     if not data or not (data.get("success") or data.get("assets")):
-        log("retry after 0.4s without relying on cache write…")
-        time.sleep(0.4)
-        fresh = _get(url, parse="json", timeout=10.0)
-        if fresh is None:
-            log("retry: still None — Steam likely blocked this IP / rate-limited / timed out")
-        elif fresh.get("success") or fresh.get("assets"):
+        # One retry with backoff — only helps transient 429s, not a hard IP block
+        log("retry after 2.0s…")
+        time.sleep(2.0)
+        fresh, err = _get_with_status(url, parse="json", timeout=10.0, headers=_inventory_headers())
+        if err:
+            log(f"retry FAIL: {err}")
+        elif fresh and (fresh.get("success") or fresh.get("assets")):
             log(f"retry OK: assets={len(fresh.get('assets') or [])}")
             _cache["steam:cs_inventory"] = (time.time(), fresh)
             data = fresh
@@ -340,8 +466,21 @@ def get_cs_inventory(count: int = 12) -> dict:
             log(f"retry unexpected shape: {list(fresh.keys())[:12] if isinstance(fresh, dict) else fresh!r}")
             data = fresh or data
 
+    # Stale success is better than empty (up to 6h) — inventory doesn't change that fast
+    if (not data or not (data.get("success") or data.get("assets"))) and "steam:cs_inventory" in _cache:
+        ts, cached = _cache["steam:cs_inventory"]
+        age = time.time() - ts
+        if age < 6 * 3600 and cached and (cached.get("success") or cached.get("assets")):
+            log(f"serving STALE cache age={age:.0f}s (live fetch failed)")
+            data = cached
+
     if not data or not (data.get("success") or data.get("assets")):
-        log("FAIL: no usable inventory payload after retries")
+        log("FAIL: no usable live payload (Steam blocked/rate-limited this IP, or inventory private)")
+        static = _load_static_inventory(count)
+        if static:
+            log(f"FALLBACK: static snapshot → {len(static['items'])} items (total={static.get('total')})")
+            return static
+        log("FAIL: no static snapshot either")
         return {"synced": False, "items": [], "total": None}
 
     descriptions = {(d.get("classid"), d.get("instanceid")): d for d in data.get("descriptions", [])}
@@ -368,6 +507,10 @@ def get_cs_inventory(count: int = 12) -> dict:
         exterior = next((tag for tag in tags if tag.get("category") == "Exterior"), None)
         icon = d.get("icon_url")
         rarity_name = rarity.get("localized_tag_name") if rarity else None
+        type_tag = next((tag for tag in tags if tag.get("category") == "Type"), None)
+        type_name = (type_tag.get("localized_tag_name") if type_tag else "") or ""
+        is_knife = "Knife" in type_name or name.startswith("★")
+        is_gloves = "Gloves" in type_name
         items.append(
             {
                 "name": d.get("name") or name,
@@ -378,6 +521,8 @@ def get_cs_inventory(count: int = 12) -> dict:
                 "exterior": exterior.get("localized_tag_name") if exterior else None,
                 "market_url": f"https://steamcommunity.com/market/listings/730/{urllib.parse.quote(name)}",
                 "_mhn": name,
+                "_knife": is_knife,
+                "_gloves": is_gloves,
             }
         )
 
@@ -387,11 +532,15 @@ def get_cs_inventory(count: int = 12) -> dict:
     )
     if not items:
         log("FAIL: inventory payload had no marketable items (private? empty CS2 inv?)")
+        static = _load_static_inventory(count)
+        if static:
+            log(f"FALLBACK: static snapshot → {len(static['items'])} items")
+            return static
         return {
             "synced": False,
             "items": [],
             "total": data.get("total_inventory_count"),
-                    }
+        }
 
     deadline = time.time() + PRICE_BUDGET_SECONDS
     consecutive_failures = 0
@@ -413,10 +562,22 @@ def get_cs_inventory(count: int = 12) -> dict:
 
     log(f"pricing done: ok={priced_ok} fail={priced_fail} budget={PRICE_BUDGET_SECONDS}s")
 
-    items.sort(key=lambda it: (it["price_rub"] is not None, it["price_rub"] or 0, it["rarity_rank"]), reverse=True)
+    # Knife / gloves first, then by market price, then rarity
+    items.sort(
+        key=lambda it: (
+            bool(it.pop("_knife", False)),
+            bool(it.pop("_gloves", False)),
+            it["price_rub"] is not None,
+            it["price_rub"] or 0,
+            it["rarity_rank"],
+        ),
+        reverse=True,
+    )
     top = items[:count]
     for it in top:
-        del it["rarity_rank"]
+        it.pop("rarity_rank", None)
+        it.pop("_knife", None)
+        it.pop("_gloves", None)
         it["price_rub"] = round(it["price_rub"], 2) if it["price_rub"] is not None else None
 
     log(f"DONE synced={bool(top)} showing={len(top)} total={data.get('total_inventory_count')}")
@@ -424,4 +585,4 @@ def get_cs_inventory(count: int = 12) -> dict:
         "synced": bool(top),
         "items": top,
         "total": data.get("total_inventory_count"),
-            }
+    }
