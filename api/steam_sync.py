@@ -17,6 +17,8 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+import log_sync
+
 API_KEY = os.environ.get("STEAM_API_KEY", "")
 STEAM_ID = os.environ.get("STEAM_ID64", "")
 TIMEOUT = 4.0
@@ -295,24 +297,20 @@ def _get_market_price(market_hash_name: str) -> float | None:
 
 
 def get_cs_inventory(count: int = 12) -> dict:
-    """Public CS2 inventory (appid 730, context 2). Returns items plus a
-    `debug` list of step-by-step log lines so the frontend / browser console
-    can show *why* a fetch failed (missing STEAM_ID, empty body, rate-limit,
-    no marketable items, etc.)."""
-    debug: list[str] = []
+    """Public CS2 inventory (appid 730, context 2). Step-by-step progress
+    is written to log_sync so it only appears in the site terminal via
+    `tail` / `tail -f` (password-gated) — never in the Steam window UI."""
     t0 = time.time()
 
     def log(msg: str) -> None:
+        """Visible only via terminal `tail` / `tail -f` (log_sync ring buffer)."""
         elapsed = f"{time.time() - t0:.2f}s"
-        line = f"[{elapsed}] {msg}"
-        debug.append(line)
-        # Also print server-side (Vercel function logs)
-        print(f"[steam:inventory] {line}", flush=True)
+        log_sync.record(f"steam/inventory: [{elapsed}] {msg}")
 
     log(f"start get_cs_inventory(count={count})")
     if not STEAM_ID:
         log("FAIL: STEAM_ID64 env is empty — set it in Vercel project settings")
-        return {"synced": False, "items": [], "total": None, "debug": debug}
+        return {"synced": False, "items": [], "total": None}
 
     log(f"STEAM_ID64 present (…{STEAM_ID[-4:]})")
     url = f"https://steamcommunity.com/inventory/{STEAM_ID}/730/2?l=english&count=200"
@@ -344,7 +342,7 @@ def get_cs_inventory(count: int = 12) -> dict:
 
     if not data or not (data.get("success") or data.get("assets")):
         log("FAIL: no usable inventory payload after retries")
-        return {"synced": False, "items": [], "total": None, "debug": debug}
+        return {"synced": False, "items": [], "total": None}
 
     descriptions = {(d.get("classid"), d.get("instanceid")): d for d in data.get("descriptions", [])}
     log(f"parsed descriptions={len(descriptions)} assets={len(data.get('assets') or [])}")
@@ -393,8 +391,7 @@ def get_cs_inventory(count: int = 12) -> dict:
             "synced": False,
             "items": [],
             "total": data.get("total_inventory_count"),
-            "debug": debug,
-        }
+                    }
 
     deadline = time.time() + PRICE_BUDGET_SECONDS
     consecutive_failures = 0
@@ -427,5 +424,4 @@ def get_cs_inventory(count: int = 12) -> dict:
         "synced": bool(top),
         "items": top,
         "total": data.get("total_inventory_count"),
-        "debug": debug,
-    }
+            }

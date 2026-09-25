@@ -1014,16 +1014,3 @@ a:hover { color: #d00000; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
-
-.nd-steam-inv-debug {
-  margin: 8px 0;
-  padding: 8px;
-  background: #0e141b;
-  border: 1px solid #2a475e;
-  color: #8fb0c6;
-  font: 11px/1.4 'Courier New', monospace;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 160px;
-  overflow-y: auto;
-}
