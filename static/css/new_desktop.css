@@ -301,7 +301,6 @@ a:hover { color: #d00000; }
 .nd-gh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .nd-gh-since { font-size: 11px; color: #8b949e; }
 .nd-gh-lines { grid-column: 1 / -1; }
-.nd-stat-sub { display: block; font-size: 10.5px; color: #6e7681; }
 .nd-gh-lang-head { align-items: center; }
 .nd-gh-switch { display: inline-flex; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; text-transform: none; letter-spacing: 0; }
 .nd-gh-switch button { padding: 2px 8px; font-size: 11px; color: #8b949e; background: #0d1117; }
