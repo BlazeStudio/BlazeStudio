@@ -22,6 +22,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import faceit_sync
 import github_sync
+import hh_sync
 import log_sync
 import music_sync
 import steam_sync
@@ -124,16 +125,6 @@ def desktop(request: Request):
     return templates.TemplateResponse(request, "index.html", _base_context())
 
 
-@app.get("/xp")
-def xp(request: Request):
-    return templates.TemplateResponse(request, "xp.html", _base_context())
-
-
-@app.get("/isaac")
-def isaac(request: Request):
-    return templates.TemplateResponse(request, "isaac.html", _base_context())
-
-
 @app.get("/dossier")
 def dossier(request: Request, lang: str = "ru"):
     lang = lang if lang in ("ru", "en") else "ru"
@@ -216,6 +207,11 @@ def faceit_stats():
         "stats": faceit_sync.get_player_stats(),
         "recent_matches": faceit_sync.get_recent_matches(),
     }
+
+
+@app.get("/api/hh")
+def hh_stats():
+    return {"market": hh_sync.get_market_stats()}
 
 
 @app.get("/api/music")

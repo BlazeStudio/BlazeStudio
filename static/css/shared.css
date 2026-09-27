@@ -1,5 +1,5 @@
 /* =========================================================
-   Loaded by both / (classic) and /xp — overlays and effects that
+   Loaded by both / (desktop) and /desktop (old 2024) — overlays and effects that
    the terminal's commands trigger regardless of which page it runs
    on: confetti, the matrix rain, the BSOD prank, the shutdown
    screen, toasts, and the "party" icon/card shake.
@@ -58,6 +58,19 @@ html, body { margin: 0; height: 100%; }
 .party-shake { animation: icon-party 0.35s ease-in-out infinite; }
 .party-shake:nth-child(2n) { animation-delay: 0.08s; }
 .party-shake:nth-child(3n) { animation-delay: 0.15s; }
+
+/* terminal 'glitch' — a couple of seconds of RGB-split jitter over the whole page */
+@keyframes fx-glitch {
+  0%, 100% { transform: none; filter: none; clip-path: none; }
+  10% { transform: translate(-6px, 2px) skewX(-4deg); filter: hue-rotate(90deg) saturate(3); }
+  20% { transform: translate(5px, -3px); filter: invert(1); clip-path: inset(12% 0 30% 0); }
+  30% { transform: translate(-3px, 0) skewX(6deg); filter: hue-rotate(-120deg) contrast(2); clip-path: none; }
+  45% { transform: translate(8px, 4px); filter: saturate(6) brightness(1.4); clip-path: inset(0 0 55% 0); }
+  60% { transform: translate(-7px, -2px) skewY(2deg); filter: hue-rotate(200deg); clip-path: inset(40% 0 0 0); }
+  75% { transform: translate(3px, 3px); filter: invert(1) hue-rotate(45deg); clip-path: none; }
+  90% { transform: translate(-2px, -1px); filter: contrast(3); }
+}
+body.fx-glitch { animation: fx-glitch 0.45s steps(1, end) infinite; }
 
 #toast {
   position: fixed;

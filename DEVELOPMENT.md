@@ -34,14 +34,12 @@ uvicorn api.index:app --reload --port 8000
 
 Then open:
 
-- **http://localhost:8000/** — the "2004 homepage" desktop cut: draggable windows, a Start menu, live Steam/FACEIT/GitHub widgets and a real console
-- **http://localhost:8000/desktop** — the plain scrolling résumé
-- **http://localhost:8000/xp** — the Windows XP desktop version
-- **http://localhost:8000/isaac** — the résumé as a The Binding of Isaac run (doors, boss fights, a devil deal, a treasure room); sprites in `static/img/isaac/` come from the TBoI-ES-Modification mod project
+- **http://localhost:8000/** — the "2004 homepage" desktop cut: draggable windows, a Start menu, live Steam/FACEIT/GitHub/hh.ru widgets, a real console, a Games folder (each game in its own window), Task Manager, Calculator and Notepad
+- **http://localhost:8000/desktop** — "old 2024": the previous plain scrolling résumé, kept as an archive (it runs its own frozen copy of the old games, `static/js/classic_games.js`)
 - **http://localhost:8000/dossier** — the printable PDF résumé (`?lang=en` for English)
 
-The homepage's Start menu links out to `/desktop`, `/xp` and `/isaac` — that's the only
-way to reach those cuts now that there's no separate entry screen.
+The homepage's Start menu → "Другие версии сайта" links to old 2024 (`/desktop`) and to
+old 2018 (https://blazestudio.wixsite.com/notoxic, an external Wix site).
 
 `--reload` restarts the server automatically when you edit a `.py` file. Static files
 (`static/css`, `static/js`) and templates are picked up on the next request without a
@@ -64,9 +62,10 @@ content lives in `api/data/profile_hh.py` and `api/data/profile_linkedin.py` —
 those directly to change wording, dates, skills, etc. Projects (`api/data/projects.py`)
 are shared between both résumé versions.
 
-## Steam / FACEIT integration on the homepage
+## Steam / FACEIT / hh.ru integration on the homepage
 
-The `/` homepage's Steam and FACEIT windows (avatar, status, recent games/matches) are
+The `/` homepage's Steam and FACEIT windows (avatar, status, recent games/matches) and the
+hh.ru window's job-market stats are
 live if — and only if — these environment variables are set (locally: `export`/`$env:`
 before running uvicorn; in prod: Vercel project → Settings → Environment Variables).
 Missing any of them makes that window render a "not connected" placeholder instead of
@@ -78,18 +77,19 @@ breaking:
 | `STEAM_ID64` | Your 17-digit SteamID64 — https://steamid.io |
 | `FACEIT_API_KEY` | https://developers.faceit.com/apps → an app → "API keys" (server-side key, not OAuth) |
 | `FACEIT_NICKNAME` | Your FACEIT username |
+| `HH_APP_TOKEN` | hh.ru *application* token: register an app at https://dev.hh.ru/admin, then `POST https://hh.ru/oauth/token` with `grant_type=client_credentials&client_id=…&client_secret=…`. App tokens don't expire. |
+| `HH_USER_AGENT` | Optional. hh.ru wants an identifying `Name/Version (contact)` header; defaults to `BlazeStudioPortfolio/1.0 (github.com/BlazeStudio)` |
+
+hh.ru closed anonymous access to `/vacancies` (it answers 403), hence the token. The
+window shows live numbers for Python vacancies in Moscow (total, remote, 3–6 years of
+experience, median salary) — `api/hh_sync.py`. The résumé's own view/invite counters
+would need the applicant's personal OAuth token, which expires every ~2 weeks and
+can't be rotated without a database, so that isn't wired up.
 
 Steam screenshots (Explorer → "Скриншоты Steam") use the community profile's public
 `?xml=1` feed (there's no official Web API for another user's screenshots) — your
 Steam privacy settings need "Game details" / inventory visible to the public for it to
 return anything.
-
-## The /isaac page
-
-`static/img/isaac/` holds sprites cropped from the actual game (The Binding of
-Isaac: Rebirth/Repentance, © Edmund McMillen / Nicalis) — pulled from the asset
-dump for the TBoI-ES-Modification mod (see `api/data/projects.py`). They're used
-as-is, not redrawn, so the footer on `/isaac` carries an attribution line.
 
 ## Deploying
 

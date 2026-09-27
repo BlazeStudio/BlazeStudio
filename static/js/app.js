@@ -53,21 +53,6 @@ function setLang(lang) {
 window.XP.setLang = setLang;
 
 /* =========================================================
-   Boot sequence
-   ========================================================= */
-function runBoot() {
-  const boot = document.getElementById('boot');
-  const desktop = document.getElementById('desktop');
-  setTimeout(() => {
-    boot.classList.add('fade-out');
-    desktop.hidden = false;
-    setTimeout(() => {
-      boot.hidden = true;
-    }, 550);
-  }, 1750);
-}
-
-/* =========================================================
    Clock
    ========================================================= */
 function tickClock() {
@@ -172,7 +157,7 @@ function matrixToggle(durationMs) {
 }
 
 function partyMode(durationMs) {
-  const targets = document.querySelectorAll('.desktop-icon, .c-card');
+  const targets = document.querySelectorAll('.nd-ico, .c-card');
   targets.forEach((el) => el.classList.add('party-shake'));
   setTimeout(() => targets.forEach((el) => el.classList.remove('party-shake')), durationMs || 3000);
 }
@@ -191,26 +176,29 @@ function bsodShow() {
   el.addEventListener('click', dismiss);
 }
 
+// Pages can swap in their own look (the desktop's XP "Turn off computer"
+// flow does) — this generic one just blanks the screen and reloads.
 function shutdownSequence() {
   const screen = document.getElementById('shutdown-screen');
-  const boot = document.getElementById('boot');
   applyStaticI18n(screen);
   screen.hidden = false;
-  setTimeout(() => {
-    if (!boot) {
-      // no desktop to reboot into on this page — the joke is rebooting into the XP version instead
-      window.location.href = '/xp';
-      return;
-    }
-    screen.hidden = true;
-    document.getElementById('desktop').hidden = true;
-    boot.hidden = false;
-    boot.classList.remove('fade-out');
-    boot.querySelector('.boot-bar-fill').style.animation = 'none';
-    void boot.offsetWidth;
-    boot.querySelector('.boot-bar-fill').style.animation = '';
-    runBoot();
-  }, 2200);
+  setTimeout(() => window.location.reload(), 2200);
+}
+
+function glitchEffect(durationMs) {
+  document.body.classList.remove('fx-glitch');
+  void document.body.offsetWidth; // restart the animation if it's already running
+  document.body.classList.add('fx-glitch');
+  clearTimeout(glitchEffect._t);
+  glitchEffect._t = setTimeout(() => document.body.classList.remove('fx-glitch'), durationMs || 1800);
+}
+
+// Runs right after the Enter keypress that submitted the command, so it's
+// still inside the browser's user-activation window and not popup-blocked.
+function rickroll() {
+  const tab = window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank');
+  if (tab) tab.opener = null;
+  else showToast(window.XP.t('Браузер заблокировал всплывающее окно — повезло.', 'Your browser blocked the pop-up — lucky you.'));
 }
 
 window.XP.effects = {
@@ -219,6 +207,8 @@ window.XP.effects = {
   party: partyMode,
   bsod: bsodShow,
   shutdown: shutdownSequence,
+  glitch: glitchEffect,
+  rickroll,
 };
 
 /* =========================================================
@@ -255,9 +245,5 @@ document.addEventListener('DOMContentLoaded', () => {
   tickClock();
   setInterval(tickClock, 1000 * 15);
 
-  if (document.getElementById('boot')) {
-    runBoot();
-  } else if (window.XP.renderClassic) {
-    window.XP.renderClassic();
-  }
+  if (window.XP.renderClassic) window.XP.renderClassic();
 });

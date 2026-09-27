@@ -57,7 +57,9 @@ a:hover { color: #d00000; }
 #nd-surface { position: absolute; inset: 0 0 40px 0; overflow: hidden; display: flex; }
 
 /* ============ desktop icons ============ */
-#nd-icons { flex: 0 0 100px; padding: 10px 0 0 10px; display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+/* Icons fill top-to-bottom and wrap into a second column on short screens
+   (a 768px-tall laptop used to cut the last few off). */
+#nd-icons { flex: 0 0 auto; padding: 10px 6px 10px 10px; display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 56px); grid-auto-columns: 88px; column-gap: 4px; min-height: 0; align-content: start; }
 .nd-ico {
   background: none;
   color: #fff;
@@ -67,8 +69,9 @@ a:hover { color: #d00000; }
   align-items: center;
   gap: 3px;
   width: 88px;
+  height: 54px;
   flex: none;
-  padding: 4px;
+  padding: 3px 4px;
   text-shadow: 1px 1px 0 #000;
   border-radius: 3px;
 }
@@ -131,9 +134,9 @@ a:hover { color: #d00000; }
    windows), so they need their own default box instead of one handed out
    by the responsive grid — new_desktop.js only takes over with inline
    left/top/width/height once the window is actually dragged or resized. */
-#nd-win-music, #nd-win-games, #nd-win-videos { position: absolute; }
+#nd-win-music, #nd-win-games, #nd-win-videos, .nd-app { position: absolute; }
 #nd-win-music { left: 40px; top: 56px; width: 300px; height: 460px; }
-#nd-win-games { left: 320px; top: 36px; width: 540px; height: 540px; }
+#nd-win-games { left: 320px; top: 36px; width: 470px; height: 320px; }
 #nd-win-videos { left: 200px; top: 90px; width: 480px; height: 420px; }
 
 .nd-resize {
@@ -166,6 +169,7 @@ a:hover { color: #d00000; }
   touch-action: none;
 }
 .nd-cap { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nd-tb-ico { flex: none; width: 16px; height: 16px; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35)); }
 .nd-tb button {
   width: 22px;
   height: 22px;
@@ -215,6 +219,12 @@ a:hover { color: #d00000; }
 .nd-win-avatar-badge { width: 44px; height: 44px; flex: none; border-radius: 6px; background: #0e141b; color: #57cbde; display: flex; align-items: center; justify-content: center; font: bold 14px Verdana, sans-serif; overflow: hidden; }
 .nd-win-avatar-badge img { width: 100%; height: 100%; object-fit: cover; }
 .nd-hh-badge { background: #d6001c; color: #fff; }
+.nd-hh-status { margin: 0 0 8px; font-size: 12px; }
+.nd-hh-status .nd-blink { color: #0a8a0a; }
+.nd-hh-label { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
+.nd-hh-label a { text-transform: none; letter-spacing: 0; }
+.nd-hh-stats .nd-stat b { color: #d6001c; }
+.nd-hh-body .nd-not-connected { margin: 0 0 10px; }
 .nd-win-name { font-weight: bold; font-size: 14px; }
 .nd-win-sub { font-size: 11.5px; color: var(--nd-text-dim); }
 .nd-win-link { font-size: 12px; }
@@ -351,7 +361,10 @@ a:hover { color: #d00000; }
 .nd-card-desc { font-size: 12.5px; }
 .nd-card-note { font-size: 11.5px; color: #a45a00; }
 .nd-card-links a { font-size: 12px; margin-right: 10px; }
-.nd-card-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+/* margin-top:auto pins the buttons to the card bottom, and wrap-reverse keeps
+   the first one (GitHub) on the bottom line when a second link wraps — so
+   GitHub buttons line up across a row either way. */
+.nd-card-links { display: flex; flex-wrap: wrap-reverse; gap: 8px; margin-top: auto; padding-top: 8px; }
 .nd-card-links a {
   display: inline-flex;
   align-items: center;
@@ -424,11 +437,14 @@ a:hover { color: #d00000; }
 .nd-shot img { width: 100%; height: 56px; object-fit: cover; display: block; }
 
 /* ---- Video app (large-icons grid, like a Windows Explorer icon view) ---- */
-.nd-videos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 12px; align-content: start; }
-.nd-video-icon { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; color: #000; text-align: center; font-size: 12px; border-radius: 4px; }
-.nd-video-icon svg, .nd-video-icon img { flex: none; object-fit: cover; border-radius: 2px; }
-.nd-video-icon span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
-.nd-video-icon:hover, .nd-video-icon:focus-visible { background: rgba(10, 79, 208, 0.12); outline: 1px dotted var(--nd-blue-4); }
+.nd-videos-grid, .nd-folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 12px; align-content: start; }
+.nd-video-icon, .nd-folder-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; color: #000; text-align: center; font-size: 12px; border-radius: 4px; }
+.nd-video-icon svg, .nd-video-icon img, .nd-folder-item svg { flex: none; object-fit: cover; border-radius: 2px; }
+.nd-video-icon span, .nd-folder-item span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.nd-video-icon:hover, .nd-video-icon:focus-visible, .nd-folder-item:hover, .nd-folder-item:focus-visible { background: rgba(10, 79, 208, 0.12); outline: 1px dotted var(--nd-blue-4); }
+.nd-folder-body { background: #fff; display: flex; flex-direction: column; }
+.nd-folder-body .nd-folder-grid { flex: 1 1 auto; }
+.nd-folder-status { flex: none; margin: 10px -12px -12px; padding: 3px 10px; border-top: 1px solid #aca899; background: var(--nd-panel); font-size: 11.5px; color: #333; }
 /* Video's window body is its own flex column (unlike the generic .nd-body)
    so the player can flex-grow to fill however big the window currently is —
    a flat max-height cap meant the video stayed small even when the window
@@ -542,13 +558,6 @@ a:hover { color: #d00000; }
 .nd-item-popup-meta { font-size: 12px; color: #333; line-height: 1.5; }
 .nd-item-popup-price { font-weight: bold; color: #a45a00; }
 
-/* align-items: start keeps each card sized to its own content — without it,
-   CSS Grid's default row-stretch makes every card in a row match the
-   tallest one, so a size change in one game (e.g. Minesweeper rebuilding
-   its grid on restart) visibly shoves its row-mates around too. */
-.nd-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; align-items: start; }
-.nd-gcard { border: 2px outset #fff; background: var(--nd-panel); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; overflow-x: auto; }
-.nd-gcard-title { font: bold 14px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
 
 /* ---- Winamp-style player chassis ---- */
 .nd-music { display: flex; flex-direction: column; gap: 8px; background: linear-gradient(#54546a, #2c2c3a); border: 2px outset #7a7a90; border-radius: 3px; padding: 10px; }
@@ -653,7 +662,7 @@ a:hover { color: #d00000; }
   position: fixed;
   left: 4px;
   bottom: 44px;
-  width: 300px;
+  width: 340px;
   z-index: 155;
   border-radius: 8px 8px 3px 3px;
   overflow: hidden;
@@ -671,7 +680,9 @@ a:hover { color: #d00000; }
   font: bold 14px Tahoma, Verdana, sans-serif;
   text-shadow: 1px 1px 0 #002080;
 }
-.nd-sm-avatar { width: 32px; height: 32px; border-radius: 4px; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.nd-sm-avatar { width: 40px; height: 40px; flex: none; display: flex; overflow: hidden; border: 2px solid #fff; border-radius: 4px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3); }
+.nd-sm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.nd-sm-sep { height: 1px; margin: 4px 6px; background: linear-gradient(90deg, transparent, #b9c6de, transparent); }
 .nd-sm-body { display: flex; background: #fff; }
 .nd-sm-col { flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 1px; }
 .nd-sm-col-alt { background: #dde8fb; }
@@ -689,9 +700,10 @@ a:hover { color: #d00000; }
 .nd-sm-item:hover { background: var(--nd-blue-1); color: #fff; }
 .nd-sm-other { background: var(--nd-panel); border-top: 1px solid #b9b6a5; padding: 6px; }
 .nd-sm-other-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; padding: 3px 8px; }
-.nd-sm-footer { background: linear-gradient(var(--nd-blue-4), #0a3fa0); padding: 4px; }
-.nd-sm-footer .nd-sm-item { color: #fff; }
-.nd-sm-footer .nd-sm-item:hover { background: rgba(255, 255, 255, 0.2); }
+.nd-sm-footer { display: flex; justify-content: flex-end; gap: 4px; padding: 6px 8px; background: linear-gradient(var(--nd-blue-2), var(--nd-blue-4)); }
+.nd-sm-foot-btn { display: flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 3px; color: #fff; font: 12px Tahoma, Verdana, sans-serif; }
+.nd-sm-foot-btn svg { flex: none; }
+.nd-sm-foot-btn:hover { background: rgba(255, 255, 255, 0.18); }
 #nd-start.active { background: linear-gradient(#2f8a2f, #1f6a1f); box-shadow: 0 0 0 2px #123a12 inset; }
 
 /* ============ taskbar ============ */
@@ -711,7 +723,10 @@ a:hover { color: #d00000; }
 }
 #nd-start {
   height: 40px;
-  padding: 0 22px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 22px 0 10px;
   background: linear-gradient(#5cb85c, #2f8a2f 15%, #2f8a2f 85%, #1f6a1f);
   border-radius: 0 16px 16px 0;
   color: #fff;
@@ -720,6 +735,7 @@ a:hover { color: #d00000; }
   margin-right: 6px;
 }
 #nd-start:hover { filter: brightness(1.08); }
+.nd-start-flag { flex: none; filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.6)); }
 #nd-tasks { flex-grow: 1; display: flex; gap: 4px; overflow: hidden; height: 30px; }
 .nd-task {
   width: 34px;
@@ -760,71 +776,233 @@ a:hover { color: #d00000; }
   background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
 }
 
-/* ============ mini-games (Minesweeper / Slots), styled to match
-   this page's 98-button/panel chrome. games.js only cares about
-   #mines-*/#slots-* ids and the .mines-cell classes it sets itself —
-   everything else here is presentation only. ============ */
-.nd-game-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-.nd-game-stats { font-family: 'Courier New', monospace; font-size: 11.5px; color: var(--nd-text-dim); display: flex; gap: 14px; }
-.nd-game-stats b { color: var(--nd-blue-4); }
-.nd-btn98:disabled { color: #888; cursor: default; }
-.nd-btn98:disabled:hover { background: var(--nd-panel); }
-.nd-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+/* ============ games (games.js) — each one in its own window. games.js
+   owns the markup; these rules are presentation only. ============ */
+.nd-game-body { display: flex; flex-direction: column; overflow: hidden; padding: 10px; background: var(--nd-panel); }
+.g-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.g-bar { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.g-bar-btns { display: flex; gap: 6px; }
+.g-stats { font: 11.5px 'Courier New', monospace; color: var(--nd-text-dim); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.g-stats b { color: var(--nd-blue-4); }
+/* fitCanvas() (games.js) sizes the canvas to the largest box that fits here,
+   leaving room for this 2px border on each side. */
+.g-stage { flex: 1 1 0; min-height: 140px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; }
+.g-stage canvas, .g-next canvas { display: block; border: 2px inset #fff; box-shadow: inset 1px 1px 0 #808080; background: #f7f6f0; box-sizing: content-box; }
+.g-overlay { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(236, 233, 216, 0.84); color: #0a2f8f; text-align: center; font-size: 12.5px; cursor: pointer; }
+.g-overlay[hidden] { display: none; }
+.g-overlay b { font: bold 19px Tahoma, Verdana, sans-serif; }
+.g-overlay span { color: #333; }
+.g-overlay.g-overlay-soft { background: transparent; justify-content: flex-end; padding-bottom: 18%; pointer-events: none; }
+.g-overlay.g-overlay-soft span { background: rgba(255, 255, 255, 0.88); padding: 3px 9px; border: 1px solid #c9c6b8; }
+.g-hint { flex: none; font-size: 11px; color: #555; text-align: center; }
+.g-led { display: inline-block; min-width: 46px; padding: 1px 4px; background: #000; color: #ff2a1a; font: bold 18px 'Courier New', monospace; text-align: right; border: 2px inset #fff; box-shadow: inset 1px 1px 0 #808080; letter-spacing: 1px; line-height: 1.15; box-sizing: border-box; }
+.g-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; max-width: 288px; }
+.g-best { font: 11.5px 'Courier New', monospace; color: #333; }
+/* on-screen controls — only where there's no keyboard to speak of */
+.g-pad { display: none; flex: none; justify-content: center; gap: 6px; }
+.g-pad-btn { min-width: 50px; min-height: 44px; font-size: 17px; padding: 0; touch-action: none; }
+@media (pointer: coarse) {
+  .g-pad { display: flex; }
+  .g-side-keys { display: none; }
+}
+
+/* ---- Minesweeper ---- */
+.g-mines { align-items: center; }
+.mines-head { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 288px; padding: 5px 6px; background: var(--nd-panel-2); border: 2px inset #fff; box-sizing: border-box; }
+.mines-face { width: 34px; height: 34px; font-size: 19px; line-height: 1; border: 2px outset #fff; background: var(--nd-panel); display: flex; align-items: center; justify-content: center; }
+.mines-face:active { border-style: inset; }
 .mines-grid {
   display: grid;
-  gap: 3px;
-  /* minmax(0,1fr) is the key: plain 1fr lets emoji/numbers expand min-content
-     and the board grows on every reveal. minmax(0,…) caps that. Width tracks
-     the parent so shrinking the games window also shrinks the board. */
-  grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+  /* minmax(0,1fr) keeps revealed numbers/emoji from widening their column */
+  grid-template-columns: repeat(9, minmax(0, 1fr));
   width: 100%;
   max-width: 288px;
-  margin: 10px auto;
-  background: var(--nd-blue-4);
-  padding: 5px;
-  border: 2px inset #808080;
+  background: #9d9a8c;
+  border: 3px inset #fff;
   box-sizing: border-box;
 }
 .mines-cell {
-  width: 100%;
   min-width: 0;
-  min-height: 0;
   aspect-ratio: 1;
   box-sizing: border-box;
-  border: 2px outset #fff;
-  background: var(--nd-panel);
-  font-family: 'Courier New', monospace;
-  font-size: clamp(9px, 2.8vw, 13px);
-  font-weight: 700;
+  border: 3px solid;
+  border-color: #fff #808080 #808080 #fff;
+  background: #d4d0c8;
+  font: bold 15px 'Courier New', monospace;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   padding: 0;
   overflow: hidden;
 }
-.mines-cell.revealed {
-  border: 2px solid #b9b6a5;
-  background: #fff;
-  cursor: default;
+.mines-cell.revealed { border: 1px solid #a8a598; background: #f1efe7; cursor: default; }
+.mines-cell.hit { background: #ff3b30; }
+.mines-cell.wrong { background: #f4c7c3; }
+.mines-cell[data-n="1"] { color: #1f3fd0; }
+.mines-cell[data-n="2"] { color: #1b7d1b; }
+.mines-cell[data-n="3"] { color: #d01818; }
+.mines-cell[data-n="4"] { color: #0c1a8a; }
+.mines-cell[data-n="5"] { color: #7d1010; }
+.mines-cell[data-n="6"] { color: #0e7f7f; }
+.mines-cell[data-n="7"] { color: #000; }
+.mines-cell[data-n="8"] { color: #6b6b6b; }
+
+/* ---- Slots ---- */
+.g-help { width: 30px; padding: 6px 0; font-size: 14px; }
+.slots-machine { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.slots-window { position: relative; display: flex; gap: 8px; padding: 12px 14px; background: linear-gradient(#c8141e, #7a0a0a); border: 4px solid #ffd400; border-radius: 8px; box-shadow: inset 0 0 0 2px #7a5a00, 3px 3px 0 rgba(0, 0, 0, 0.35); }
+.slots-window.win { animation: slots-win 0.25s steps(2, start) 6; }
+@keyframes slots-win { to { border-color: #fff; box-shadow: inset 0 0 0 2px #7a5a00, 0 0 18px 4px #ffd400; } }
+.slots-reel { width: 62px; height: 132px; background: linear-gradient(#bdbdbd, #fff 28%, #fff 72%, #bdbdbd); border: 2px inset #808080; display: flex; flex-direction: column; overflow: hidden; }
+.slots-cell { flex: 1 1 0; display: flex; align-items: center; justify-content: center; font-size: 30px; line-height: 1; }
+.slots-cell.dim { opacity: 0.35; transform: scale(0.78); }
+.slots-reel.spinning .slots-cell { filter: blur(1.4px); }
+.slots-payline { position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; margin-top: -1px; background: rgba(255, 40, 30, 0.7); pointer-events: none; }
+.sym-7 { font: bold 36px Georgia, 'Times New Roman', serif; color: #d0021b; text-shadow: 1px 1px 0 #ffd400, 2px 2px 0 #7a0a0a; }
+.sym-bar { display: inline-block; padding: 3px 5px; background: #111; color: #ffd400; font: bold 13px Impact, 'Arial Black', sans-serif; letter-spacing: 1px; border-radius: 3px; border: 1px solid #ffd400; line-height: 1; }
+.slots-bet { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.slots-bet-btn { padding: 4px 9px; }
+.slots-bet-val { min-width: 52px; font-size: 16px; text-align: center; }
+.slots-spin { font-size: 14px; padding: 8px 30px; }
+.slots-msg { font: bold 12px 'Courier New', monospace; color: #0a2f8f; min-height: 16px; text-align: center; }
+.slots-paytable { position: absolute; inset: -10px; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); }
+.slots-paytable[hidden] { display: none; }
+.slots-paytable-box { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 94%; max-height: 94%; overflow: auto; padding: 10px 14px; background: var(--nd-panel); border: 3px solid var(--nd-blue-4); border-radius: 6px; box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45); box-sizing: border-box; }
+.slots-paytable-title { font: bold 14px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
+.slots-paytable table { border-collapse: collapse; font-size: 12.5px; background: #fff; border: 2px inset #fff; }
+.slots-paytable td { padding: 2px 10px; border-bottom: 1px solid #e6e3d6; }
+.slots-pt-combo { font-size: 15px; white-space: nowrap; }
+.slots-pt-combo small { font-size: 11px; color: #555; }
+.slots-pt-combo .sym-7 { font-size: 17px; }
+.slots-pt-combo .sym-bar { font-size: 9px; padding: 2px 3px; margin-right: 2px; }
+.slots-pt-win { font-weight: bold; color: #a45a00; text-align: right; }
+.slots-paytable-note { margin: 0; font-size: 11px; color: #333; text-align: center; max-width: 260px; }
+
+/* ---- Tetris ---- */
+.g-tetris-main { flex: 1 1 0; min-height: 0; display: flex; gap: 10px; }
+.g-side { flex: none; width: 104px; display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; }
+.g-side-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; margin-top: 4px; }
+.g-next { width: 100px; height: 76px; display: flex; align-items: center; justify-content: center; }
+.g-side-keys { margin-top: auto; font-size: 10.5px; color: #555; line-height: 1.4; }
+
+/* ---- 2048 ---- */
+.g2048-stage { flex: 1 1 0; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; container-type: size; touch-action: none; }
+.g2048-board { width: min(100cqw, 100cqh); aspect-ratio: 1; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 3%; padding: 3%; background: #bbada0; border-radius: 6px; box-sizing: border-box; }
+.g2048-cell { display: flex; align-items: center; justify-content: center; border-radius: 4px; background: rgba(238, 228, 218, 0.35); color: #776e65; font: bold clamp(14px, 8cqmin, 38px) Verdana, sans-serif; }
+.g2048-cell.big { font-size: clamp(11px, 5.5cqmin, 28px); }
+.g2048-cell.t2 { background: #eee4da; }
+.g2048-cell.t4 { background: #ede0c8; }
+.g2048-cell.t8 { background: #f2b179; color: #f9f6f2; }
+.g2048-cell.t16 { background: #f59563; color: #f9f6f2; }
+.g2048-cell.t32 { background: #f67c5f; color: #f9f6f2; }
+.g2048-cell.t64 { background: #f65e3b; color: #f9f6f2; }
+.g2048-cell.t128 { background: #edcf72; color: #f9f6f2; }
+.g2048-cell.t256 { background: #edcc61; color: #f9f6f2; }
+.g2048-cell.t512 { background: #edc850; color: #f9f6f2; }
+.g2048-cell.t1024 { background: #edc53f; color: #f9f6f2; }
+.g2048-cell.t2048 { background: #edc22e; color: #f9f6f2; box-shadow: 0 0 12px rgba(237, 194, 46, 0.6); }
+.g2048-cell.t4096 { background: #3c3a32; color: #f9f6f2; }
+.g2048-cell.new { animation: g2048-pop 0.18s ease-out; }
+.g2048-cell.merged { animation: g2048-merge 0.18s ease-out; }
+@keyframes g2048-pop { from { transform: scale(0.3); opacity: 0.3; } }
+@keyframes g2048-merge { 50% { transform: scale(1.14); } }
+
+/* ============ Task Manager / Calculator / Notepad ============ */
+.nd-app-body { padding: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--nd-panel); }
+
+.tm { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 8px 8px 0; font-size: 12px; }
+.tm-tabs { display: flex; gap: 2px; padding-left: 4px; }
+.tm-tab { position: relative; top: 1px; padding: 4px 10px; border: 1px solid #919b9c; border-bottom: 0; border-radius: 3px 3px 0 0; background: linear-gradient(#fff, #ecebe5); font-size: 12px; }
+.tm-tab.active { z-index: 1; padding-top: 3px; background: #fcfcfe; border-top: 2px solid #e68b2c; }
+.tm-panel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; background: #fcfcfe; border: 1px solid #919b9c; }
+.tm-list { flex: 1 1 auto; min-height: 0; overflow: auto; background: #fff; border: 1px solid #7f9db9; }
+.tm-list table { width: 100%; border-collapse: collapse; }
+.tm-list th { position: sticky; top: 0; padding: 3px 6px; background: linear-gradient(#fff, #ebeadb); border-bottom: 1px solid #c7c5b2; border-right: 1px solid #e2e0cf; text-align: left; font-weight: normal; }
+.tm-list td { padding: 2px 6px; white-space: nowrap; }
+.tm-list td svg { vertical-align: -3px; margin-right: 6px; }
+.tm-list .num { text-align: right; }
+.tm-row { cursor: default; }
+.tm-row.sel td { background: #316ac5; color: #fff; }
+.tm-actions { flex: none; display: flex; justify-content: flex-end; gap: 6px; }
+.tm-actions .nd-btn98 { font-weight: normal; padding: 4px 10px; }
+.tm-status { flex: none; display: flex; margin: 0 -8px; border-top: 1px solid #aca899; font-size: 11.5px; }
+.tm-status span { flex: 1 1 auto; padding: 3px 8px; border-right: 1px solid #aca899; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-perf { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 8px; align-content: start; }
+.tm-perf fieldset { margin: 0; padding: 3px 6px 6px; border: 1px solid #d0d0bf; border-radius: 3px; min-width: 0; }
+.tm-perf legend { padding: 0 3px; font-size: 11px; color: #0046d5; }
+.tm-wide { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
+.tm-meter { height: 70px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; background: #000; box-sizing: border-box; }
+.tm-meter b { order: 2; color: #3cff3c; font: 11px 'Courier New', monospace; }
+.tm-meter-bar { flex: 1 1 auto; width: 30px; display: flex; align-items: flex-end; background: repeating-linear-gradient(#0a3a0a 0 2px, #000 2px 3px); }
+.tm-meter-bar div { width: 100%; background: repeating-linear-gradient(#3cff3c 0 2px, #000 2px 3px); }
+.tm-graph { display: block; width: 100%; height: 70px; background: #000; }
+.tm-kv { display: flex; justify-content: space-between; font-size: 11.5px; }
+
+#nd-win-calc .nd-app-body { padding: 8px; }
+.calc { display: flex; flex-direction: column; gap: 8px; }
+.calc-display { min-height: 28px; padding: 4px 6px; background: #fff; border: 2px inset #fff; box-shadow: inset 1px 1px 0 #808080; text-align: right; font: 17px 'Lucida Console', 'Courier New', monospace; line-height: 1.2; white-space: nowrap; overflow: hidden; box-sizing: border-box; }
+.calc-top { display: grid; grid-template-columns: 34px 1fr 1fr 1fr; gap: 5px; align-items: center; }
+.calc-mem { height: 26px; display: flex; align-items: center; justify-content: center; border: 2px inset #fff; box-shadow: inset 1px 1px 0 #808080; font: bold 12px Tahoma, Verdana, sans-serif; box-sizing: border-box; }
+.calc-grid { display: grid; grid-template-columns: 34px repeat(5, minmax(0, 1fr)); gap: 5px; }
+.calc-key { height: 30px; padding: 0; border: 1px solid #7a8aa8; border-radius: 3px; background: linear-gradient(#fdfdfb, #e7e5dc); color: #1c2fd8; font: 12px Tahoma, Verdana, sans-serif; }
+.calc-key:hover { box-shadow: inset 0 0 0 1px #f8b330; }
+.calc-key:active { background: linear-gradient(#e2e0d6, #f4f3ee); }
+.calc-key.op, .calc-key.m { color: #d11a1a; }
+
+#nd-win-notepad .nd-app-body { background: #fff; }
+.np { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.np-menubar { flex: none; display: flex; padding: 1px 2px; background: var(--nd-panel); border-bottom: 1px solid #aca899; font-size: 12px; }
+.np-menu { position: relative; }
+.np-menu-btn { padding: 3px 8px; font-size: 12px; }
+.np-menu-btn:hover { background: #316ac5; color: #fff; }
+.np-drop { position: absolute; top: 100%; left: 0; z-index: 5; min-width: 200px; padding: 2px; background: #fff; border: 1px solid #aca899; box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.35); }
+.np-drop[hidden] { display: none; }
+.np-item { display: flex; align-items: center; width: 100%; padding: 3px 10px 3px 0; text-align: left; font-size: 12px; }
+.np-item:hover { background: #316ac5; color: #fff; }
+.np-check { flex: none; width: 22px; text-align: center; }
+.np-item kbd { margin-left: auto; padding-left: 18px; font: inherit; opacity: 0.75; }
+.np-text { flex: 1 1 auto; min-height: 0; padding: 4px 6px; border: 0; outline: 0; resize: none; background: #fff; color: #000; font: 13px 'Lucida Console', 'Courier New', monospace; line-height: 1.4; }
+.np-text.nowrap { white-space: pre; overflow-x: auto; }
+
+/* ============ Windows XP "Turn off computer" + shutdown screen ============ */
+#nd-desktop { transition: filter 1.2s ease; }
+#nd-desktop.nd-greyed { filter: grayscale(1) brightness(0.85); }
+#nd-xp-off { position: fixed; inset: 0; z-index: 420; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.12); }
+#nd-xp-off[hidden] { display: none; }
+.xp-off-box { width: 314px; max-width: calc(100vw - 24px); overflow: hidden; border: 1px solid #0b2a7a; border-radius: 4px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); font-family: Tahoma, Verdana, sans-serif; }
+.xp-off-top { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; background: linear-gradient(#0937a7, #0a2f93); color: #fff; font: 17px 'Franklin Gothic Medium', 'Trebuchet MS', Tahoma, sans-serif; }
+.xp-off-mid { display: flex; justify-content: space-around; padding: 22px 8px 18px; background: linear-gradient(90deg, #5a7edc, #86a3ec 45%, #5a7edc); border-top: 1px solid #b6c9f6; border-bottom: 1px solid #b6c9f6; }
+.xp-off-btn { width: 92px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #fff; font-size: 12px; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35); }
+.xp-off-btn:focus-visible { outline: none; }
+.xp-orb { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.85); border-radius: 6px; box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4), inset 0 12px 10px -6px rgba(255, 255, 255, 0.45); }
+.xp-orb svg { width: 24px; height: 24px; }
+.xp-orb-standby { background: linear-gradient(#ffcf4a, #e39a05); }
+.xp-orb-off { background: linear-gradient(#f5795a, #c8261a); }
+.xp-orb-restart { background: linear-gradient(#6ad04e, #2f9a1e); }
+.xp-off-btn:hover .xp-orb, .xp-off-btn:focus-visible .xp-orb { filter: brightness(1.15); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55), 1px 1px 2px rgba(0, 0, 0, 0.4); }
+.xp-off-bottom { display: flex; justify-content: flex-end; padding: 10px 14px; background: linear-gradient(#0a2f93, #0937a7); }
+.xp-off-cancel { padding: 3px 18px; border: 1px solid #003c74; border-radius: 3px; background: linear-gradient(#fff, #ece9d8); color: #000; font: 12px Tahoma, Verdana, sans-serif; }
+.xp-off-cancel:hover { box-shadow: inset 0 0 0 1px #f8b330; }
+
+#nd-xp-screen { position: fixed; inset: 0; z-index: 430; display: flex; flex-direction: column; background: #5a7edc; color: #fff; font-family: Tahoma, Verdana, sans-serif; cursor: wait; }
+#nd-xp-screen[hidden] { display: none; }
+.xp-screen-band { flex: 0 0 12%; background: #00309c; }
+.xp-screen-band:first-child { border-bottom: 2px solid #7ea3ff; }
+.xp-screen-band:last-child { border-top: 2px solid #f59f2a; }
+.xp-screen-mid { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 48px; padding: 0 20px; background: radial-gradient(ellipse at 18% 22%, #a8c0f6 0%, #5a7edc 42%, #3a62cc 100%); }
+.xp-screen-logo { display: flex; align-items: center; gap: 12px; }
+.xp-screen-brand { display: flex; flex-direction: column; }
+.xp-screen-brand span { font-size: 13px; opacity: 0.9; }
+.xp-screen-brand b { font: bold 40px 'Franklin Gothic Medium', 'Trebuchet MS', Tahoma, sans-serif; letter-spacing: -1px; line-height: 1; }
+.xp-screen-brand sup { margin-left: 2px; color: #f59f2a; font-size: 20px; }
+.xp-screen-msg { min-height: 60px; display: flex; align-items: center; padding-left: 48px; border-left: 1px solid rgba(255, 255, 255, 0.5); font-size: 20px; }
+@media (max-width: 640px) {
+  .xp-screen-mid { flex-direction: column; gap: 24px; }
+  .xp-screen-msg { min-height: 0; padding: 0; border: 0; font-size: 17px; }
 }
-.mines-cell.revealed.mine { background: #e88; }
-.mines-cell.revealed.hit { background: #ff5f5f; }
-.mines-cell.flagged { background: #ffe6a8; }
-.mines-cell[data-n="1"] { color: #1565c0; }
-.mines-cell[data-n="2"] { color: #2e7d32; }
-.mines-cell[data-n="3"] { color: #c62828; }
-.mines-cell[data-n="4"] { color: #6a1b9a; }
-.mines-cell[data-n="5"] { color: #8d4b00; }
-.mines-cell[data-n="6"] { color: #00838f; }
-.mines-cell[data-n="7"] { color: #212121; }
-.mines-cell[data-n="8"] { color: #757575; }
-.slots-machine { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px; }
-.slots-reels { display: flex; gap: 10px; background: #7a0a0a; border: 3px solid #ffd400; padding: 14px 18px; border-radius: 4px; }
-.slots-reel { font-size: 36px; width: 48px; text-align: center; background: #fff; border: 2px inset #808080; }
-.slots-spin-btn { font-weight: 700; }
-.slots-msg { font-family: 'Courier New', monospace; font-size: 12px; color: var(--nd-text-dim); min-height: 16px; }
+#nd-xp-standby { position: fixed; inset: 0; z-index: 440; background: #000; cursor: none; }
+#nd-xp-standby[hidden] { display: none; }
 
 /* ============ responsive ============ */
 @media (max-width: 900px) {
@@ -898,6 +1076,8 @@ a:hover { color: #d00000; }
      not being restricted by an ancestor — removes any doubt on real devices
      this environment can't fully emulate for verification. */
   .nd-win, .nd-win * { touch-action: manipulation; }
+  /* ...except game boards, which handle their own swipes/drags */
+  .nd-win .g-stage, .nd-win .g-stage *, .nd-win .g2048-stage, .nd-win .g2048-stage *, .nd-win .g-pad-btn { touch-action: none; }
   .nd-win button, .nd-win input, .nd-win a, .nd-win .nd-btn98, .nd-win .mines-cell {
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(10, 79, 208, 0.25);

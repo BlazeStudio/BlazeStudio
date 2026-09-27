@@ -21,7 +21,21 @@
      fixed box; "Расставить" clears all detached state and lets
      everything fall back into the grid.
      ========================================================= */
-  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts', 'music', 'games', 'videos'];
+  const GAMES = window.XP.GAMES || {};
+  const GAME_KINDS = Object.keys(GAMES);
+  const gameWinId = (kind) => 'game-' + kind;
+  const GAME_WIN_IDS = GAME_KINDS.map(gameWinId);
+
+  // Small "apps" that don't live in the template — built on the fly by
+  // createAppWindow() below, same markup as the template's windows.
+  const APP_TITLES = {
+    taskmgr: ['Диспетчер задач Windows', 'Windows Task Manager'],
+    calc: ['Калькулятор', 'Calculator'],
+    notepad: ['Безымянный — Блокнот', 'Untitled — Notepad'],
+  };
+  GAME_KINDS.forEach((kind) => (APP_TITLES[gameWinId(kind)] = GAMES[kind].title));
+
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts', 'music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
@@ -32,9 +46,13 @@
     console: () => t('Консоль', 'Console'),
     contacts: () => t('Контакты', 'Contacts'),
     music: () => 'Winamp',
-    games: () => t('Мини-игры', 'Mini-games'),
-    videos: () => t('Видео', 'Video'),
+    games: () => t('Игры', 'Games'),
+    videos: () => t('Видео', 'Videos'),
+    taskmgr: () => t('Диспетчер задач', 'Task Manager'),
   };
+  Object.keys(APP_TITLES).forEach((id) => {
+    if (!WIN_LABEL[id]) WIN_LABEL[id] = () => t(APP_TITLES[id][0], APP_TITLES[id][1]);
+  });
   const WIN_ICON = {
     avatar: 'ico-avatar',
     steam: 'ico-steam',
@@ -46,8 +64,24 @@
     contacts: 'ico-contacts',
     music: 'ico-music',
     games: 'ico-games',
-    videos: 'ico-video',
+    videos: 'ico-videos',
+    taskmgr: 'ico-taskmgr',
+    calc: 'ico-calc',
+    notepad: 'ico-notepad',
   };
+  GAME_KINDS.forEach((kind) => (WIN_ICON[gameWinId(kind)] = GAMES[kind].icon));
+
+  // Default size for windows that float over the desktop instead of taking a
+  // slot in the grid — they open centered-ish, cascading, at this size.
+  const FLOAT_SIZE = {
+    music: [300, 460],
+    games: [470, 320],
+    videos: [480, 420],
+    taskmgr: [440, 440],
+    calc: [262, 322],
+    notepad: [500, 380],
+  };
+  GAME_KINDS.forEach((kind) => (FLOAT_SIZE[gameWinId(kind)] = GAMES[kind].size));
   const MIN_WIN_W = 200;
   const MIN_WIN_H = 140;
   // The Steam window packs an avatar row, a stat grid, a recent-games list
@@ -85,7 +119,9 @@
   }
 
 
-  const state = { hidden: {}, detached: {}, preMax: {}, z: {}, tab: 'resume' };
+  // hidden = not on screen (minimized or closed); closed = a floating app
+  // that's been shut entirely, so it drops off the taskbar too.
+  const state = { hidden: {}, closed: {}, detached: {}, preMax: {}, z: {}, tab: 'resume' };
   let zOrder = []; // back-to-front stacking order, kept short so z-index never has to grow unbounded (and stays well under the taskbar's)
 
   function winEl(id) {
@@ -142,7 +178,7 @@
   // #nd-surface's OWN row flex (icons + grid), squeezing #nd-grid every time
   // one of these was dragged or maximized — worse with each one, since each
   // left its own leftover placeholder competing for the same row.
-  const FLOATING_WIN_IDS = new Set(['music', 'games', 'videos']);
+  const FLOATING_WIN_IDS = new Set(['music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS]);
   function syncPlaceholder(id) {
     if (FLOATING_WIN_IDS.has(id)) {
       hidePlaceholder(id);
@@ -202,7 +238,63 @@
     }
   }
 
+  // Per-window lifecycle hooks: ON_OPEN runs when a floating app goes from
+  // closed to open (not on restore-from-minimized), ON_CLOSE when it's shut.
+  const ON_OPEN = {};
+  const ON_CLOSE = {};
+
+  let cascade = 0;
+  function defaultBox(id) {
+    const sr = surfaceRect();
+    const [dw, dh] = FLOAT_SIZE[id] || [420, 360];
+    const w = Math.min(dw, sr.width - 20);
+    const h = Math.min(dh, sr.height - 20);
+    const step = (cascade++ % 8) * 26;
+    return {
+      left: Math.max(10, Math.min(sr.width - w - 10, Math.round((sr.width - w) / 2) - 80 + step)),
+      top: Math.max(10, Math.min(sr.height - h - 10, Math.round((sr.height - h) / 2) - 70 + step)),
+      width: w,
+      height: h,
+    };
+  }
+
+  function isOpen(id) {
+    return !FLOATING_WIN_IDS.has(id) || !state.closed[id];
+  }
+
+  function closeWin(id) {
+    if (FLOATING_WIN_IDS.has(id)) {
+      if (state.closed[id]) return;
+      state.closed[id] = true;
+      if (ON_CLOSE[id]) ON_CLOSE[id]();
+      if (isMaximized(id)) toggleMaximize(id);
+    }
+    setHidden(id, true);
+  }
+
+  // The topmost window that's actually on screen — the one keyboard-driven
+  // games and the calculator listen to.
+  function activeWinId() {
+    for (let i = zOrder.length - 1; i >= 0; i -= 1) {
+      if (!state.hidden[zOrder[i]]) return zOrder[i];
+    }
+    return null;
+  }
+  window.XP.isGameActive = function (root) {
+    const w = root && root.closest ? root.closest('.nd-win') : null;
+    return !!w && w.id === 'nd-win-' + activeWinId();
+  };
+
   function show(id) {
+    if (!winEl(id)) return;
+    if (FLOATING_WIN_IDS.has(id) && state.closed[id]) {
+      state.closed[id] = false;
+      if (!state.detached[id] && !isMaximized(id)) {
+        state.detached[id] = defaultBox(id);
+        applyWinStyle(id);
+      }
+      if (ON_OPEN[id]) ON_OPEN[id]();
+    }
     if (state.hidden[id]) setHidden(id, false);
     raise(id);
     // iOS: virtual keyboard / caret only appear after an explicit focus
@@ -331,15 +423,7 @@
       const min = el.querySelector('.nd-min');
       onTap(min, () => toggleWin(id));
       const close = el.querySelector('.nd-x');
-      onTap(close, () => {
-        // Real Winamp behavior: closing it stops playback, minimizing it
-        // (to the taskbar, same as every other window here) doesn't. Video
-        // gets the same treatment — closing the player shouldn't leave it
-        // playing in the background.
-        if (id === 'music') stopMusicPlayback();
-        else if (id === 'videos') stopVideoPlayback();
-        toggleWin(id);
-      });
+      onTap(close, () => closeWin(id));
       const maxBtn = el.querySelector('.nd-max');
       onTap(maxBtn, () => toggleMaximize(id));
       const resizeHandle = el.querySelector('.nd-resize');
@@ -349,11 +433,25 @@
     });
   }
 
+  function taskbarIds() {
+    return WIN_ORDER.filter((id) => winEl(id) && isOpen(id));
+  }
+
+  // XP windows carry their app icon at the left of the title bar.
+  function addTitlebarIcons() {
+    WIN_ORDER.forEach((id) => {
+      const tb = winEl(id) && winEl(id).querySelector('.nd-tb');
+      if (!tb || tb.querySelector('.nd-tb-ico') || !WIN_ICON[id]) return;
+      tb.insertAdjacentHTML('afterbegin', `<svg class="nd-tb-ico" width="16" height="16" aria-hidden="true"><use href="#${WIN_ICON[id]}"></use></svg>`);
+    });
+  }
+
   function syncTaskbar() {
     const bar = document.getElementById('nd-tasks');
     if (!bar) return;
     bar.innerHTML = '';
-    WIN_ORDER.forEach((id) => {
+    const ids = taskbarIds();
+    ids.forEach((id) => {
       const btn = document.createElement('button');
       const hidden = !!state.hidden[id];
       btn.className = 'nd-task' + (hidden ? '' : ' active');
@@ -364,22 +462,44 @@
       bar.appendChild(btn);
     });
     const allBtn = document.getElementById('nd-toggle-all');
-    const allVisible = WIN_ORDER.every((id) => !state.hidden[id]);
+    const allVisible = ids.every((id) => !state.hidden[id]);
     if (allBtn) allBtn.textContent = allVisible ? t('Свернуть всё', 'Hide all') : t('Показать всё', 'Show all');
+    if (isOpen('taskmgr') && !state.hidden.taskmgr) renderTaskmgrPanel();
   }
 
   function arrange() {
-    state.detached = {};
+    cascade = 0;
     WIN_ORDER.forEach((id) => {
       if (isMaximized(id)) toggleMaximize(id);
+      delete state.detached[id];
+      // Open floating apps get re-cascaded; closed ones get a fresh spot next time they open.
+      if (FLOATING_WIN_IDS.has(id) && isOpen(id)) state.detached[id] = defaultBox(id);
       applyWinStyle(id);
     });
     window.XP.toast(t('Окна расставлены по местам.', 'Windows arranged.'));
   }
 
   function toggleAll() {
-    const allVisible = WIN_ORDER.every((id) => !state.hidden[id]);
-    WIN_ORDER.forEach((id) => setHidden(id, allVisible));
+    const ids = taskbarIds();
+    const allVisible = ids.every((id) => !state.hidden[id]);
+    ids.forEach((id) => setHidden(id, allVisible));
+  }
+
+  /* Builds a floating app window with the same chrome as the template's. */
+  function createAppWindow(id, opts) {
+    if (winEl(id)) return winEl(id);
+    const [ru, en] = APP_TITLES[id];
+    const el = document.createElement('div');
+    el.className = 'nd-win nd-hidden nd-app' + (opts && opts.cls ? ' ' + opts.cls : '');
+    el.id = 'nd-win-' + id;
+    el.innerHTML = `
+      <div class="nd-tb"><svg class="nd-tb-ico" width="16" height="16" aria-hidden="true"><use href="#${WIN_ICON[id]}"></use></svg><span class="nd-cap" data-ru="${ru}" data-en="${en}">${t(ru, en)}</span><button class="nd-min" aria-label="${t('Свернуть', 'Minimize')}">_</button>${
+        opts && opts.fixed ? '' : `<button class="nd-max" aria-label="${t('Развернуть', 'Maximize')}"><svg width="14" height="14" aria-hidden="true"><use href="#ico-maximize"></use></svg></button>`
+      }<button class="nd-x" aria-label="${t('Закрыть', 'Close')}">×</button></div>
+      <div class="nd-body${opts && opts.bodyCls ? ' ' + opts.bodyCls : ''}" id="nd-${id}-body"></div>
+      ${opts && opts.fixed ? '' : '<div class="nd-resize" aria-hidden="true"></div>'}`;
+    document.getElementById('nd-surface').appendChild(el);
+    return el;
   }
 
   /* =========================================================
@@ -819,77 +939,580 @@
     });
   }
 
-  function gamesHtml(l) {
-    return `
-      <div class="nd-games">
-        <div class="nd-gcard">
-          <div class="nd-gcard-title">${t('Сапёр', 'Minesweeper')}</div>
-          <div id="nd-mines-root"></div>
-        </div>
-        <div class="nd-gcard">
-          <div class="nd-gcard-title">${t('Слоты', 'Slots')}</div>
-          <div id="nd-slots-root"></div>
-        </div>
-        <div class="nd-gcard">
-          <div class="nd-gcard-title">Snake_Deploy</div>
-          <div id="nd-snake-root"></div>
-        </div>
-      </div>
-    `;
-  }
-
-  function mountGames() {
-    const l = lang();
-    const minesRoot = document.getElementById('nd-mines-root');
-    const slotsRoot = document.getElementById('nd-slots-root');
-    if (minesRoot) {
-      minesRoot.innerHTML = `
-        <div class="nd-game-toolbar">
-          <div class="nd-game-stats"><span>${t('Флаги', 'Flags')}: <b id="mines-flags">10</b></span><span>${t('Время', 'Time')}: <b id="mines-time">0</b></span><span>${t('Рекорд', 'Best')}: <b id="mines-best">—</b></span></div>
-          <div class="nd-btn-row">
-            <button class="nd-btn98" id="mines-flag-mode">🚩 ${t('Флажки', 'Flags')}</button>
-            <button class="nd-btn98" id="mines-restart">${t('🔄 Заново', '🔄 Restart')}</button>
-          </div>
-        </div>
-        <div class="mines-grid" id="mines-grid"></div>
-      `;
-      window.XP.initGame('mines', minesRoot, 'nd-mines');
-      wirePanelTaps(minesRoot);
-    }
-    if (slotsRoot) {
-      slotsRoot.innerHTML = `
-        <div class="nd-game-toolbar">
-          <div class="nd-game-stats"><span>${t('Кредиты', 'Credits')}: <b id="slots-credits">100</b></span><span>${t('Рекорд', 'Best')}: <b id="slots-best">100</b></span></div>
-          <button class="nd-btn98" id="slots-restart">${t('🔄 Заново', '🔄 Restart')}</button>
-        </div>
-        <div class="slots-machine">
-          <div class="slots-reels"><span class="slots-reel" id="slots-r1">🐍</span><span class="slots-reel" id="slots-r2">🐍</span><span class="slots-reel" id="slots-r3">🐍</span></div>
-          <button class="nd-btn98 slots-spin-btn" id="slots-spin">${t('🎰 Крутить', '🎰 Spin')}</button>
-          <div class="slots-msg" id="slots-msg"></div>
-        </div>
-      `;
-      window.XP.initGame('slots', slotsRoot, 'nd-slots');
-      wirePanelTaps(slotsRoot);
-    }
-    const snakeRoot = document.getElementById('nd-snake-root');
-    if (snakeRoot) {
-      snakeRoot.innerHTML = `
-        <div class="nd-game-toolbar">
-          <div class="nd-game-stats"><span>${t('Запросов', 'Requests')}: <b id="snake-score">0</b></span><span>${t('Рекорд', 'Best')}: <b id="snake-best">0</b></span></div>
-          <button class="nd-btn98" id="snake-start">${t('▶ Деплой', '▶ Deploy')}</button>
-        </div>
-        <canvas id="snake-canvas" width="360" height="360"></canvas>
-      `;
-      window.XP.initGame('snake', snakeRoot, 'nd-snake');
-    }
-    void l;
-  }
-
-  function initGamesWin() {
+  /* =========================================================
+     Games — a folder window listing every game as a large icon; each game
+     opens in its own window (mounted by games.js on open, torn down on
+     close, so a closed game costs nothing).
+     ========================================================= */
+  function renderGamesFolder() {
     const body = document.getElementById('nd-games-body');
     if (!body) return;
-    body.innerHTML = gamesHtml(lang());
-    mountGames();
+    body.innerHTML = `
+      <div class="nd-folder-grid">${GAME_KINDS.map((kind) => {
+        const [ru, en] = GAMES[kind].title;
+        return `<button type="button" class="nd-folder-item" data-game="${kind}">
+          <svg width="40" height="40" aria-hidden="true"><use href="#${GAMES[kind].icon}"></use></svg>
+          <span data-ru="${ru}" data-en="${en}">${t(ru, en)}</span>
+        </button>`;
+      }).join('')}</div>
+      <div class="nd-folder-status">${t('Объектов', 'Objects')}: ${GAME_KINDS.length}</div>`;
+    body.querySelectorAll('.nd-folder-item').forEach((btn) => onTap(btn, () => show(gameWinId(btn.dataset.game))));
+  }
+
+  const gameCleanups = {};
+  function initGameWindows() {
+    GAME_KINDS.forEach((kind) => {
+      const id = gameWinId(kind);
+      createAppWindow(id, { bodyCls: 'nd-game-body' });
+      const body = document.getElementById(`nd-${id}-body`);
+      // A focused button would turn the next Space press (pause/drop/spin)
+      // into a click on itself — games use Space, so buttons give focus back.
+      body.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (b) b.blur();
+      });
+      ON_OPEN[id] = () => {
+        gameCleanups[id] = window.XP.mountGame(kind, body);
+      };
+      ON_CLOSE[id] = () => {
+        if (gameCleanups[id]) gameCleanups[id]();
+        delete gameCleanups[id];
+        body.innerHTML = '';
+      };
+    });
+  }
+
+  /* =========================================================
+     Task Manager — "Applications" lists the real open windows (End Task
+     really closes them), "Processes" maps them onto XP-era process names,
+     "Performance" draws CPU/memory history. The load figures are simulated
+     (a page can't read real CPU usage) but track what's actually open —
+     each running real-time game adds visible load.
+     ========================================================= */
+  const PROC_NAMES = {
+    avatar: 'mspaint.exe',
+    steam: 'steam.exe',
+    faceit: 'faceit.exe',
+    explorer: 'explorer.exe',
+    console: 'cmd.exe',
+    github: 'github.exe',
+    hh: 'iexplore.exe',
+    contacts: 'msmsgs.exe',
+    music: 'winamp.exe',
+    games: 'explorer.exe',
+    videos: 'wmplayer.exe',
+    taskmgr: 'taskmgr.exe',
+    calc: 'calc.exe',
+    notepad: 'notepad.exe',
+    'game-mines': 'winmine.exe',
+    'game-slots': 'slots.exe',
+    'game-snake': 'snake.exe',
+    'game-tetris': 'tetris.exe',
+    'game-breakout': 'arkanoid.exe',
+    'game-g2048': '2048.exe',
+  };
+  const SYSTEM_PROCS = [
+    ['System', 'SYSTEM', 236],
+    ['smss.exe', 'SYSTEM', 388],
+    ['csrss.exe', 'SYSTEM', 3480],
+    ['winlogon.exe', 'SYSTEM', 2904],
+    ['services.exe', 'SYSTEM', 3612],
+    ['lsass.exe', 'SYSTEM', 1320],
+    ['svchost.exe', 'SYSTEM', 4876],
+    ['svchost.exe', 'NETWORK SERVICE', 3104],
+    ['spoolsv.exe', 'SYSTEM', 4410],
+  ];
+  const CRITICAL_PROCS = new Set(['csrss.exe', 'winlogon.exe', 'smss.exe']);
+  const PROC_MEM = { 'explorer.exe': 21480, 'iexplore.exe': 18760, 'steam.exe': 34120, 'wmplayer.exe': 15630, 'winamp.exe': 9820, 'cmd.exe': 2110 };
+  const tm = { tab: 'apps', selected: null, timer: null, cpu: Array(60).fill(0), mem: Array(60).fill(0), load: 4, startedAt: Date.now() };
+
+  function runningGames() {
+    return ['game-snake', 'game-tetris', 'game-breakout'].filter((id) => isOpen(id) && !state.hidden[id]).length;
+  }
+
+  function tmTick() {
+    const target = 3 + taskbarIds().filter((id) => !state.hidden[id]).length * 1.5 + runningGames() * 9 + (musicState.playing ? 4 : 0);
+    tm.load = Math.max(1, Math.min(100, tm.load + (target - tm.load) * 0.35 + (Math.random() - 0.5) * 8));
+    tm.cpu.push(Math.round(tm.load));
+    tm.cpu.shift();
+    tm.mem.push(Math.round(118 + taskbarIds().length * 6.5 + Math.random() * 3));
+    tm.mem.shift();
+    if (!state.hidden.taskmgr) renderTaskmgrPanel(true);
+  }
+
+  function tmProcs() {
+    const cpuLeft = tm.cpu[tm.cpu.length - 1];
+    const apps = taskbarIds().map((id) => ({
+      name: PROC_NAMES[id] || id + '.exe',
+      user: 'anton',
+      id,
+      mem: (PROC_MEM[PROC_NAMES[id]] || 6200) + (id.charCodeAt(id.length - 1) % 9) * 311,
+    }));
+    const system = SYSTEM_PROCS.map(([name, user, mem]) => ({ name, user, mem }));
+    const all = [...system, ...apps];
+    // Split the current load across processes, weighted towards the "heavy" ones.
+    let budget = cpuLeft;
+    all.forEach((p) => {
+      const heavy = p.id && /^game-(snake|tetris|breakout)$/.test(p.id) && !state.hidden[p.id];
+      const share = Math.min(budget, Math.round((heavy ? 0.3 : 0.04) * cpuLeft * Math.random() * 2));
+      p.cpu = share;
+      budget -= share;
+    });
+    return [{ name: t('Бездействие системы', 'System Idle Process'), user: 'SYSTEM', mem: 28, cpu: Math.max(0, 100 - cpuLeft) }, ...all];
+  }
+
+  function graphSvg(data, max) {
+    const w = 180;
+    const h = 70;
+    const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (Math.min(v, max) / max) * (h - 2) - 1}`).join(' ');
+    const grid = [];
+    for (let x = 0; x <= w; x += 12) grid.push(`<line x1="${x}" y1="0" x2="${x}" y2="${h}"/>`);
+    for (let y = 0; y <= h; y += 12) grid.push(`<line x1="0" y1="${y}" x2="${w}" y2="${y}"/>`);
+    return `<svg class="tm-graph" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><g stroke="#0a5a0a" stroke-width="0.6">${grid.join('')}</g><polyline points="${pts}" fill="none" stroke="#3cff3c" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+
+  function fmtKb(kb) {
+    return `${Math.round(kb).toLocaleString('ru-RU')} ${t('КБ', 'K')}`;
+  }
+
+  function renderTaskmgrPanel(tickOnly) {
+    const panel = document.getElementById('tm-panel');
+    const status = document.getElementById('tm-status');
+    if (!panel) return;
+    const cpu = tm.cpu[tm.cpu.length - 1];
+    const memMb = tm.mem[tm.mem.length - 1];
+    if (status) {
+      status.innerHTML = `<span>${t('Процессов', 'Processes')}: ${SYSTEM_PROCS.length + 1 + taskbarIds().length}</span><span>${t('Загрузка ЦП', 'CPU Usage')}: ${cpu}%</span><span>${t('Выделение памяти', 'Commit Charge')}: ${memMb}${t('М', 'M')} / 512${t('М', 'M')}</span>`;
+    }
+    if (tm.tab === 'apps') {
+      if (tickOnly) return; // the app list only changes when windows do (syncTaskbar re-renders it)
+      const rows = taskbarIds().filter((id) => id !== 'taskmgr');
+      if (tm.selected && !rows.includes(tm.selected)) tm.selected = null;
+      panel.innerHTML = `
+        <div class="tm-list"><table><thead><tr><th>${t('Задача', 'Task')}</th><th>${t('Состояние', 'Status')}</th></tr></thead><tbody>${rows
+          .map(
+            (id) => `<tr class="tm-row${tm.selected === id ? ' sel' : ''}" data-id="${id}"><td><svg width="16" height="16" aria-hidden="true"><use href="#${WIN_ICON[id]}"></use></svg>${WIN_LABEL[id]()}</td><td>${
+              state.hidden[id] ? t('Свёрнуто', 'Minimized') : t('Работает', 'Running')
+            }</td></tr>`
+          )
+          .join('')}</tbody></table></div>
+        <div class="tm-actions">
+          <button type="button" class="nd-btn98" data-tm="end">${t('Снять задачу', 'End Task')}</button>
+          <button type="button" class="nd-btn98" data-tm="switch">${t('Переключиться', 'Switch To')}</button>
+          <button type="button" class="nd-btn98" data-tm="new">${t('Новая задача…', 'New Task…')}</button>
+        </div>`;
+      panel.querySelectorAll('.tm-row').forEach((row) => {
+        row.addEventListener('click', () => {
+          tm.selected = row.dataset.id;
+          panel.querySelectorAll('.tm-row').forEach((r) => r.classList.toggle('sel', r === row));
+        });
+        row.addEventListener('dblclick', () => show(row.dataset.id));
+      });
+      panel.querySelector('[data-tm="end"]').addEventListener('click', () => {
+        if (tm.selected) closeWin(tm.selected);
+      });
+      panel.querySelector('[data-tm="switch"]').addEventListener('click', () => {
+        if (tm.selected) show(tm.selected);
+      });
+      panel.querySelector('[data-tm="new"]').addEventListener('click', () => show('console'));
+    } else if (tm.tab === 'procs') {
+      const procs = tmProcs();
+      const scroll = panel.querySelector('.tm-list');
+      const scrollTop = scroll ? scroll.scrollTop : 0;
+      panel.innerHTML = `
+        <div class="tm-list"><table><thead><tr><th>${t('Имя образа', 'Image Name')}</th><th>${t('Пользователь', 'User Name')}</th><th class="num">${t('ЦП', 'CPU')}</th><th class="num">${t('Память', 'Mem Usage')}</th></tr></thead><tbody>${procs
+          .map((p, i) => {
+            const key = p.id || p.name + ':' + i;
+            return `<tr class="tm-row${tm.selected === key ? ' sel' : ''}" data-key="${key}" data-id="${p.id || ''}" data-name="${p.name}"><td>${p.name}</td><td>${p.user}</td><td class="num">${String(p.cpu).padStart(2, '0')}</td><td class="num">${fmtKb(p.mem)}</td></tr>`;
+          })
+          .join('')}</tbody></table></div>
+        <div class="tm-actions"><button type="button" class="nd-btn98" data-tm="kill">${t('Завершить процесс', 'End Process')}</button></div>`;
+      const list = panel.querySelector('.tm-list');
+      list.scrollTop = scrollTop;
+      panel.querySelectorAll('.tm-row').forEach((row) => {
+        row.addEventListener('click', () => {
+          tm.selected = row.dataset.key;
+          panel.querySelectorAll('.tm-row').forEach((r) => r.classList.toggle('sel', r === row));
+        });
+      });
+      panel.querySelector('[data-tm="kill"]').addEventListener('click', () => {
+        const row = panel.querySelector('.tm-row.sel');
+        if (!row) return;
+        if (row.dataset.id) {
+          closeWin(row.dataset.id);
+        } else if (CRITICAL_PROCS.has(row.dataset.name)) {
+          window.XP.effects.bsod(); // exactly what real XP did when you killed csrss.exe
+        } else {
+          window.XP.toast(t('Не удаётся завершить процесс. Отказано в доступе.', 'Unable to terminate process. Access is denied.'));
+        }
+      });
+    } else {
+      const uptime = Math.floor((Date.now() - tm.startedAt) / 1000);
+      const hh = String(Math.floor(uptime / 3600)).padStart(2, '0');
+      const mm = String(Math.floor((uptime % 3600) / 60)).padStart(2, '0');
+      const ss = String(uptime % 60).padStart(2, '0');
+      const heap = performance && performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null;
+      panel.innerHTML = `
+        <div class="tm-perf">
+          <fieldset><legend>${t('Загрузка ЦП', 'CPU Usage')}</legend><div class="tm-meter"><b>${cpu}%</b><div class="tm-meter-bar"><div style="height:${cpu}%"></div></div></div></fieldset>
+          <fieldset><legend>${t('Хронология загрузки ЦП', 'CPU Usage History')}</legend>${graphSvg(tm.cpu, 100)}</fieldset>
+          <fieldset><legend>${t('Файл подкачки', 'PF Usage')}</legend><div class="tm-meter"><b>${memMb} ${t('МБ', 'MB')}</b><div class="tm-meter-bar"><div style="height:${Math.round((memMb / 512) * 100)}%"></div></div></div></fieldset>
+          <fieldset><legend>${t('Хронология файла подкачки', 'Page File Usage History')}</legend>${graphSvg(tm.mem, 512)}</fieldset>
+          <fieldset class="tm-wide"><legend>${t('Всего', 'Totals')}</legend>
+            <div class="tm-kv"><span>${t('Процессов', 'Processes')}</span><b>${SYSTEM_PROCS.length + 1 + taskbarIds().length}</b></div>
+            <div class="tm-kv"><span>${t('Окон открыто', 'Open windows')}</span><b>${taskbarIds().length}</b></div>
+            <div class="tm-kv"><span>${t('Время работы', 'Up Time')}</span><b>${hh}:${mm}:${ss}</b></div>
+            ${heap != null ? `<div class="tm-kv"><span>${t('Память JS (реальная)', 'JS heap (real)')}</span><b>${heap} ${t('МБ', 'MB')}</b></div>` : ''}
+          </fieldset>
+        </div>`;
+    }
+  }
+
+  function renderTaskmgr() {
+    const body = document.getElementById('nd-taskmgr-body');
+    if (!body) return;
+    const tabs = [
+      ['apps', 'Приложения', 'Applications'],
+      ['procs', 'Процессы', 'Processes'],
+      ['perf', 'Быстродействие', 'Performance'],
+    ];
+    body.innerHTML = `
+      <div class="tm">
+        <div class="tm-tabs">${tabs.map(([id, ru, en]) => `<button type="button" class="tm-tab${tm.tab === id ? ' active' : ''}" data-tab="${id}">${t(ru, en)}</button>`).join('')}</div>
+        <div class="tm-panel" id="tm-panel"></div>
+        <div class="tm-status" id="tm-status"></div>
+      </div>`;
+    body.querySelectorAll('.tm-tab').forEach((b) =>
+      b.addEventListener('click', () => {
+        tm.tab = b.dataset.tab;
+        tm.selected = null;
+        body.querySelectorAll('.tm-tab').forEach((x) => x.classList.toggle('active', x === b));
+        renderTaskmgrPanel();
+      })
+    );
+    renderTaskmgrPanel();
+  }
+
+  function initTaskmgr() {
+    createAppWindow('taskmgr', { bodyCls: 'nd-app-body' });
+    ON_OPEN.taskmgr = () => {
+      renderTaskmgr();
+      clearInterval(tm.timer);
+      tm.timer = setInterval(tmTick, 1000);
+    };
+    ON_CLOSE.taskmgr = () => {
+      clearInterval(tm.timer);
+      tm.timer = null;
+    };
+  }
+
+  /* =========================================================
+     Calculator — Windows' standard calc: immediate execution (no operator
+     precedence), repeat-last-operation on "=", memory keys, keyboard input.
+     ========================================================= */
+  // fresh: the next digit starts a new number; entered: the display holds an
+  // operand the pending operation hasn't consumed yet (typed, or produced by
+  // sqrt/%/1/x/MR) — so "100 + 10 % +" still applies the pending +.
+  const calc = { display: '0', acc: null, op: null, fresh: true, entered: false, lastOp: null, lastArg: null, mem: 0, error: false };
+
+  function calcFormat(n) {
+    if (!Number.isFinite(n)) return null;
+    let s = String(parseFloat(n.toPrecision(15)));
+    if (s.replace('-', '').replace('.', '').length > 16) s = n.toExponential(9);
+    return s;
+  }
+
+  function calcApply(a, op, b) {
+    if (op === '+') return a + b;
+    if (op === '-') return a - b;
+    if (op === '*') return a * b;
+    if (op === '/') return b === 0 ? NaN : a / b;
+    return b;
+  }
+
+  function calcSet(n, divZero) {
+    const s = calcFormat(n);
+    if (s === null) {
+      calc.display = divZero ? t('Деление на ноль невозможно.', 'Cannot divide by zero.') : t('Недопустимый ввод.', 'Invalid input.');
+      calc.error = true;
+      calc.acc = null;
+      calc.op = null;
+    } else {
+      calc.display = s;
+    }
+    calc.fresh = true;
+    calc.entered = true;
+  }
+
+  function calcPress(key) {
+    if (calc.error && key !== 'C') calcPress('C');
+    const cur = parseFloat(calc.display);
+    if (/^\d$/.test(key)) {
+      if (calc.fresh || calc.display === '0') calc.display = key;
+      else if (calc.display.replace(/[-.]/g, '').length < 16) calc.display += key;
+      calc.fresh = false;
+      calc.entered = true;
+    } else if (key === '.') {
+      if (calc.fresh) calc.display = '0.';
+      else if (!calc.display.includes('.')) calc.display += '.';
+      calc.fresh = false;
+      calc.entered = true;
+    } else if ('+-*/'.includes(key)) {
+      if (calc.op && calc.entered) calcSet(calcApply(calc.acc, calc.op, cur), calc.op === '/' && cur === 0);
+      if (calc.error) return renderCalcDisplay();
+      calc.acc = parseFloat(calc.display);
+      calc.op = key;
+      calc.fresh = true;
+      calc.entered = false;
+    } else if (key === '=') {
+      if (calc.op) {
+        calc.lastOp = calc.op;
+        calc.lastArg = cur;
+        calcSet(calcApply(calc.acc, calc.op, cur), calc.op === '/' && cur === 0);
+        calc.op = null;
+        calc.acc = null;
+      } else if (calc.lastOp) {
+        calcSet(calcApply(cur, calc.lastOp, calc.lastArg), calc.lastOp === '/' && calc.lastArg === 0);
+      }
+    } else if (key === 'sqrt') {
+      calcSet(cur < 0 ? NaN : Math.sqrt(cur));
+    } else if (key === '%') {
+      calcSet(calc.acc === null ? 0 : (calc.acc * cur) / 100);
+    } else if (key === '1/x') {
+      calcSet(cur === 0 ? NaN : 1 / cur, cur === 0);
+    } else if (key === 'neg') {
+      if (calc.display !== '0') calc.display = calc.display.startsWith('-') ? calc.display.slice(1) : '-' + calc.display;
+      calc.entered = true;
+    } else if (key === 'back') {
+      if (!calc.fresh) calc.display = calc.display.length > 1 && calc.display !== '-0' ? calc.display.slice(0, -1).replace(/^-$/, '0') : '0';
+    } else if (key === 'CE') {
+      calc.display = '0';
+      calc.fresh = true;
+      calc.entered = true;
+    } else if (key === 'C') {
+      Object.assign(calc, { display: '0', acc: null, op: null, fresh: true, entered: false, lastOp: null, lastArg: null, error: false });
+    } else if (key === 'MC') {
+      calc.mem = 0;
+    } else if (key === 'MR') {
+      calcSet(calc.mem);
+    } else if (key === 'MS') {
+      calc.mem = cur;
+      calc.fresh = true;
+    } else if (key === 'M+') {
+      calc.mem += cur;
+      calc.fresh = true;
+    }
+    renderCalcDisplay();
+  }
+
+  function renderCalcDisplay() {
+    const d = document.getElementById('calc-display');
+    const m = document.getElementById('calc-mem');
+    if (d) d.textContent = calc.error ? calc.display : lang() === 'ru' ? calc.display.replace('.', ',') : calc.display;
+    if (m) m.textContent = calc.mem !== 0 ? 'M' : '';
+  }
+
+  function renderCalc() {
+    const body = document.getElementById('nd-calc-body');
+    if (!body) return;
+    const dec = lang() === 'ru' ? ',' : '.';
+    const rows = [
+      [['MC', 'MC', 'm'], ['7', '7'], ['8', '8'], ['9', '9'], ['/', '/', 'op'], ['sqrt', 'sqrt', 'fn']],
+      [['MR', 'MR', 'm'], ['4', '4'], ['5', '5'], ['6', '6'], ['*', '*', 'op'], ['%', '%', 'fn']],
+      [['MS', 'MS', 'm'], ['1', '1'], ['2', '2'], ['3', '3'], ['-', '-', 'op'], ['1/x', '1/x', 'fn']],
+      [['M+', 'M+', 'm'], ['0', '0'], ['neg', '+/-'], ['.', dec], ['+', '+', 'op'], ['=', '=', 'op']],
+    ];
+    body.innerHTML = `
+      <div class="calc">
+        <div class="calc-display" id="calc-display" aria-live="polite">0</div>
+        <div class="calc-top">
+          <span class="calc-mem" id="calc-mem"></span>
+          <button type="button" class="calc-key op" data-k="back">${t('Назад', 'Backspace')}</button>
+          <button type="button" class="calc-key op" data-k="CE">CE</button>
+          <button type="button" class="calc-key op" data-k="C">C</button>
+        </div>
+        <div class="calc-grid">${rows
+          .flat()
+          .map(([k, label, cls]) => `<button type="button" class="calc-key${cls ? ' ' + cls : ''}" data-k="${k}">${label}</button>`)
+          .join('')}</div>
+      </div>`;
+    body.querySelectorAll('.calc-key').forEach((b) =>
+      b.addEventListener('click', () => {
+        calcPress(b.dataset.k);
+        b.blur();
+      })
+    );
+    renderCalcDisplay();
+  }
+
+  function initCalc() {
+    createAppWindow('calc', { fixed: true, bodyCls: 'nd-app-body' });
+    ON_OPEN.calc = renderCalc;
+    document.addEventListener('keydown', (e) => {
+      if (activeWinId() !== 'calc' || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      const map = { Enter: '=', '=': '=', Backspace: 'back', Escape: 'C', Delete: 'CE', ',': '.', '.': '.', '+': '+', '-': '-', '*': '*', '/': '/', '%': '%' };
+      const key = /^\d$/.test(e.key) ? e.key : map[e.key];
+      if (!key) return;
+      e.preventDefault();
+      calcPress(key);
+    });
+  }
+
+  /* =========================================================
+     Notepad — a real little editor; the text is kept in this browser.
+     ========================================================= */
+  const NOTEPAD_KEY = 'av-notepad';
+  let notepadSaveTimer = null;
+
+  function notepadDefault() {
+    return t(
+      'Привет! Это настоящий Блокнот: всё, что здесь напишете, сохранится в этом браузере.\n\nФайл → Сохранить скачает текст как .txt, Правка → Время и дата (F5) вставит текущее время — как в оригинале.\n',
+      "Hi! This is a real Notepad: whatever you type here is kept in this browser.\n\nFile → Save downloads it as a .txt, Edit → Time/Date (F5) inserts the current time — just like the original.\n"
+    );
+  }
+
+  function renderNotepad(initialText) {
+    const body = document.getElementById('nd-notepad-body');
+    if (!body) return;
+    let text = null;
+    try {
+      text = localStorage.getItem(NOTEPAD_KEY);
+    } catch (_) {
+      text = null;
+    }
+    let wrap = true;
+    try {
+      wrap = localStorage.getItem('av-notepad-wrap') !== '0';
+    } catch (_) {
+      wrap = true;
+    }
+    const menus = [
+      ['file', t('Файл', 'File'), [['new', t('Создать', 'New')], ['save', t('Сохранить…', 'Save…') + '<kbd>Ctrl+S</kbd>']]],
+      ['edit', t('Правка', 'Edit'), [['all', t('Выделить всё', 'Select All') + '<kbd>Ctrl+A</kbd>'], ['time', t('Время и дата', 'Time/Date') + '<kbd>F5</kbd>']]],
+      ['format', t('Формат', 'Format'), [['wrap', t('Перенос по словам', 'Word Wrap')]]],
+    ];
+    body.innerHTML = `
+      <div class="np">
+        <div class="np-menubar">${menus
+          .map(
+            ([id, label, items]) => `<div class="np-menu"><button type="button" class="np-menu-btn" data-menu="${id}">${label}</button><div class="np-drop" hidden>${items
+              .map(([act, text2]) => `<button type="button" class="np-item" data-act="${act}">${act === 'wrap' ? `<span class="np-check">${wrap ? '✓' : ''}</span>` : '<span class="np-check"></span>'}${text2}</button>`)
+              .join('')}</div></div>`
+          )
+          .join('')}</div>
+        <textarea class="np-text${wrap ? '' : ' nowrap'}" id="np-text" spellcheck="false" aria-label="${t('Текст', 'Text')}"></textarea>
+      </div>`;
+    const ta = body.querySelector('#np-text');
+    ta.value = initialText != null ? initialText : text === null ? notepadDefault() : text;
+    const persist = () => {
+      clearTimeout(notepadSaveTimer);
+      notepadSaveTimer = setTimeout(() => {
+        try {
+          localStorage.setItem(NOTEPAD_KEY, ta.value);
+        } catch (_) {
+          /* storage blocked — the note just won't survive a reload */
+        }
+      }, 300);
+    };
+    const insertAtCursor = (str) => {
+      const { selectionStart: a, selectionEnd: b } = ta;
+      ta.setRangeText(str, a, b, 'end');
+      persist();
+      ta.focus();
+    };
+    const closeMenus = () => body.querySelectorAll('.np-drop').forEach((d) => (d.hidden = true));
+    const actions = {
+      new: () => {
+        ta.value = '';
+        persist();
+        ta.focus();
+      },
+      save: () => {
+        const blob = new Blob([ta.value], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = t('Безымянный.txt', 'Untitled.txt');
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      },
+      all: () => {
+        ta.focus();
+        ta.select();
+      },
+      time: () => {
+        const now = new Date();
+        const loc = lang() === 'ru' ? 'ru-RU' : 'en-US';
+        insertAtCursor(`${now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })} ${now.toLocaleDateString(loc)}`);
+      },
+      wrap: () => {
+        const on = ta.classList.toggle('nowrap') === false;
+        try {
+          localStorage.setItem('av-notepad-wrap', on ? '1' : '0');
+        } catch (_) {
+          /* ignore */
+        }
+        const check = body.querySelector('[data-act="wrap"] .np-check');
+        if (check) check.textContent = on ? '✓' : '';
+      },
+    };
+    ta.addEventListener('input', persist);
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'F5') {
+        e.preventDefault();
+        actions.time();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'ы')) {
+        e.preventDefault();
+        actions.save();
+      }
+    });
+    body.querySelectorAll('.np-menu-btn').forEach((btn) =>
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const drop = btn.nextElementSibling;
+        const willOpen = drop.hidden;
+        closeMenus();
+        drop.hidden = !willOpen;
+      })
+    );
+    body.querySelectorAll('.np-item').forEach((item) =>
+      item.addEventListener('click', () => {
+        closeMenus();
+        actions[item.dataset.act]();
+      })
+    );
+    if (!body.dataset.wired) {
+      body.dataset.wired = '1';
+      body.addEventListener('click', (e) => {
+        if (!e.target.closest('.np-menu')) body.querySelectorAll('.np-drop').forEach((d) => (d.hidden = true));
+      });
+    }
+  }
+
+  // Re-render (e.g. on a language switch) without losing unsaved keystrokes.
+  function rerenderNotepad() {
+    const ta = document.getElementById('np-text');
+    if (!ta) return;
+    clearTimeout(notepadSaveTimer);
+    try {
+      localStorage.setItem(NOTEPAD_KEY, ta.value);
+    } catch (_) {
+      /* ignore */
+    }
+    renderNotepad(ta.value);
+  }
+
+  function initNotepad() {
+    createAppWindow('notepad', { bodyCls: 'nd-app-body' });
+    ON_OPEN.notepad = () => {
+      if (!document.getElementById('np-text')) renderNotepad();
+      setTimeout(() => {
+        const ta = document.getElementById('np-text');
+        if (ta) ta.focus();
+      }, 60);
+    };
   }
 
   /* =========================================================
@@ -956,8 +1579,8 @@
           <button class="nd-wbtn" id="nd-music-play" aria-label="${t('Играть', 'Play')}">▶</button>
           <button class="nd-wbtn" id="nd-music-stop" aria-label="${t('Стоп', 'Stop')}">■</button>
           <button class="nd-wbtn" id="nd-music-next" aria-label="${t('Следующий трек', 'Next track')}">▶▶</button>
-          <button class="nd-wbtn" id="nd-music-repeat" aria-label="${t('Повтор трека', 'Repeat track')}" title="${t('Повтор трека', 'Repeat track')}">🔁</button>
-                </div>
+          <button class="nd-wbtn" id="nd-music-repeat" aria-label="${t('Повтор трека', 'Repeat track')}" title="${t('Повтор трека', 'Repeat track')}"><svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M2.5 6.5V5a2 2 0 0 1 2-2h9.5M15.5 7.5V9a2 2 0 0 1-2 2H4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M12.2.4 15.4 3l-3.2 2.6zM5.8 8.4 2.6 11l3.2 2.6z" fill="currentColor"/></svg></button>
+        </div>
         <div class="nd-wa-volume-row">
           <span class="nd-wa-volume-ico" aria-hidden="true">🔊</span>
           <input type="range" id="nd-music-volume" class="nd-wa-volume" min="0" max="100" value="80" aria-label="${t('Громкость', 'Volume')}">
@@ -1587,6 +2210,38 @@
     `;
   }
 
+  /* hh.ru — the résumé card plus live job-market numbers for Python roles
+     in Moscow from the official hh.ru API (see api/hh_sync.py for why it's
+     market stats rather than the résumé's own view counters). */
+  let hhMarket = null;
+  async function loadHh() {
+    try {
+      const res = await fetch('/api/hh');
+      hhMarket = (await res.json()).market || { synced: false };
+    } catch (e) {
+      hhMarket = { synced: false };
+    }
+    renderHh();
+  }
+
+  function hhMarketHtml(l) {
+    const m = hhMarket;
+    if (!m) return `<p class="nd-loading">${t('Тянем статистику hh.ru…', 'Fetching hh.ru stats…')}</p>`;
+    if (!m.synced) {
+      return `<div class="nd-hh-label">${t('Статистика рынка', 'Job market stats')}</div>${notConnectedHtml(['HH_APP_TOKEN'], 'https://dev.hh.ru/admin')}`;
+    }
+    const n = (v) => (v == null ? '—' : Number(v).toLocaleString('ru-RU'));
+    const salary = m.salary_median ? `${Math.round(m.salary_median / 1000).toLocaleString('ru-RU')} ${t('тыс. ₽', 'K ₽')}` : '—';
+    return `
+      <div class="nd-hh-label"><span>${t('Рынок: Python', 'Market: Python')} · ${m.area[l]}</span><a href="${m.search_url}" target="_blank" rel="noopener">${t('на hh.ru ↗', 'on hh.ru ↗')}</a></div>
+      <div class="nd-stat-grid nd-hh-stats">
+        <div class="nd-stat">${t('Вакансий', 'Openings')}<b>${n(m.total)}</b></div>
+        <div class="nd-stat">${t('Удалёнка', 'Remote')}<b>${n(m.remote)}</b></div>
+        <div class="nd-stat">${t('Опыт 3–6 лет', '3–6 yrs exp.')}<b>${n(m.mid_level)}</b></div>
+        <div class="nd-stat" title="${t('По', 'From')} ${m.salary_sample} ${t('свежим вакансиям с указанной зарплатой', 'recent openings that list a salary')}">${t('Медиана ЗП', 'Median pay')}<b>${salary}</b></div>
+      </div>`;
+  }
+
   function renderHh() {
     const body = document.getElementById('nd-hh-body');
     if (!body) return;
@@ -1596,7 +2251,8 @@
         <div class="nd-win-avatar-badge nd-hh-badge">hh</div>
         <div><div class="nd-win-name">${PROFILE.role[l]}</div><div class="nd-win-sub">${PROFILE.location[l]}</div></div>
       </div>
-      <p style="margin:0 0 10px">${PROFILE.employment[l]}</p>
+      <p class="nd-hh-status"><span class="nd-blink">●</span> ${PROFILE.employment[l]}</p>
+      ${hhMarketHtml(l)}
       <a class="nd-btn98 nd-block" href="${PROFILE.contacts.hh}" target="_blank" rel="noopener">${t('Открыть резюме на hh.ru', 'Open résumé on hh.ru')}</a>
     `;
   }
@@ -1685,11 +2341,11 @@
       videos: () => show('videos'),
       hh: () => show('hh'),
       avatar: () => show('avatar'),
-      // easter-egg "apps" that don't have their own window — land on console
-      taskmgr: () => show('console'),
-      calc: () => show('console'),
-      notepad: () => show('console'),
+      taskmgr: () => show('taskmgr'),
+      calc: () => show('calc'),
+      notepad: () => show('notepad'),
     };
+    GAME_KINDS.forEach((kind) => (openers[kind] = () => show(gameWinId(kind))));
     const fn = openers[id];
     if (fn) fn();
     else console.warn('[XP.open] unknown target:', id);
@@ -1763,9 +2419,101 @@
     if (shutdownBtn) {
       shutdownBtn.addEventListener('click', () => {
         closeStartMenu();
-        window.XP.effects.shutdown();
+        openTurnOffDialog();
       });
     }
+    const logoffBtn = document.getElementById('nd-sm-logoff');
+    if (logoffBtn) {
+      logoffBtn.addEventListener('click', () => {
+        closeStartMenu();
+        xpScreen(t('Выход из системы…', 'Logging off…'), () => window.location.reload());
+      });
+    }
+  }
+
+  /* =========================================================
+     Windows XP "Turn off computer" — the desktop fades to grey behind the
+     three-button dialog, then the blue "shutting down" screen. There's no
+     "off" page yet, so turning off just lands back on this same page.
+     ========================================================= */
+  const SHUTDOWN_REDIRECT = '/';
+
+  function xpScreen(message, then) {
+    closeTurnOffDialog();
+    const screen = document.getElementById('nd-xp-screen');
+    const msg = document.getElementById('nd-xp-screen-msg');
+    if (!screen) {
+      then();
+      return;
+    }
+    stopMusicPlayback();
+    stopVideoPlayback();
+    if (msg) msg.textContent = message;
+    screen.hidden = false;
+    setTimeout(then, 2600);
+  }
+
+  function shutdownNow() {
+    xpScreen(t('Завершение работы Windows…', 'Windows is shutting down…'), () => {
+      window.location.href = SHUTDOWN_REDIRECT;
+    });
+  }
+
+  function openTurnOffDialog() {
+    const dlg = document.getElementById('nd-xp-off');
+    if (!dlg) {
+      shutdownNow();
+      return;
+    }
+    dlg.hidden = false;
+    document.getElementById('nd-desktop').classList.add('nd-greyed');
+    const off = dlg.querySelector('[data-off="shutdown"]');
+    if (off) off.focus();
+  }
+
+  function closeTurnOffDialog() {
+    const dlg = document.getElementById('nd-xp-off');
+    if (dlg) dlg.hidden = true;
+    document.getElementById('nd-desktop').classList.remove('nd-greyed');
+  }
+
+  function standBy() {
+    closeTurnOffDialog();
+    const cover = document.getElementById('nd-xp-standby');
+    if (!cover) return;
+    cover.hidden = false;
+    const armedAt = Date.now();
+    function wake(e) {
+      if (Date.now() - armedAt < 500) return; // the click that chose "Stand By" shouldn't wake it straight back up
+      if (e.type === 'keydown') e.preventDefault();
+      cover.hidden = true;
+      document.removeEventListener('keydown', wake, true);
+      cover.removeEventListener('pointerdown', wake);
+    }
+    document.addEventListener('keydown', wake, true);
+    cover.addEventListener('pointerdown', wake);
+  }
+
+  function initTurnOff() {
+    const dlg = document.getElementById('nd-xp-off');
+    if (!dlg) return;
+    dlg.querySelectorAll('[data-off]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const act = btn.dataset.off;
+        if (act === 'shutdown') shutdownNow();
+        else if (act === 'restart') xpScreen(t('Перезагрузка Windows…', 'Windows is restarting…'), () => window.location.reload());
+        else if (act === 'standby') standBy();
+        else closeTurnOffDialog();
+      })
+    );
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg) closeTurnOffDialog();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !dlg.hidden) closeTurnOffDialog();
+    });
+    // The terminal's `shutdown` goes straight to the XP shutdown screen.
+    window.XP.effects.shutdown = shutdownNow;
   }
 
   /* =========================================================
@@ -1826,13 +2574,22 @@
       }
     }, true);
 
+    // Floating apps built in JS have to exist before initWindows() wires them.
+    initTaskmgr();
+    initCalc();
+    initNotepad();
+    initGameWindows();
+    ON_CLOSE.music = stopMusicPlayback; // real Winamp: closing stops playback, minimizing doesn't
+    ON_CLOSE.videos = stopVideoPlayback;
     initWindows();
-    // Winamp, mini-games and Video are standalone floating windows, but
-    // unlike the rest they start closed even on desktop — opened on demand
-    // from their icon/Start menu entry, on top of whatever else is open.
-    setHidden('music', true);
-    setHidden('games', true);
-    setHidden('videos', true);
+    addTitlebarIcons();
+    // Winamp, Games, Video and the small apps float over the desktop and,
+    // unlike the grid windows, start closed (off the taskbar too) — opened
+    // on demand from their icon / Start menu entry / console command.
+    FLOATING_WIN_IDS.forEach((id) => {
+      state.closed[id] = true;
+      setHidden(id, true);
+    });
     // Mobile: windows render as fixed full-screen overlays (see the
     // max-width: 900px rules below), so starting with all of them open would
     // stack full-screen panels on load with no way back to the desktop icons.
@@ -1848,13 +2605,15 @@
     renderHh();
     renderContacts();
     initConsoleWindow();
-    initGamesWin();
+    renderGamesFolder();
     renderMusicWin();
     initVideosWin();
     loadGithub();
     loadSteamWin();
     loadFaceit();
+    loadHh();
     loadMusicTracks();
+    initTurnOff();
 
     document.querySelectorAll('.nd-tabbtn').forEach((b) => onTap(b, () => setTab(b.dataset.tab)));
 
@@ -1872,6 +2631,10 @@
       renderSteamWin();
       renderFaceitWin();
       renderContacts();
+      renderGamesFolder();
+      if (isOpen('taskmgr')) renderTaskmgr();
+      if (isOpen('calc')) renderCalc();
+      rerenderNotepad();
       const title = document.getElementById('nd-explorer-title');
       const addr = document.getElementById('nd-explorer-address');
       const l = lang();

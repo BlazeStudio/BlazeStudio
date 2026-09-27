@@ -29,6 +29,7 @@ COMMANDS = [
     "neofetch",
     "taskmgr",
     "explorer",
+    "games",
     "calc",
     "notepad",
     "glitch",
@@ -146,7 +147,7 @@ def _neofetch(lang: str) -> str:
      |    ▽    |     -----------
       \\_______/      OS: Portfolio OS 1.0
                      Host: recruiter-desktop
-                     Kernel: React + Tailwind
+                     Kernel: FastAPI + vanilla JS
                      Uptime: too long polishing this terminal
                      Shell: custom-cmd
                      Resolution: 1920x1080 (probably)
@@ -430,11 +431,15 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "") -> dict
 
     if name == "taskmgr":
         msg = (
-            "Диспетчер задач открыт.\n(на самом деле просто красивое окно)"
+            "Диспетчер задач открыт. «Снять задачу» правда закрывает окна."
             if lang == "ru"
-            else "Task Manager opened.\n(actually just a pretty window)"
+            else "Task Manager opened. \"End Task\" really does close windows."
         )
         return {"output": msg, "effect": {"type": "open", "target": "taskmgr"}}
+
+    if name == "games":
+        msg = "Папка «Игры» открыта." if lang == "ru" else "Games folder opened."
+        return {"output": msg, "effect": {"type": "open", "target": "games"}}
 
     if name == "explorer":
         msg = (
@@ -446,17 +451,17 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "") -> dict
 
     if name == "calc":
         msg = (
-            "Калькулятор готов. Но считать придётся самому."
+            "Калькулятор открыт. С клавиатуры тоже считает."
             if lang == "ru"
-            else "Calculator ready. But you'll have to do the math yourself."
+            else "Calculator opened. The keyboard works too."
         )
         return {"output": msg, "effect": {"type": "open", "target": "calc"}}
 
     if name == "notepad":
         msg = (
-            "Блокнот открыт. Можно оставить заметку для рекрутера."
+            "Блокнот открыт. Заметка сохраняется в этом браузере."
             if lang == "ru"
-            else "Notepad opened. You can leave a note for the recruiter."
+            else "Notepad opened. Your note is saved in this browser."
         )
         return {"output": msg, "effect": {"type": "open", "target": "notepad"}}
 
@@ -518,6 +523,7 @@ def _help(lang: str) -> str:
             ("neofetch", "system info (sort of)"),
             ("taskmgr", "task manager window"),
             ("explorer", "file explorer"),
+            ("games", "games folder"),
             ("calc", "calculator"),
             ("notepad", "simple notepad"),
             ("glitch", "screen glitch effect"),
@@ -545,6 +551,7 @@ def _help(lang: str) -> str:
             ("neofetch", "информация о системе (почти)"),
             ("taskmgr", "диспетчер задач"),
             ("explorer", "проводник"),
+            ("games", "папка с играми"),
             ("calc", "калькулятор"),
             ("notepad", "блокнот"),
             ("glitch", "глитч-эффект на экране"),

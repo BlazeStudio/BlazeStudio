@@ -106,6 +106,8 @@
         else if (eff.type === 'party') window.XP.effects.party(3000);
         else if (eff.type === 'bsod') window.XP.effects.bsod();
         else if (eff.type === 'shutdown') window.XP.effects.shutdown();
+        else if (eff.type === 'glitch') window.XP.effects.glitch(1800);
+        else if (eff.type === 'rickroll') window.XP.effects.rickroll();
         else if (eff.type === 'elevate') {
           const m = cmd.trim().match(/^sudo\s+su\s+(.+)$/i);
           if (m) elevatedPassword = m[1].trim();
