@@ -53,9 +53,12 @@ screen, then the XP welcome screen with a chime. "Выключение" ends on 
 screen; its power button runs the same boot (browsers only allow sound after a click,
 which is why it waits for one). Esc skips the boot.
 
-All of those sounds are synthesized in the browser. To use real recordings instead, put
-any of these into `static/sounds/` (`.mp3`, `.ogg`, `.wav` or `.m4a`) — `api/index.py`
-picks up whichever exist:
+Sounds live in `static/sounds/` (`.mp3`, `.ogg`, `.wav` or `.m4a`) — `api/index.py` picks up
+whichever exist, and any that's missing is synthesized in the browser instead.
+`pc-boot.mp3` and `xp-startup.mp3` are in the repo; there's no `xp-shutdown` yet, so that
+chime is synthesized. The boot screens are timed to `pc-boot.mp3` (the `CUE` table at the
+top of the sequence in `boot.js`) — if you swap the recording, retime those cues. The
+BIOS logo is `static/img/energy-star.png`.
 
 | File | Replaces |
 | --- | --- |

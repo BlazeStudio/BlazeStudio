@@ -5,10 +5,10 @@
    hard-drive and floppy noises, the POST beep) → the Windows XP loading
    screen → the XP "welcome" screen with its chime → the desktop.
 
-   Every sound is synthesized with the Web Audio API, so nothing here ships
-   anyone's recordings. To use real ones, drop files into static/sounds/
-   (pc-boot, xp-startup, xp-shutdown — .mp3/.ogg/.wav/.m4a); api/index.py
-   lists whichever exist in site data and they replace the synthesized ones.
+   Sounds come from static/sounds/ (pc-boot, xp-startup, xp-shutdown —
+   .mp3/.ogg/.wav/.m4a); api/index.py lists whichever exist in site data.
+   Any that's missing is synthesized with the Web Audio API instead, on the
+   same cues, so the sequence works with or without the files.
 
    Browsers only allow sound after the user has clicked on the page, which
    is why a shutdown ends on a "powered off" screen with a power button
@@ -65,7 +65,9 @@
     return reverb;
   }
 
-  function playFile(key, volume) {
+  // group: 'hw' (the PC's own noises — cut when the desktop shows) or
+  // 'chime' (the XP startup sound — allowed to ring on over the desktop).
+  function playFile(key, volume, group) {
     const url = SOUND_FILES[key];
     if (!url) return null;
     const a = new Audio(url);
@@ -75,6 +77,8 @@
       a.pause();
       stoppers.delete(stop);
     };
+    stop.audio = a;
+    stop.group = group || 'hw';
     stop.fade = (sec) => {
       const from = a.volume;
       const t0 = performance.now();
@@ -218,7 +222,7 @@
 
   // A soft pad + bell arpeggio in the spirit of the XP chimes (not a copy of them).
   function chime(kind) {
-    if (playFile(kind === 'startup' ? 'xp_startup' : 'xp_shutdown', 0.9)) return;
+    if (playFile(kind === 'startup' ? 'xp_startup' : 'xp_shutdown', 0.9, 'chime')) return;
     if (!unlock()) return;
     const t0 = ctx.currentTime + 0.05;
     const up = kind === 'startup';
@@ -265,11 +269,7 @@
     root.hidden = true;
     root.innerHTML = `
       <div class="boot-stage boot-post" hidden>
-        <svg class="boot-post-logo" viewBox="0 0 132 72" aria-hidden="true">
-          <path d="M6 60 Q60 -6 126 26" fill="none" stroke="#4ec94e" stroke-width="5" stroke-linecap="round"/>
-          <path d="M62 14 L48 40 H59 L52 64 L78 32 H65 L72 14 Z" fill="#ffd400" stroke="#8a6d00" stroke-width="1.5" stroke-linejoin="round"/>
-          <text x="84" y="66" font-family="Arial Black, Arial, sans-serif" font-style="italic" font-size="14" fill="#4d8fe8">blaze</text>
-        </svg>
+        <img class="boot-post-logo" src="/static/img/energy-star.png" alt="" hidden>
         <pre class="boot-post-text"></pre>
         <pre class="boot-post-foot"></pre>
       </div>
@@ -346,40 +346,98 @@
     return out.join('\n');
   }
 
+  /* The timeline is pinned to the recorded boot track (static/sounds/pc-boot.mp3):
+     power-on + fan/HDD spin-up 0.5–2.5 s, the POST beep at ~3.7 s, the floppy
+     seek and its clunk 6.4–7.3 s, then the hard drive churning 9–17 s. The
+     screens hit those marks — memory finishes counting right on the beep,
+     the configuration table lands on the clunk, XP loads over the disk
+     activity. Without the file the synthesized noises fire on the same cues. */
+  const CUE = {
+    monitorOn: 0.9,
+    cpu: 1.4,
+    memStart: 1.6,
+    memEnd: 3.62,
+    beep: 3.68,
+    pnp: 4.1,
+    drives: [4.5, 5.05, 5.6, 6.15],
+    floppy: 6.4,
+    table: 7.2,
+    dmi: 8.5,
+    bootHdd: 9.4,
+    xpOn: 10.2,
+    xpOff: 15.9,
+    welcome: 16.3,
+    desktop: 17.7,
+  };
+
+  function at(r, sec) {
+    return sleep(Math.max(0, r.t0 + sec * 1000 - performance.now()));
+  }
+
+  // Resolves once the track is actually playing (or gives up), so t0 lines up with its first sample.
+  function whenPlaying(audio, timeoutMs) {
+    return new Promise((resolve) => {
+      if (!audio.paused && audio.currentTime > 0) {
+        resolve();
+        return;
+      }
+      let timer = null;
+      const done = () => {
+        clearTimeout(timer);
+        audio.removeEventListener('playing', done);
+        resolve();
+      };
+      timer = setTimeout(done, timeoutMs);
+      audio.addEventListener('playing', done);
+    });
+  }
+
   async function post(r) {
     const text = el('.boot-post-text');
     const foot = el('.boot-post-foot');
+    const logo = el('.boot-post-logo');
     const print = (s) => {
       text.textContent += s + '\n';
     };
     text.textContent = '';
     foot.textContent = '';
+    logo.hidden = true;
     stage('post');
     const now = new Date();
     const mdY = [now.getMonth() + 1, now.getDate(), now.getFullYear()].map((n) => String(n).padStart(2, '0')).join('/');
-    const file = playFile('pc_boot', 0.9);
-    if (!file) humStart();
-    await sleep(700);
+
+    r.file = playFile('pc_boot', 0.9, 'hw');
+    if (r.file) await whenPlaying(r.file.audio, 1500);
     if (r.cancelled) return;
-    print(' BlazeBIOS v4.51PG, A Coffee-Powered Ally');
+    r.t0 = performance.now() - (r.file ? r.file.audio.currentTime * 1000 : 0);
+    if (!r.file) humStart();
+
+    await at(r, CUE.monitorOn);
+    if (r.cancelled) return;
+    logo.hidden = false;
+    print(' BlazeBIOS v4.51PG, An Energy Star Ally');
     print(' Copyright (C) 1998-' + now.getFullYear() + ', BlazeStudio Software, Inc.');
     print('');
     print(' #401A0-0203');
     print('');
     foot.textContent = ' Press DEL to enter SETUP\n ' + mdY + '-i440BX-8671-2A69KA1AC-00';
-    await sleep(500);
+    await at(r, CUE.cpu);
     if (r.cancelled) return;
     print(' ANTON-III CPU at 3.0 YRS');
     text.textContent += ' Memory Test :        ';
-    await sleep(250);
-    // Count the memory up like the real thing, then the one-beep "OK".
+    await at(r, CUE.memStart);
+    if (r.cancelled) return;
+    // Count the memory up like the real thing, landing on the one-beep "OK".
     const total = 524288;
     const base = text.textContent;
-    const started = performance.now();
+    const span = CUE.memEnd - CUE.memStart;
     await new Promise((resolve) => {
       const tick = () => {
-        if (r.cancelled) return resolve();
-        const k = Math.min(1, (performance.now() - started) / 1500);
+        if (r.cancelled) {
+          resolve();
+          return;
+        }
+        const k = Math.min(1, Math.max(0, (performance.now() - r.t0) / 1000 - CUE.memStart) / span);
         text.textContent = base.slice(0, -8) + String(Math.round((total * k) / 1024) * 1024).padStart(7, ' ') + 'K';
         if (k < 1) requestAnimationFrame(tick);
         else resolve();
@@ -388,8 +446,9 @@
     });
     if (r.cancelled) return;
     print(' OK');
-    if (!file) beep();
-    await sleep(500);
+    await at(r, CUE.beep);
+    if (!r.file) beep();
+    await at(r, CUE.pnp);
     if (r.cancelled) return;
     print('');
     print(' BlazeBIOS Plug and Play Extension v1.0A');
@@ -400,66 +459,82 @@
       ['Secondary Master', 'FINTECH ATAPI CD-ROM 52X'],
       ['Secondary Slave ', 'None'],
     ];
-    for (const [slot, name] of drives) {
-      await sleep(260);
+    for (let i = 0; i < drives.length; i += 1) {
+      const [slot, name] = drives[i];
+      await at(r, CUE.drives[i]);
       if (r.cancelled) return;
       text.textContent += '    Detecting HDD ' + slot + ' ... ';
-      await sleep(330);
+      await at(r, CUE.drives[i] + 0.3);
       if (r.cancelled) return;
       print(name);
-      if (!file && name !== 'None') seek(2 + Math.floor(Math.random() * 3));
+      if (!r.file && name !== 'None') seek(2 + Math.floor(Math.random() * 3));
     }
-    await sleep(700);
+    await at(r, CUE.floppy);
+    if (!r.file) floppy();
+    await at(r, CUE.table);
     if (r.cancelled) return;
-    // Second screen: the configuration summary, the floppy seek, then off to the OS.
+    // Second screen: the configuration summary, then off to the OS.
+    logo.hidden = true;
     text.textContent = '\n' + configTable() + '\n\n';
     foot.textContent = '';
-    if (!file) floppy();
-    await sleep(1500);
+    await at(r, CUE.dmi);
     if (r.cancelled) return;
     text.textContent += ' Verifying DMI Pool Data ';
-    for (let i = 0; i < 8; i += 1) {
-      await sleep(90);
+    for (let i = 1; i <= 8; i += 1) {
+      await at(r, CUE.dmi + i * 0.1);
       if (r.cancelled) return;
       text.textContent += '.';
     }
-    if (!file) seek(4);
+    if (!r.file) seek(4);
+    await at(r, CUE.bootHdd);
+    if (r.cancelled) return;
     print('');
     print(' Boot from HDD 0 ...');
-    await sleep(700);
-    r.file = file;
   }
 
   async function xpLoading(r) {
+    await at(r, CUE.bootHdd + 0.5);
+    if (r.cancelled) return;
     stage('none');
-    await sleep(500);
+    await at(r, CUE.xpOn);
     if (r.cancelled) return;
     stage('xp');
-    const end = performance.now() + 4400;
-    while (performance.now() < end) {
+    while (performance.now() < r.t0 + CUE.xpOff * 1000 - 300) {
       await sleep(350 + Math.random() * 550);
       if (r.cancelled) return;
       if (!r.file) seek(1 + Math.floor(Math.random() * 4));
     }
+    await at(r, CUE.xpOff);
+    if (r.cancelled) return;
     stage('none');
-    await sleep(450);
   }
 
+  // XP shows "welcome" while the desktop loads; the startup sound plays as the desktop appears.
   async function welcome(r) {
+    await at(r, CUE.welcome);
+    if (r.cancelled) return;
     el('.boot-welcome-text').textContent = t('приветствие', 'welcome');
     stage('welcome');
-    if (r.file) r.file.fade(1.5);
-    humStop(2.5);
+    if (r.file) r.file.fade(0.9);
+    humStop(1.5);
+    await at(r, CUE.desktop);
+    if (r.cancelled) return;
     chime('startup');
-    await sleep(3000);
+    await sleep(250);
   }
 
-  function finish() {
+  // Skipped: silence everything. Finished normally: only the PC's own noise
+  // stops — the XP startup sound rings on over the freshly shown desktop.
+  function finish(skipped) {
     if (!run) return;
     const r = run;
     run = null;
     r.timers.forEach(clearTimeout);
-    stoppers.forEach((stop) => (stop.fade ? stop.fade(0.4) : stop(0.4)));
+    stoppers.forEach((stop) => {
+      if (!skipped && stop.group === 'chime') return;
+      if (stop.fade) stop.fade(0.4);
+      else stop(0.4);
+    });
     el('.boot-skip').hidden = true;
     root.classList.add('boot-fade');
     setTimeout(() => {
@@ -474,7 +549,7 @@
   function skip() {
     if (!run) return;
     run.cancelled = true;
-    finish();
+    finish(true);
   }
 
   // The whole cold boot, POST to welcome. Resolves when the desktop should show.
@@ -482,7 +557,7 @@
     if (run) return run.promise;
     build();
     unlock();
-    const r = { cancelled: false, timers: [] };
+    const r = { cancelled: false, timers: [], t0: performance.now() };
     run = r;
     r.promise = new Promise((resolve) => {
       r.resolve = resolve;
@@ -499,7 +574,7 @@
       if (r.cancelled) return;
       await welcome(r);
       if (r.cancelled) return;
-      finish();
+      finish(false);
     })();
     return r.promise;
   }
