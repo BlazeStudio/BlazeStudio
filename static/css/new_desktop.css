@@ -300,6 +300,9 @@ a:hover { color: #d00000; }
 .nd-github-body .nd-not-connected code { background: #161b22; color: #c9d1d9; }
 .nd-gh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .nd-gh-since { font-size: 11px; color: #8b949e; }
+.nd-gh-lines { grid-column: 1 / -1; }
+.nd-gh-lines span { display: block; font-size: 10.5px; color: #6e7681; }
+.nd-gh-cell.nd-gh-pad { visibility: hidden; }
 .nd-gh-langbar { display: flex; height: 8px; gap: 2px; margin-bottom: 6px; border-radius: 4px; overflow: hidden; }
 .nd-gh-langbar span { min-width: 4px; }
 .nd-gh-legend { display: flex; flex-wrap: wrap; gap: 3px 12px; margin-bottom: 10px; font-size: 11.5px; color: #c9d1d9; }

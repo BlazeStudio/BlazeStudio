@@ -114,6 +114,14 @@ Refresh those from a home connection now and then and commit the file:
 python scripts/refresh_cs_prices.py
 ```
 
+The GitHub window works without a key, but its per-repo stats (languages by code size —
+up to 10, `TOP_LANGUAGES` in `api/github_sync.py` — and lines of code) cost two API calls
+per repo, and unauthenticated GitHub allows only 60 calls an hour per IP. Set
+`GITHUB_TOKEN` (a fine-grained token with read-only access to public repos:
+https://github.com/settings/personal-access-tokens) to raise that to 5000. Lines of code
+come from each repo's `/stats/code_frequency`, which GitHub computes on first request, so
+the total fills in over the first few visits.
+
 The Codewars window reads the public Codewars API (no key) for `BlazeStudio`;
 set `CODEWARS_USER` to show someone else.
 

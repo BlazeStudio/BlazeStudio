@@ -1990,20 +1990,32 @@
     const memberSince = s.created_at ? new Date(s.created_at).getFullYear() : null;
     const repos = s.repos && s.repos.synced ? s.repos : {};
     const langs = repos.languages || [];
-    const langTotal = langs.reduce((a, x) => a + x.repos, 0);
+    const langTotal = langs.reduce((a, x) => a + x.size, 0);
+    const pct = (x) => {
+      const p = (x.size / langTotal) * 100;
+      return p >= 1 ? Math.round(p) + '%' : '<1%';
+    };
     const langHtml = langTotal
-      ? `<div class="nd-gh-heat-label"><span>${t('Языки по репозиториям', 'Top languages by repo')}</span></div>
-        <div class="nd-gh-langbar">${langs.map((x) => `<span style="flex-grow:${x.repos};background:${langColor(x.name)}" title="${x.name}: ${x.repos}"></span>`).join('')}</div>
-        <div class="nd-gh-legend">${langs
-          .map((x) => `<span><i style="background:${langColor(x.name)}"></i>${x.name} <b>${Math.round((x.repos / langTotal) * 100)}%</b></span>`)
-          .join('')}</div>`
+      ? `<div class="nd-gh-heat-label"><span>${t('Языки · по объёму кода', 'Languages · by code size')}</span></div>
+        <div class="nd-gh-langbar">${langs.map((x) => `<span style="flex-grow:${x.size};background:${langColor(x.name)}" title="${x.name}: ${pct(x)}"></span>`).join('')}</div>
+        <div class="nd-gh-legend">${langs.map((x) => `<span><i style="background:${langColor(x.name)}"></i>${x.name} <b>${pct(x)}</b></span>`).join('')}</div>`
       : '';
+    const linesNote =
+      repos.lines_repos && repos.lines_repos < repos.repos_total
+        ? t(`по ${repos.lines_repos} из ${repos.repos_total} репо — GitHub досчитывает остальные`, `${repos.lines_repos} of ${repos.repos_total} repos so far — GitHub is still counting the rest`)
+        : t('чистый прирост по истории коммитов', 'net additions over the commit history');
+    const linesHtml = `<div class="nd-stat nd-gh-lines">${t('Строк кода', 'Lines of code')}<b>${repos.lines != null ? '≈ ' + repos.lines.toLocaleString('ru-RU') : t('считается…', 'counting…')}</b><span>${repos.lines != null ? linesNote : t('GitHub готовит статистику, загляните чуть позже', 'GitHub is preparing the stats — check back shortly')}</span></div>`;
     const contrib = s.contributions || {};
     const days = contrib.days || [];
+    // Columns are weeks (Sunday on top, like GitHub's own graph): pad the first
+    // column down to the weekday the year's first day falls on.
+    const lead = days.length ? new Date(days[0].date + 'T00:00:00Z').getUTCDay() : 0;
     const heatHtml = days.length
       ? `
         <div class="nd-gh-heat-label"><span>${t('Активность за год', 'Activity, past year')}</span><span>${contrib.total ?? days.filter((d) => d.level > 0).length} ${t('коммитов', 'commits')}</span></div>
-        <div class="nd-gh-heat-wrap" id="nd-gh-heat-wrap"><div class="nd-gh-heat">${days.map((d) => `<span class="nd-gh-cell" data-lvl="${d.level}" title="${d.date}"></span>`).join('')}</div></div>`
+        <div class="nd-gh-heat-wrap" id="nd-gh-heat-wrap"><div class="nd-gh-heat">${'<span class="nd-gh-cell nd-gh-pad"></span>'.repeat(lead)}${days
+          .map((d) => `<span class="nd-gh-cell" data-lvl="${d.level}" title="${d.date}"></span>`)
+          .join('')}</div></div>`
       : '';
     body.innerHTML = `
       <div class="nd-win-head">
@@ -2017,6 +2029,7 @@
         <div class="nd-stat">${t('Коммиты', 'Commits')}<b>${s.commit_count != null ? s.commit_count + '+' : '—'}</b></div>
         <div class="nd-stat">Pull requests<b>${repos.prs ?? '—'}</b></div>
         <div class="nd-stat">Issues<b>${repos.issues ?? '—'}</b></div>
+        ${linesHtml}
       </div>
       ${langHtml}
       ${heatHtml}
@@ -2029,7 +2042,7 @@
   // GitHub's own linguist colors (a couple of too-dark ones lifted so they read on the dark window).
   const LANG_COLORS = {
     Python: '#3572A5', HTML: '#e34c26', JavaScript: '#f1e05a', TypeScript: '#3178c6', Java: '#b07219', Lua: '#4b5fe0',
-    CSS: '#663399', 'C++': '#f34b7d', C: '#8b8b8b', 'C#': '#178600', Go: '#00ADD8', Shell: '#89e051', 'Jupyter Notebook': '#DA5B0B',
+    CSS: '#663399', 'C++': '#f34b7d', C: '#8b8b8b', 'C#': '#178600', Go: '#00ADD8', Shell: '#89e051', 'Jupyter Notebook': '#DA5B0B', Assembly: '#6E4C13', PHP: '#4F5D95', Kotlin: '#A97BFF', Rust: '#dea584', Dockerfile: '#384d54', SCSS: '#c6538c', Vue: '#41b883',
   };
   function langColor(name) {
     return LANG_COLORS[name] || '#8b949e';
