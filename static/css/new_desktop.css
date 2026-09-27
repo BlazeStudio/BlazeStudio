@@ -221,10 +221,6 @@ a:hover { color: #d00000; }
 .nd-hh-badge { background: #d6001c; color: #fff; }
 .nd-hh-status { margin: 0 0 8px; font-size: 12px; }
 .nd-hh-status .nd-blink { color: #0a8a0a; }
-.nd-hh-label { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
-.nd-hh-label a { text-transform: none; letter-spacing: 0; }
-.nd-hh-stats .nd-stat b { color: #d6001c; }
-.nd-hh-body .nd-not-connected { margin: 0 0 10px; }
 .nd-win-name { font-weight: bold; font-size: 14px; }
 .nd-win-sub { font-size: 11.5px; color: var(--nd-text-dim); }
 .nd-win-link { font-size: 12px; }
@@ -1004,6 +1000,69 @@ a:hover { color: #d00000; }
 #nd-xp-standby { position: fixed; inset: 0; z-index: 440; background: #000; cursor: none; }
 #nd-xp-standby[hidden] { display: none; }
 
+/* ============ power cycle (boot.js): BIOS POST → XP loading → welcome ============ */
+html.pc-off body { background: #000; }
+html.pc-off #nd-desktop, html.pc-off #nd-scanlines { visibility: hidden; }
+#nd-boot { position: fixed; inset: 0; z-index: 460; background: #000; color: #aaa; cursor: none; transition: opacity 0.45s ease; }
+#nd-boot[hidden] { display: none; }
+#nd-boot.boot-fade { opacity: 0; }
+.boot-stage[hidden] { display: none !important; }
+.boot-skip { position: absolute; right: 14px; bottom: 12px; z-index: 2; padding: 4px 8px; color: #555; font: 12px Tahoma, Verdana, sans-serif; cursor: pointer; }
+.boot-skip:hover { color: #aaa; }
+.boot-skip[hidden] { display: none; }
+
+/* 80×25 text mode: the font scales so the whole screen always fits */
+.boot-post { position: absolute; inset: 0; padding: 2vh 2vw; font: min(2vw, 3.3vh) / 1.2 'Lucida Console', 'Courier New', monospace; }
+.boot-post pre { margin: 0; font: inherit; white-space: pre; color: #aaa; }
+.boot-post-foot { position: absolute; left: 2vw; bottom: 2vh; }
+.boot-post-logo { position: absolute; top: 2vh; right: 3vw; width: 11em; height: auto; }
+
+.boot-xp { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 48px; color: #fff; font-family: Tahoma, Verdana, sans-serif; }
+.boot-xp-logo { display: flex; align-items: center; gap: 14px; }
+.boot-xp-logo .xp-screen-brand b { font-size: 52px; }
+.boot-xp-logo .xp-screen-brand sup { font-size: 26px; }
+.boot-xp-bar { position: relative; width: 160px; height: 16px; border: 2px solid #b2b2b2; border-radius: 4px; overflow: hidden; }
+.boot-xp-blocks { position: absolute; top: 2px; left: 0; display: flex; gap: 2px; animation: boot-xp-slide 1.9s linear infinite; }
+.boot-xp-blocks i { display: block; width: 9px; height: 8px; border-radius: 1px; background: linear-gradient(#aecbff, #2659d8 45%, #1a3fb0); }
+@keyframes boot-xp-slide { from { transform: translateX(-36px); } to { transform: translateX(166px); } }
+.boot-xp-copy { position: absolute; left: 24px; bottom: 20px; font-size: 12px; color: #fff; }
+.boot-xp-brand { position: absolute; right: 26px; bottom: 16px; font: italic bold 20px 'Franklin Gothic Medium', 'Trebuchet MS', Tahoma, sans-serif; color: #fff; }
+
+.boot-welcome { position: absolute; inset: 0; display: flex; flex-direction: column; background: #5a7edc; }
+.boot-welcome-mid { justify-content: flex-start; padding-left: 16%; }
+.boot-welcome-text { color: #fff; font: italic bold clamp(40px, 9vw, 96px) 'Franklin Gothic Medium', 'Trebuchet MS', Tahoma, sans-serif; letter-spacing: -1px; text-shadow: 2px 3px 6px rgba(0, 0, 60, 0.45); animation: boot-welcome-in 0.8s ease-out; }
+@keyframes boot-welcome-in { from { opacity: 0; transform: translateX(-24px); } }
+
+.boot-off { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: default; }
+.boot-power { width: 76px; height: 76px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid #3a3a3a; background: radial-gradient(circle at 40% 35%, #3b3b3b, #151515 70%); color: #6a6a6a; box-shadow: 0 0 0 6px #0c0c0c, 0 6px 16px rgba(0, 0, 0, 0.8); cursor: pointer; transition: color 0.2s, box-shadow 0.2s; }
+.boot-power svg { width: 34px; height: 34px; }
+.boot-power:hover, .boot-power:focus-visible { color: #6ee06e; outline: none; box-shadow: 0 0 0 6px #0c0c0c, 0 0 22px rgba(110, 224, 110, 0.45); }
+.boot-off-hint { color: #5a5a5a; font: 13px Tahoma, Verdana, sans-serif; text-align: center; padding: 0 16px; }
+
+.boot-crt { position: absolute; inset: 0; background: #000; }
+.boot-crt[hidden] { display: none; }
+.boot-crt.on::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: #fff; box-shadow: 0 0 18px 6px rgba(200, 220, 255, 0.6); animation: boot-crt-off 0.6s ease-in forwards; }
+@keyframes boot-crt-off {
+  0% { transform: scaleY(180) scaleX(1); opacity: 0.9; }
+  45% { transform: scaleY(1) scaleX(1); opacity: 1; }
+  80% { transform: scaleX(0.004); opacity: 1; }
+  100% { transform: scaleX(0.004); opacity: 0; }
+}
+
+/* Task Manager → "Новая задача…" */
+.nd-app-body { position: relative; }
+.tm-run { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.25); }
+.tm-run[hidden] { display: none; }
+.tm-run-box { width: min(360px, 92%); display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; background: var(--nd-panel); border: 3px solid var(--nd-blue-4); border-radius: 6px 6px 3px 3px; box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45); font-size: 12px; box-sizing: border-box; }
+.tm-run-title { margin: 0 -12px; padding: 5px 10px; background: linear-gradient(var(--nd-blue-1), var(--nd-blue-4)); color: #fff; font-weight: bold; }
+.tm-run-box p { margin: 0; }
+.tm-run-box label { display: flex; align-items: center; gap: 8px; }
+.tm-run-box input { flex: 1 1 auto; min-width: 0; padding: 3px 5px; border: 1px solid #7f9db9; font: 12px Tahoma, Verdana, sans-serif; }
+.tm-run-err { color: #c00000; }
+.tm-run-err:empty { display: none; }
+.tm-run-btns { display: flex; justify-content: flex-end; gap: 6px; }
+.tm-run-btns .nd-btn98 { min-width: 72px; padding: 4px 10px; font-weight: normal; }
+
 /* ============ responsive ============ */
 @media (max-width: 900px) {
   /* Every window becomes a fixed, full-screen, pixel-positioned overlay
@@ -1077,7 +1136,7 @@ a:hover { color: #d00000; }
      this environment can't fully emulate for verification. */
   .nd-win, .nd-win * { touch-action: manipulation; }
   /* ...except game boards, which handle their own swipes/drags */
-  .nd-win .g-stage, .nd-win .g-stage *, .nd-win .g2048-stage, .nd-win .g2048-stage *, .nd-win .g-pad-btn { touch-action: none; }
+  .nd-win .g-stage, .nd-win .g-stage *, .nd-win .g2048-stage, .nd-win .g2048-stage *, .nd-win .g-pad-btn, .nd-win .nd-wa-seek { touch-action: none; }
   .nd-win button, .nd-win input, .nd-win a, .nd-win .nd-btn98, .nd-win .mines-cell {
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(10, 79, 208, 0.25);

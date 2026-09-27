@@ -22,7 +22,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import faceit_sync
 import github_sync
-import hh_sync
 import log_sync
 import music_sync
 import steam_sync
@@ -99,8 +98,29 @@ STATUS_MESSAGES = {
 }
 
 
+# Optional real recordings for the desktop's power cycle (static/js/boot.js):
+# drop e.g. static/sounds/xp-startup.mp3 in and it replaces the synthesized one.
+SOUND_NAMES = {"pc_boot": "pc-boot", "xp_startup": "xp-startup", "xp_shutdown": "xp-shutdown"}
+SOUND_EXTS = (".mp3", ".ogg", ".wav", ".m4a")
+
+
+def _sound_files() -> dict:
+    sounds_dir = ROOT / "static" / "sounds"
+    found = {}
+    for key, stem in SOUND_NAMES.items():
+        match = next((sounds_dir / (stem + ext) for ext in SOUND_EXTS if (sounds_dir / (stem + ext)).is_file()), None)
+        found[key] = f"/static/sounds/{match.name}" if match else None
+    return found
+
+
 def _site_data_json() -> str:
-    payload = {"profile": PROFILE, "projects": PROJECTS, "categories": CATEGORIES, "resume_source": RESUME_SOURCE}
+    payload = {
+        "profile": PROFILE,
+        "projects": PROJECTS,
+        "categories": CATEGORIES,
+        "resume_source": RESUME_SOURCE,
+        "sounds": _sound_files(),
+    }
     return json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
 
@@ -207,11 +227,6 @@ def faceit_stats():
         "stats": faceit_sync.get_player_stats(),
         "recent_matches": faceit_sync.get_recent_matches(),
     }
-
-
-@app.get("/api/hh")
-def hh_stats():
-    return {"market": hh_sync.get_market_stats()}
 
 
 @app.get("/api/music")

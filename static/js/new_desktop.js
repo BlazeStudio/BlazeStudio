@@ -230,12 +230,8 @@
   }
 
   function toggleWin(id) {
-    if (state.hidden[id]) {
-      setHidden(id, false);
-      raise(id);
-    } else {
-      setHidden(id, true);
-    }
+    if (state.hidden[id]) show(id);
+    else setHidden(id, true);
   }
 
   // Per-window lifecycle hooks: ON_OPEN runs when a floating app goes from
@@ -258,17 +254,18 @@
     };
   }
 
+  // Running = not closed. Minimizing (_) keeps a window running; closing (×
+  // or Task Manager's End Task) doesn't. Grid windows keep a taskbar button
+  // even when closed (it reopens them); floating apps drop off the taskbar.
   function isOpen(id) {
-    return !FLOATING_WIN_IDS.has(id) || !state.closed[id];
+    return !state.closed[id];
   }
 
   function closeWin(id) {
-    if (FLOATING_WIN_IDS.has(id)) {
-      if (state.closed[id]) return;
-      state.closed[id] = true;
-      if (ON_CLOSE[id]) ON_CLOSE[id]();
-      if (isMaximized(id)) toggleMaximize(id);
-    }
+    if (state.closed[id]) return;
+    state.closed[id] = true;
+    if (ON_CLOSE[id]) ON_CLOSE[id]();
+    if (isMaximized(id)) toggleMaximize(id);
     setHidden(id, true);
   }
 
@@ -287,6 +284,7 @@
 
   function show(id) {
     if (!winEl(id)) return;
+    if (state.closed[id] && !FLOATING_WIN_IDS.has(id)) state.closed[id] = false;
     if (FLOATING_WIN_IDS.has(id) && state.closed[id]) {
       state.closed[id] = false;
       if (!state.detached[id] && !isMaximized(id)) {
@@ -434,7 +432,7 @@
   }
 
   function taskbarIds() {
-    return WIN_ORDER.filter((id) => winEl(id) && isOpen(id));
+    return WIN_ORDER.filter((id) => winEl(id) && (!FLOATING_WIN_IDS.has(id) || isOpen(id)));
   }
 
   // XP windows carry their app icon at the left of the title bar.
@@ -464,7 +462,7 @@
     const allBtn = document.getElementById('nd-toggle-all');
     const allVisible = ids.every((id) => !state.hidden[id]);
     if (allBtn) allBtn.textContent = allVisible ? t('Свернуть всё', 'Hide all') : t('Показать всё', 'Show all');
-    if (isOpen('taskmgr') && !state.hidden.taskmgr) renderTaskmgrPanel();
+    if (isOpen('taskmgr') && !state.hidden.taskmgr) updateTaskmgr();
   }
 
   function arrange() {
@@ -482,7 +480,10 @@
   function toggleAll() {
     const ids = taskbarIds();
     const allVisible = ids.every((id) => !state.hidden[id]);
-    ids.forEach((id) => setHidden(id, allVisible));
+    ids.forEach((id) => {
+      if (!allVisible) state.closed[id] = false; // "show all" reopens closed grid windows too
+      setHidden(id, allVisible);
+    });
   }
 
   /* Builds a floating app window with the same chrome as the template's. */
@@ -1024,41 +1025,54 @@
   ];
   const CRITICAL_PROCS = new Set(['csrss.exe', 'winlogon.exe', 'smss.exe']);
   const PROC_MEM = { 'explorer.exe': 21480, 'iexplore.exe': 18760, 'steam.exe': 34120, 'wmplayer.exe': 15630, 'winamp.exe': 9820, 'cmd.exe': 2110 };
-  const tm = { tab: 'apps', selected: null, timer: null, cpu: Array(60).fill(0), mem: Array(60).fill(0), load: 4, startedAt: Date.now() };
+  const tm = { tab: 'apps', selected: null, timer: null, cpu: Array(60).fill(0), mem: Array(60).fill(0), load: 4, startedAt: Date.now(), rowsSig: '' };
+
+  // What "Новая задача…" understands — program names map onto this desktop's windows.
+  const RUN_TARGETS = {
+    calc: 'calc', notepad: 'notepad', cmd: 'console', command: 'console', console: 'console', taskmgr: 'taskmgr',
+    explorer: 'explorer', winamp: 'music', wmplayer: 'videos', mspaint: 'avatar', iexplore: 'hh', steam: 'steam',
+    faceit: 'faceit', github: 'github', msmsgs: 'contacts', games: 'games', winmine: 'game-mines', mines: 'game-mines',
+    slots: 'game-slots', snake: 'game-snake', tetris: 'game-tetris', arkanoid: 'game-breakout', breakout: 'game-breakout', 2048: 'game-g2048',
+  };
+
+  function runningIds() {
+    return WIN_ORDER.filter((id) => winEl(id) && isOpen(id));
+  }
 
   function runningGames() {
     return ['game-snake', 'game-tetris', 'game-breakout'].filter((id) => isOpen(id) && !state.hidden[id]).length;
   }
 
   function tmTick() {
-    const target = 3 + taskbarIds().filter((id) => !state.hidden[id]).length * 1.5 + runningGames() * 9 + (musicState.playing ? 4 : 0);
+    const target = 3 + runningIds().filter((id) => !state.hidden[id]).length * 1.5 + runningGames() * 9 + (musicState.playing ? 4 : 0);
     tm.load = Math.max(1, Math.min(100, tm.load + (target - tm.load) * 0.35 + (Math.random() - 0.5) * 8));
     tm.cpu.push(Math.round(tm.load));
     tm.cpu.shift();
-    tm.mem.push(Math.round(118 + taskbarIds().length * 6.5 + Math.random() * 3));
+    tm.mem.push(Math.round(118 + runningIds().length * 6.5 + Math.random() * 3));
     tm.mem.shift();
-    if (!state.hidden.taskmgr) renderTaskmgrPanel(true);
+    if (!state.hidden.taskmgr) updateTaskmgr();
   }
 
   function tmProcs() {
-    const cpuLeft = tm.cpu[tm.cpu.length - 1];
-    const apps = taskbarIds().map((id) => ({
+    const cpuNow = tm.cpu[tm.cpu.length - 1];
+    const system = SYSTEM_PROCS.map(([name, user, mem], i) => ({ key: 'sys' + i, name, user, mem }));
+    const apps = runningIds().map((id) => ({
+      key: id,
+      id,
       name: PROC_NAMES[id] || id + '.exe',
       user: 'anton',
-      id,
       mem: (PROC_MEM[PROC_NAMES[id]] || 6200) + (id.charCodeAt(id.length - 1) % 9) * 311,
     }));
-    const system = SYSTEM_PROCS.map(([name, user, mem]) => ({ name, user, mem }));
     const all = [...system, ...apps];
     // Split the current load across processes, weighted towards the "heavy" ones.
-    let budget = cpuLeft;
+    let budget = cpuNow;
     all.forEach((p) => {
       const heavy = p.id && /^game-(snake|tetris|breakout)$/.test(p.id) && !state.hidden[p.id];
-      const share = Math.min(budget, Math.round((heavy ? 0.3 : 0.04) * cpuLeft * Math.random() * 2));
+      const share = Math.min(budget, Math.round((heavy ? 0.3 : 0.04) * cpuNow * Math.random() * 2));
       p.cpu = share;
       budget -= share;
     });
-    return [{ name: t('Бездействие системы', 'System Idle Process'), user: 'SYSTEM', mem: 28, cpu: Math.max(0, 100 - cpuLeft) }, ...all];
+    return [{ key: 'idle', name: t('Бездействие системы', 'System Idle Process'), user: 'SYSTEM', mem: 28, cpu: Math.max(0, 100 - cpuNow) }, ...all];
   }
 
   function graphSvg(data, max) {
@@ -1075,97 +1089,176 @@
     return `${Math.round(kb).toLocaleString('ru-RU')} ${t('КБ', 'K')}`;
   }
 
-  function renderTaskmgrPanel(tickOnly) {
-    const panel = document.getElementById('tm-panel');
-    const status = document.getElementById('tm-status');
-    if (!panel) return;
-    const cpu = tm.cpu[tm.cpu.length - 1];
-    const memMb = tm.mem[tm.mem.length - 1];
-    if (status) {
-      status.innerHTML = `<span>${t('Процессов', 'Processes')}: ${SYSTEM_PROCS.length + 1 + taskbarIds().length}</span><span>${t('Загрузка ЦП', 'CPU Usage')}: ${cpu}%</span><span>${t('Выделение памяти', 'Commit Charge')}: ${memMb}${t('М', 'M')} / 512${t('М', 'M')}</span>`;
+  function tmSelectRow(row) {
+    tm.selected = row ? row.dataset.key : null;
+    document.querySelectorAll('#tm-panel .tm-row').forEach((r) => r.classList.toggle('sel', r === row));
+  }
+
+  // End whatever's selected on the current tab — the one action both
+  // "Снять задачу" and "Завершить процесс" (and the Delete key) share.
+  function tmEndSelected() {
+    const row = document.querySelector('#tm-panel .tm-row.sel');
+    if (!row) {
+      window.XP.toast(t('Сначала выберите задачу в списке.', 'Select a task in the list first.'));
+      return;
     }
-    if (tm.tab === 'apps') {
-      if (tickOnly) return; // the app list only changes when windows do (syncTaskbar re-renders it)
-      const rows = taskbarIds().filter((id) => id !== 'taskmgr');
-      if (tm.selected && !rows.includes(tm.selected)) tm.selected = null;
-      panel.innerHTML = `
-        <div class="tm-list"><table><thead><tr><th>${t('Задача', 'Task')}</th><th>${t('Состояние', 'Status')}</th></tr></thead><tbody>${rows
-          .map(
-            (id) => `<tr class="tm-row${tm.selected === id ? ' sel' : ''}" data-id="${id}"><td><svg width="16" height="16" aria-hidden="true"><use href="#${WIN_ICON[id]}"></use></svg>${WIN_LABEL[id]()}</td><td>${
-              state.hidden[id] ? t('Свёрнуто', 'Minimized') : t('Работает', 'Running')
-            }</td></tr>`
-          )
-          .join('')}</tbody></table></div>
-        <div class="tm-actions">
-          <button type="button" class="nd-btn98" data-tm="end">${t('Снять задачу', 'End Task')}</button>
-          <button type="button" class="nd-btn98" data-tm="switch">${t('Переключиться', 'Switch To')}</button>
-          <button type="button" class="nd-btn98" data-tm="new">${t('Новая задача…', 'New Task…')}</button>
-        </div>`;
-      panel.querySelectorAll('.tm-row').forEach((row) => {
-        row.addEventListener('click', () => {
-          tm.selected = row.dataset.id;
-          panel.querySelectorAll('.tm-row').forEach((r) => r.classList.toggle('sel', r === row));
-        });
-        row.addEventListener('dblclick', () => show(row.dataset.id));
-      });
-      panel.querySelector('[data-tm="end"]').addEventListener('click', () => {
-        if (tm.selected) closeWin(tm.selected);
-      });
-      panel.querySelector('[data-tm="switch"]').addEventListener('click', () => {
-        if (tm.selected) show(tm.selected);
-      });
-      panel.querySelector('[data-tm="new"]').addEventListener('click', () => show('console'));
-    } else if (tm.tab === 'procs') {
-      const procs = tmProcs();
-      const scroll = panel.querySelector('.tm-list');
-      const scrollTop = scroll ? scroll.scrollTop : 0;
-      panel.innerHTML = `
-        <div class="tm-list"><table><thead><tr><th>${t('Имя образа', 'Image Name')}</th><th>${t('Пользователь', 'User Name')}</th><th class="num">${t('ЦП', 'CPU')}</th><th class="num">${t('Память', 'Mem Usage')}</th></tr></thead><tbody>${procs
-          .map((p, i) => {
-            const key = p.id || p.name + ':' + i;
-            return `<tr class="tm-row${tm.selected === key ? ' sel' : ''}" data-key="${key}" data-id="${p.id || ''}" data-name="${p.name}"><td>${p.name}</td><td>${p.user}</td><td class="num">${String(p.cpu).padStart(2, '0')}</td><td class="num">${fmtKb(p.mem)}</td></tr>`;
-          })
-          .join('')}</tbody></table></div>
-        <div class="tm-actions"><button type="button" class="nd-btn98" data-tm="kill">${t('Завершить процесс', 'End Process')}</button></div>`;
-      const list = panel.querySelector('.tm-list');
-      list.scrollTop = scrollTop;
-      panel.querySelectorAll('.tm-row').forEach((row) => {
-        row.addEventListener('click', () => {
-          tm.selected = row.dataset.key;
-          panel.querySelectorAll('.tm-row').forEach((r) => r.classList.toggle('sel', r === row));
-        });
-      });
-      panel.querySelector('[data-tm="kill"]').addEventListener('click', () => {
-        const row = panel.querySelector('.tm-row.sel');
-        if (!row) return;
-        if (row.dataset.id) {
-          closeWin(row.dataset.id);
-        } else if (CRITICAL_PROCS.has(row.dataset.name)) {
-          window.XP.effects.bsod(); // exactly what real XP did when you killed csrss.exe
-        } else {
-          window.XP.toast(t('Не удаётся завершить процесс. Отказано в доступе.', 'Unable to terminate process. Access is denied.'));
-        }
-      });
+    const id = row.dataset.id;
+    if (id) {
+      closeWin(id);
+      tmSelectRow(null);
+    } else if (CRITICAL_PROCS.has(row.dataset.name)) {
+      window.XP.effects.bsod(); // exactly what real XP did when you killed csrss.exe
     } else {
-      const uptime = Math.floor((Date.now() - tm.startedAt) / 1000);
-      const hh = String(Math.floor(uptime / 3600)).padStart(2, '0');
-      const mm = String(Math.floor((uptime % 3600) / 60)).padStart(2, '0');
-      const ss = String(uptime % 60).padStart(2, '0');
-      const heap = performance && performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null;
+      window.XP.toast(t('Не удаётся завершить процесс. Отказано в доступе.', 'Unable to terminate process. Access is denied.'));
+    }
+  }
+
+  /* The panel's structure (table, buttons) is built once per tab; after that
+     only the rows' contents change in place. Rebuilding it on every tick or
+     every window raise used to swap the rows/buttons out from under the
+     mouse between pointerdown and pointerup — so the click never landed and
+     "End Task" appeared to do nothing. */
+  function buildTaskmgrPanel() {
+    const panel = document.getElementById('tm-panel');
+    if (!panel) return;
+    tm.rowsSig = '';
+    if (tm.tab === 'apps' || tm.tab === 'procs') {
+      const apps = tm.tab === 'apps';
+      const head = apps
+        ? `<th>${t('Задача', 'Task')}</th><th>${t('Состояние', 'Status')}</th>`
+        : `<th>${t('Имя образа', 'Image Name')}</th><th>${t('Пользователь', 'User Name')}</th><th class="num">${t('ЦП', 'CPU')}</th><th class="num">${t('Память', 'Mem Usage')}</th>`;
+      const buttons = apps
+        ? `<button type="button" class="nd-btn98" data-tm="end">${t('Снять задачу', 'End Task')}</button>
+           <button type="button" class="nd-btn98" data-tm="switch">${t('Переключиться', 'Switch To')}</button>
+           <button type="button" class="nd-btn98" data-tm="new">${t('Новая задача…', 'New Task…')}</button>`
+        : `<button type="button" class="nd-btn98" data-tm="end">${t('Завершить процесс', 'End Process')}</button>`;
+      panel.innerHTML = `<div class="tm-list"><table><thead><tr>${head}</tr></thead><tbody id="tm-rows"></tbody></table></div><div class="tm-actions">${buttons}</div>`;
+      const rows = panel.querySelector('#tm-rows');
+      rows.addEventListener('click', (e) => {
+        const row = e.target.closest('.tm-row');
+        if (row) tmSelectRow(row);
+      });
+      rows.addEventListener('dblclick', (e) => {
+        const row = e.target.closest('.tm-row');
+        if (row && row.dataset.id) show(row.dataset.id);
+      });
+      panel.querySelector('[data-tm="end"]').addEventListener('click', tmEndSelected);
+      const sw = panel.querySelector('[data-tm="switch"]');
+      if (sw) {
+        sw.addEventListener('click', () => {
+          const row = panel.querySelector('.tm-row.sel');
+          if (row && row.dataset.id) show(row.dataset.id);
+        });
+      }
+      const nw = panel.querySelector('[data-tm="new"]');
+      if (nw) nw.addEventListener('click', openRunDialog);
+    } else {
       panel.innerHTML = `
         <div class="tm-perf">
-          <fieldset><legend>${t('Загрузка ЦП', 'CPU Usage')}</legend><div class="tm-meter"><b>${cpu}%</b><div class="tm-meter-bar"><div style="height:${cpu}%"></div></div></div></fieldset>
-          <fieldset><legend>${t('Хронология загрузки ЦП', 'CPU Usage History')}</legend>${graphSvg(tm.cpu, 100)}</fieldset>
-          <fieldset><legend>${t('Файл подкачки', 'PF Usage')}</legend><div class="tm-meter"><b>${memMb} ${t('МБ', 'MB')}</b><div class="tm-meter-bar"><div style="height:${Math.round((memMb / 512) * 100)}%"></div></div></div></fieldset>
-          <fieldset><legend>${t('Хронология файла подкачки', 'Page File Usage History')}</legend>${graphSvg(tm.mem, 512)}</fieldset>
+          <fieldset><legend>${t('Загрузка ЦП', 'CPU Usage')}</legend><div class="tm-meter"><b data-tm="cpu"></b><div class="tm-meter-bar"><div data-tm="cpubar"></div></div></div></fieldset>
+          <fieldset><legend>${t('Хронология загрузки ЦП', 'CPU Usage History')}</legend><div data-tm="cpugraph"></div></fieldset>
+          <fieldset><legend>${t('Файл подкачки', 'PF Usage')}</legend><div class="tm-meter"><b data-tm="mem"></b><div class="tm-meter-bar"><div data-tm="membar"></div></div></div></fieldset>
+          <fieldset><legend>${t('Хронология файла подкачки', 'Page File Usage History')}</legend><div data-tm="memgraph"></div></fieldset>
           <fieldset class="tm-wide"><legend>${t('Всего', 'Totals')}</legend>
-            <div class="tm-kv"><span>${t('Процессов', 'Processes')}</span><b>${SYSTEM_PROCS.length + 1 + taskbarIds().length}</b></div>
-            <div class="tm-kv"><span>${t('Окон открыто', 'Open windows')}</span><b>${taskbarIds().length}</b></div>
-            <div class="tm-kv"><span>${t('Время работы', 'Up Time')}</span><b>${hh}:${mm}:${ss}</b></div>
-            ${heap != null ? `<div class="tm-kv"><span>${t('Память JS (реальная)', 'JS heap (real)')}</span><b>${heap} ${t('МБ', 'MB')}</b></div>` : ''}
+            <div class="tm-kv"><span>${t('Процессов', 'Processes')}</span><b data-tm="procs"></b></div>
+            <div class="tm-kv"><span>${t('Окон открыто', 'Open windows')}</span><b data-tm="wins"></b></div>
+            <div class="tm-kv"><span>${t('Время работы', 'Up Time')}</span><b data-tm="uptime"></b></div>
+            <div class="tm-kv" data-tm="heaprow" hidden><span>${t('Память JS (реальная)', 'JS heap (real)')}</span><b data-tm="heap"></b></div>
           </fieldset>
         </div>`;
     }
+    updateTaskmgr();
+  }
+
+  function updateTaskmgr() {
+    const panel = document.getElementById('tm-panel');
+    if (!panel) return;
+    const cpu = tm.cpu[tm.cpu.length - 1];
+    const memMb = tm.mem[tm.mem.length - 1];
+    const procCount = SYSTEM_PROCS.length + 1 + runningIds().length;
+    const status = document.getElementById('tm-status');
+    if (status) {
+      status.innerHTML = `<span>${t('Процессов', 'Processes')}: ${procCount}</span><span>${t('Загрузка ЦП', 'CPU Usage')}: ${cpu}%</span><span>${t('Выделение памяти', 'Commit Charge')}: ${memMb}${t('М', 'M')} / 512${t('М', 'M')}</span>`;
+    }
+    const q = (name) => panel.querySelector(`[data-tm="${name}"]`);
+    const rowsEl = panel.querySelector('#tm-rows');
+    if (tm.tab === 'apps' && rowsEl) {
+      const ids = runningIds().filter((id) => id !== 'taskmgr');
+      const sig = ids.map((id) => id + (state.hidden[id] ? '-' : '+')).join(',') + lang();
+      if (sig === tm.rowsSig) return;
+      tm.rowsSig = sig;
+      if (tm.selected && !ids.includes(tm.selected)) tm.selected = null;
+      rowsEl.innerHTML = ids
+        .map(
+          (id) => `<tr class="tm-row${tm.selected === id ? ' sel' : ''}" data-key="${id}" data-id="${id}"><td><svg width="16" height="16" aria-hidden="true"><use href="#${WIN_ICON[id]}"></use></svg>${WIN_LABEL[id]()}</td><td>${
+            state.hidden[id] ? t('Свёрнуто', 'Minimized') : t('Работает', 'Running')
+          }</td></tr>`
+        )
+        .join('');
+    } else if (tm.tab === 'procs' && rowsEl) {
+      const procs = tmProcs();
+      const sig = procs.map((p) => p.key).join(',') + lang();
+      if (sig !== tm.rowsSig) {
+        tm.rowsSig = sig;
+        if (tm.selected && !procs.some((p) => p.key === tm.selected)) tm.selected = null;
+        rowsEl.innerHTML = procs
+          .map(
+            (p) =>
+              `<tr class="tm-row${tm.selected === p.key ? ' sel' : ''}" data-key="${p.key}" data-id="${p.id || ''}" data-name="${p.name}"><td>${p.name}</td><td>${p.user}</td><td class="num"></td><td class="num"></td></tr>`
+          )
+          .join('');
+      }
+      // Same processes as last tick: just refresh the numbers in place.
+      procs.forEach((p, i) => {
+        const cells = rowsEl.children[i] && rowsEl.children[i].children;
+        if (!cells) return;
+        cells[2].textContent = String(p.cpu).padStart(2, '0');
+        cells[3].textContent = fmtKb(p.mem);
+      });
+    } else if (tm.tab === 'perf' && q('cpu')) {
+      const uptime = Math.floor((Date.now() - tm.startedAt) / 1000);
+      const heap = performance && performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null;
+      q('cpu').textContent = cpu + '%';
+      q('cpubar').style.height = cpu + '%';
+      q('cpugraph').innerHTML = graphSvg(tm.cpu, 100);
+      q('mem').textContent = `${memMb} ${t('МБ', 'MB')}`;
+      q('membar').style.height = Math.round((memMb / 512) * 100) + '%';
+      q('memgraph').innerHTML = graphSvg(tm.mem, 512);
+      q('procs').textContent = String(procCount);
+      q('wins').textContent = String(runningIds().length);
+      q('uptime').textContent = [Math.floor(uptime / 3600), Math.floor((uptime % 3600) / 60), uptime % 60].map((n) => String(n).padStart(2, '0')).join(':');
+      if (heap != null) {
+        q('heaprow').hidden = false;
+        q('heap').textContent = `${heap} ${t('МБ', 'MB')}`;
+      }
+    }
+  }
+
+  /* "Новая задача…" — XP's Create New Task box: type a program name, it opens. */
+  function openRunDialog() {
+    const body = document.getElementById('nd-taskmgr-body');
+    const dlg = body && body.querySelector('.tm-run');
+    if (!dlg) return;
+    dlg.hidden = false;
+    dlg.querySelector('.tm-run-err').textContent = '';
+    const input = dlg.querySelector('input');
+    input.value = '';
+    input.focus();
+  }
+
+  function runTask(raw) {
+    const cmd = raw.trim();
+    if (!cmd) return true;
+    if (/^https?:\/\//i.test(cmd)) {
+      const w = window.open(cmd, '_blank');
+      if (w) w.opener = null;
+      return true;
+    }
+    const name = cmd.toLowerCase().replace(/\.exe$/, '');
+    const target = RUN_TARGETS[name];
+    if (!target) return false;
+    show(target);
+    return true;
   }
 
   function renderTaskmgr() {
@@ -1181,16 +1274,47 @@
         <div class="tm-tabs">${tabs.map(([id, ru, en]) => `<button type="button" class="tm-tab${tm.tab === id ? ' active' : ''}" data-tab="${id}">${t(ru, en)}</button>`).join('')}</div>
         <div class="tm-panel" id="tm-panel"></div>
         <div class="tm-status" id="tm-status"></div>
+      </div>
+      <div class="tm-run" hidden>
+        <form class="tm-run-box" role="dialog" aria-label="${t('Создать новую задачу', 'Create New Task')}">
+          <div class="tm-run-title">${t('Создать новую задачу', 'Create New Task')}</div>
+          <p>${t('Введите имя программы, папки, документа или ресурса Интернета, которые требуется открыть.', 'Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.')}</p>
+          <label>${t('Открыть:', 'Open:')} <input type="text" list="tm-run-list" autocomplete="off" spellcheck="false"></label>
+          <datalist id="tm-run-list">${['calc', 'notepad', 'cmd', 'explorer', 'winamp', 'wmplayer', 'winmine', 'snake', 'tetris', 'arkanoid', '2048', 'slots'].map((n) => `<option value="${n}">`).join('')}</datalist>
+          <div class="tm-run-err" aria-live="polite"></div>
+          <div class="tm-run-btns"><button type="submit" class="nd-btn98">OK</button><button type="button" class="nd-btn98" data-run="cancel">${t('Отмена', 'Cancel')}</button></div>
+        </form>
       </div>`;
     body.querySelectorAll('.tm-tab').forEach((b) =>
       b.addEventListener('click', () => {
         tm.tab = b.dataset.tab;
         tm.selected = null;
         body.querySelectorAll('.tm-tab').forEach((x) => x.classList.toggle('active', x === b));
-        renderTaskmgrPanel();
+        buildTaskmgrPanel();
       })
     );
-    renderTaskmgrPanel();
+    const dlg = body.querySelector('.tm-run');
+    const form = dlg.querySelector('form');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = form.querySelector('input').value;
+      if (runTask(value)) {
+        dlg.hidden = true;
+      } else {
+        dlg.querySelector('.tm-run-err').textContent = t(
+          `Не удаётся найти «${value.trim()}». Проверьте, правильно ли указано имя, и повторите попытку.`,
+          `Windows cannot find '${value.trim()}'. Make sure you typed the name correctly, and then try again.`
+        );
+      }
+    });
+    dlg.querySelector('[data-run="cancel"]').addEventListener('click', () => (dlg.hidden = true));
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        dlg.hidden = true;
+      }
+    });
+    buildTaskmgrPanel();
   }
 
   function initTaskmgr() {
@@ -1204,6 +1328,17 @@
       clearInterval(tm.timer);
       tm.timer = null;
     };
+    // Delete ends the selected task, Enter switches to it — as in the real one.
+    document.addEventListener('keydown', (e) => {
+      if (activeWinId() !== 'taskmgr' || (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'))) return;
+      if (e.key === 'Delete') {
+        e.preventDefault();
+        tmEndSelected();
+      } else if (e.key === 'Enter' && tm.tab === 'apps') {
+        const row = document.querySelector('#tm-panel .tm-row.sel');
+        if (row && row.dataset.id) show(row.dataset.id);
+      }
+    });
   }
 
   /* =========================================================
@@ -1636,7 +1771,7 @@
   function updateMusicTime() {
     const timeEl = document.getElementById('nd-music-time');
     const seekEl = document.getElementById('nd-music-seek');
-    if (!musicAudioEl || !timeEl) return;
+    if (!musicAudioEl || !timeEl || musicState.seeking) return; // mid-drag, the bar shows the drag position, not playback
     const cur = musicAudioEl.currentTime || 0;
     const dur = musicAudioEl.duration || 0;
     timeEl.textContent = `${String(Math.floor(cur / 60)).padStart(2, '0')}:${String(Math.floor(cur % 60)).padStart(2, '0')}`;
@@ -1724,44 +1859,47 @@
     if (prev) prev.addEventListener('click', () => playTrack(musicState.track - 1));
     if (next) next.addEventListener('click', () => playTrack(musicState.track + 1));
     if (seekTrack) {
-      // Click + drag (mouse) and touch-drag — the old click-only path used
-      // clientX on a 7px bar which is nearly impossible to hit on a phone.
-      const seekFromEvent = (e) => {
-        if (!musicAudioEl || !Number.isFinite(musicAudioEl.duration) || musicAudioEl.duration <= 0) return;
-        const point = e.touches && e.touches[0] ? e.touches[0] : e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : e;
+      // Dragging only moves the bar and the time readout; the audio itself
+      // seeks exactly once, on release. Seeking on every pointerdown/move/up
+      // (plus the click that follows) used to restart decoding several times
+      // per gesture — each later seek landed a fraction of a second *behind*
+      // where playback had already got to, which is the audible "jump back".
+      const ratioAt = (e) => {
         const rect = seekTrack.getBoundingClientRect();
-        const ratio = Math.min(1, Math.max(0, (point.clientX - rect.left) / rect.width));
-        musicAudioEl.currentTime = ratio * musicAudioEl.duration;
+        return rect.width ? Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)) : 0;
+      };
+      const canSeek = () => musicAudioEl && Number.isFinite(musicAudioEl.duration) && musicAudioEl.duration > 0;
+      const preview = (ratio) => {
+        const fill = document.getElementById('nd-music-seek');
+        const timeEl = document.getElementById('nd-music-time');
+        const cur = ratio * musicAudioEl.duration;
+        if (fill) fill.style.width = ratio * 100 + '%';
+        if (timeEl) timeEl.textContent = `${String(Math.floor(cur / 60)).padStart(2, '0')}:${String(Math.floor(cur % 60)).padStart(2, '0')}`;
+      };
+      let dragRatio = null;
+      seekTrack.addEventListener('pointerdown', (e) => {
+        if (!canSeek() || (e.button !== undefined && e.button !== 0)) return;
+        e.preventDefault();
+        seekTrack.setPointerCapture(e.pointerId);
+        musicState.seeking = true;
+        dragRatio = ratioAt(e);
+        preview(dragRatio);
+      });
+      seekTrack.addEventListener('pointermove', (e) => {
+        if (dragRatio === null) return;
+        dragRatio = ratioAt(e);
+        preview(dragRatio);
+      });
+      const finish = (commit) => {
+        if (dragRatio === null) return;
+        if (commit && canSeek()) musicAudioEl.currentTime = dragRatio * musicAudioEl.duration;
+        dragRatio = null;
+        musicState.seeking = false;
         updateMusicTime();
       };
-      let seeking = false;
-      const startSeek = (e) => {
-        seeking = true;
-        seekFromEvent(e);
-        e.preventDefault();
-      };
-      const moveSeek = (e) => {
-        if (!seeking) return;
-        seekFromEvent(e);
-        e.preventDefault();
-      };
-      const endSeek = (e) => {
-        if (!seeking) return;
-        seeking = false;
-        seekFromEvent(e);
-      };
-      seekTrack.addEventListener('pointerdown', (e) => {
-        seekTrack.setPointerCapture(e.pointerId);
-        startSeek(e);
-      });
-      seekTrack.addEventListener('pointermove', moveSeek);
-      seekTrack.addEventListener('pointerup', endSeek);
-      seekTrack.addEventListener('pointercancel', () => { seeking = false; });
-      // Fallback for older iOS that is flaky with pointer events on custom divs
-      seekTrack.addEventListener('touchstart', startSeek, { passive: false });
-      seekTrack.addEventListener('touchmove', moveSeek, { passive: false });
-      seekTrack.addEventListener('touchend', endSeek, { passive: false });
-      seekTrack.addEventListener('click', seekFromEvent);
+      seekTrack.addEventListener('pointerup', () => finish(true));
+      seekTrack.addEventListener('pointercancel', () => finish(false));
+      seekTrack.addEventListener('lostpointercapture', () => finish(true));
     }
     const repeatBtn = document.getElementById('nd-music-repeat');
     if (repeatBtn) {
@@ -2210,38 +2348,6 @@
     `;
   }
 
-  /* hh.ru — the résumé card plus live job-market numbers for Python roles
-     in Moscow from the official hh.ru API (see api/hh_sync.py for why it's
-     market stats rather than the résumé's own view counters). */
-  let hhMarket = null;
-  async function loadHh() {
-    try {
-      const res = await fetch('/api/hh');
-      hhMarket = (await res.json()).market || { synced: false };
-    } catch (e) {
-      hhMarket = { synced: false };
-    }
-    renderHh();
-  }
-
-  function hhMarketHtml(l) {
-    const m = hhMarket;
-    if (!m) return `<p class="nd-loading">${t('Тянем статистику hh.ru…', 'Fetching hh.ru stats…')}</p>`;
-    if (!m.synced) {
-      return `<div class="nd-hh-label">${t('Статистика рынка', 'Job market stats')}</div>${notConnectedHtml(['HH_APP_TOKEN'], 'https://dev.hh.ru/admin')}`;
-    }
-    const n = (v) => (v == null ? '—' : Number(v).toLocaleString('ru-RU'));
-    const salary = m.salary_median ? `${Math.round(m.salary_median / 1000).toLocaleString('ru-RU')} ${t('тыс. ₽', 'K ₽')}` : '—';
-    return `
-      <div class="nd-hh-label"><span>${t('Рынок: Python', 'Market: Python')} · ${m.area[l]}</span><a href="${m.search_url}" target="_blank" rel="noopener">${t('на hh.ru ↗', 'on hh.ru ↗')}</a></div>
-      <div class="nd-stat-grid nd-hh-stats">
-        <div class="nd-stat">${t('Вакансий', 'Openings')}<b>${n(m.total)}</b></div>
-        <div class="nd-stat">${t('Удалёнка', 'Remote')}<b>${n(m.remote)}</b></div>
-        <div class="nd-stat">${t('Опыт 3–6 лет', '3–6 yrs exp.')}<b>${n(m.mid_level)}</b></div>
-        <div class="nd-stat" title="${t('По', 'From')} ${m.salary_sample} ${t('свежим вакансиям с указанной зарплатой', 'recent openings that list a salary')}">${t('Медиана ЗП', 'Median pay')}<b>${salary}</b></div>
-      </div>`;
-  }
-
   function renderHh() {
     const body = document.getElementById('nd-hh-body');
     if (!body) return;
@@ -2252,7 +2358,6 @@
         <div><div class="nd-win-name">${PROFILE.role[l]}</div><div class="nd-win-sub">${PROFILE.location[l]}</div></div>
       </div>
       <p class="nd-hh-status"><span class="nd-blink">●</span> ${PROFILE.employment[l]}</p>
-      ${hhMarketHtml(l)}
       <a class="nd-btn98 nd-block" href="${PROFILE.contacts.hh}" target="_blank" rel="noopener">${t('Открыть резюме на hh.ru', 'Open résumé on hh.ru')}</a>
     `;
   }
@@ -2426,6 +2531,7 @@
     if (logoffBtn) {
       logoffBtn.addEventListener('click', () => {
         closeStartMenu();
+        window.XP.boot.unlock();
         xpScreen(t('Выход из системы…', 'Logging off…'), () => window.location.reload());
       });
     }
@@ -2433,10 +2539,13 @@
 
   /* =========================================================
      Windows XP "Turn off computer" — the desktop fades to grey behind the
-     three-button dialog, then the blue "shutting down" screen. There's no
-     "off" page yet, so turning off just lands back on this same page.
+     three-button dialog, then the blue "shutting down" screen with the
+     shutdown chime. Restart runs the full cold boot (boot.js) right here;
+     Turn Off lands back on this same page, powered off, and the power
+     button there boots it the same way.
      ========================================================= */
   const SHUTDOWN_REDIRECT = '/';
+  const POWER_FLAG = 'av-power';
 
   function xpScreen(message, then) {
     closeTurnOffDialog();
@@ -2448,15 +2557,57 @@
     }
     stopMusicPlayback();
     stopVideoPlayback();
+    window.XP.boot.chime('shutdown'); // still inside the click, so the browser lets it play
     if (msg) msg.textContent = message;
     screen.hidden = false;
-    setTimeout(then, 2600);
+    setTimeout(then, 2800);
+  }
+
+  function hideXpScreen() {
+    const screen = document.getElementById('nd-xp-screen');
+    if (screen) screen.hidden = true;
   }
 
   function shutdownNow() {
-    xpScreen(t('Завершение работы Windows…', 'Windows is shutting down…'), () => {
+    window.XP.boot.unlock();
+    xpScreen(t('Завершение работы Windows…', 'Windows is shutting down…'), async () => {
+      await window.XP.boot.crtOff();
+      try {
+        sessionStorage.setItem(POWER_FLAG, 'off');
+      } catch (_) {
+        /* no storage — it'll just come back up already on */
+      }
       window.location.href = SHUTDOWN_REDIRECT;
     });
+  }
+
+  function restartNow() {
+    window.XP.boot.unlock();
+    xpScreen(t('Перезагрузка Windows…', 'Windows is restarting…'), async () => {
+      await window.XP.boot.crtOff();
+      hideXpScreen();
+      resetDesktop();
+      await window.XP.boot.boot();
+    });
+  }
+
+  // What a reboot leaves behind: apps closed, grid windows back in place, a fresh console.
+  function resetDesktop() {
+    closeStartMenu();
+    WIN_ORDER.forEach((id) => {
+      if (FLOATING_WIN_IDS.has(id)) {
+        closeWin(id);
+      } else {
+        state.closed[id] = false;
+        setHidden(id, window.innerWidth <= 900); // phones start on the icon "home screen"
+      }
+      if (isMaximized(id)) toggleMaximize(id);
+      delete state.detached[id];
+      applyWinStyle(id);
+    });
+    cascade = 0;
+    setTab('resume');
+    if (window.XP.resetConsole) window.XP.resetConsole();
   }
 
   function openTurnOffDialog() {
@@ -2501,7 +2652,7 @@
       btn.addEventListener('click', () => {
         const act = btn.dataset.off;
         if (act === 'shutdown') shutdownNow();
-        else if (act === 'restart') xpScreen(t('Перезагрузка Windows…', 'Windows is restarting…'), () => window.location.reload());
+        else if (act === 'restart') restartNow();
         else if (act === 'standby') standBy();
         else closeTurnOffDialog();
       })
@@ -2520,6 +2671,17 @@
      Init
      ========================================================= */
   document.addEventListener('DOMContentLoaded', () => {
+    // Coming back from "Turn Off": start on the powered-off screen.
+    let poweredOff = false;
+    try {
+      poweredOff = sessionStorage.getItem(POWER_FLAG) === 'off';
+      sessionStorage.removeItem(POWER_FLAG);
+    } catch (_) {
+      poweredOff = false;
+    }
+    if (poweredOff) window.XP.boot.powerOff();
+    else document.documentElement.classList.remove('pc-off');
+
     // Global iOS safety net for window content: only synthesize a click when
     // the browser fails to deliver one after a touch (fixed-in-overflow quirk).
     // If a real click arrives, cancel the pending synthetic one — never double-fire.
@@ -2611,7 +2773,6 @@
     loadGithub();
     loadSteamWin();
     loadFaceit();
-    loadHh();
     loadMusicTracks();
     initTurnOff();
 

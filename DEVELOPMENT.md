@@ -34,7 +34,7 @@ uvicorn api.index:app --reload --port 8000
 
 Then open:
 
-- **http://localhost:8000/** — the "2004 homepage" desktop cut: draggable windows, a Start menu, live Steam/FACEIT/GitHub/hh.ru widgets, a real console, a Games folder (each game in its own window), Task Manager, Calculator and Notepad
+- **http://localhost:8000/** — the "2004 homepage" desktop cut: draggable windows, a Start menu, live Steam/FACEIT/GitHub widgets, a real console, a Games folder (each game in its own window), Task Manager, Calculator and Notepad
 - **http://localhost:8000/desktop** — "old 2024": the previous plain scrolling résumé, kept as an archive (it runs its own frozen copy of the old games, `static/js/classic_games.js`)
 - **http://localhost:8000/dossier** — the printable PDF résumé (`?lang=en` for English)
 
@@ -44,6 +44,24 @@ old 2018 (https://blazestudio.wixsite.com/notoxic, an external Wix site).
 `--reload` restarts the server automatically when you edit a `.py` file. Static files
 (`static/css`, `static/js`) and templates are picked up on the next request without a
 restart.
+
+## Restart / shutdown sounds
+
+Start → Выключение → "Перезагрузка" plays a full cold boot (`static/js/boot.js`): a 90s
+BIOS POST screen with fan, hard-drive, floppy and POST-beep sounds, the Windows XP loading
+screen, then the XP welcome screen with a chime. "Выключение" ends on a powered-off
+screen; its power button runs the same boot (browsers only allow sound after a click,
+which is why it waits for one). Esc skips the boot.
+
+All of those sounds are synthesized in the browser. To use real recordings instead, put
+any of these into `static/sounds/` (`.mp3`, `.ogg`, `.wav` or `.m4a`) — `api/index.py`
+picks up whichever exist:
+
+| File | Replaces |
+| --- | --- |
+| `pc-boot.*` | the whole PC hardware soundtrack under the BIOS + XP loading screens |
+| `xp-startup.*` | the chime on the welcome screen |
+| `xp-shutdown.*` | the chime on the "shutting down" / "restarting" screen |
 
 ## Switching the résumé content
 
@@ -62,10 +80,9 @@ content lives in `api/data/profile_hh.py` and `api/data/profile_linkedin.py` —
 those directly to change wording, dates, skills, etc. Projects (`api/data/projects.py`)
 are shared between both résumé versions.
 
-## Steam / FACEIT / hh.ru integration on the homepage
+## Steam / FACEIT integration on the homepage
 
-The `/` homepage's Steam and FACEIT windows (avatar, status, recent games/matches) and the
-hh.ru window's job-market stats are
+The `/` homepage's Steam and FACEIT windows (avatar, status, recent games/matches) are
 live if — and only if — these environment variables are set (locally: `export`/`$env:`
 before running uvicorn; in prod: Vercel project → Settings → Environment Variables).
 Missing any of them makes that window render a "not connected" placeholder instead of
@@ -77,14 +94,6 @@ breaking:
 | `STEAM_ID64` | Your 17-digit SteamID64 — https://steamid.io |
 | `FACEIT_API_KEY` | https://developers.faceit.com/apps → an app → "API keys" (server-side key, not OAuth) |
 | `FACEIT_NICKNAME` | Your FACEIT username |
-| `HH_APP_TOKEN` | hh.ru *application* token: register an app at https://dev.hh.ru/admin, then `POST https://hh.ru/oauth/token` with `grant_type=client_credentials&client_id=…&client_secret=…`. App tokens don't expire. |
-| `HH_USER_AGENT` | Optional. hh.ru wants an identifying `Name/Version (contact)` header; defaults to `BlazeStudioPortfolio/1.0 (github.com/BlazeStudio)` |
-
-hh.ru closed anonymous access to `/vacancies` (it answers 403), hence the token. The
-window shows live numbers for Python vacancies in Moscow (total, remote, 3–6 years of
-experience, median salary) — `api/hh_sync.py`. The résumé's own view/invite counters
-would need the applicant's personal OAuth token, which expires every ~2 weeks and
-can't be rotated without a database, so that isn't wired up.
 
 Steam screenshots (Explorer → "Скриншоты Steam") use the community profile's public
 `?xml=1` feed (there's no official Web API for another user's screenshots) — your

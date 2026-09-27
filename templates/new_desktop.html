@@ -9,6 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%230a246a%22/><rect x=%2210%22 y=%2210%22 width=%2280%22 height=%2280%22 rx=%228%22 fill=%22%23ece9d8%22/><rect x=%2210%22 y=%2210%22 width=%2280%22 height=%2222%22 rx=%228%22 fill=%22%230a4fd0%22/></svg>">
 <link rel="stylesheet" href="/static/css/shared.css?v={{ v }}">
 <link rel="stylesheet" href="/static/css/new_desktop.css?v={{ v }}">
+<script>try{if(sessionStorage.getItem('av-power')==='off')document.documentElement.classList.add('pc-off')}catch(e){}</script>
 </head>
 <body>
 
@@ -201,7 +202,7 @@
           <div class="nd-resize" aria-hidden="true"></div>
         </div>
 
-        <div class="nd-win" id="nd-win-hh" style="flex-grow:1.1;max-height:330px">
+        <div class="nd-win" id="nd-win-hh" style="flex-grow:0.7;max-height:200px">
           <div class="nd-tb"><span class="nd-cap" data-ru="hh.ru — резюме" data-en="hh.ru — résumé">hh.ru — резюме</span><button class="nd-min" aria-label="Свернуть окно hh.ru">_</button><button class="nd-max" aria-label="Развернуть окно hh.ru"><svg width="14" height="14" aria-hidden="true"><use href="#ico-maximize"></use></svg></button><button class="nd-x" aria-label="Закрыть окно hh.ru">×</button></div>
           <div class="nd-body nd-hh-body" id="nd-hh-body"></div>
           <div class="nd-resize" aria-hidden="true"></div>
@@ -272,7 +273,7 @@
     </div>
     <div class="nd-sm-other">
       <div class="nd-sm-other-label" data-ru="Другие версии сайта" data-en="Older versions of this site">Другие версии сайта</div>
-      <a class="nd-sm-item" href="/desktop">📃 <span>old 2024</span></a>
+      <a class="nd-sm-item" href="/desktop" target="_blank">📃 <span>old 2024</span></a>
       <a class="nd-sm-item" href="https://blazestudio.wixsite.com/notoxic" target="_blank" rel="noopener">🌐 <span>old 2018</span></a>
     </div>
     <div class="nd-sm-footer">
@@ -354,6 +355,7 @@
 <script src="/static/js/app.js?v={{ v }}"></script>
 <script src="/static/js/terminal.js?v={{ v }}"></script>
 <script src="/static/js/games.js?v={{ v }}"></script>
+<script src="/static/js/boot.js?v={{ v }}"></script>
 <script src="/static/js/new_desktop.js?v={{ v }}"></script>
 </body>
 </html>

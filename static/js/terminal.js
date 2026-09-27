@@ -125,6 +125,17 @@
     const input = root.querySelector('#term-input');
     printLine(output, WELCOME[window.XP.lang()]);
 
+    // A desktop restart wipes the session: output, history, any live tail and sudo.
+    window.XP.resetConsole = function () {
+      stopFollow();
+      elevatedPassword = '';
+      history.length = 0;
+      historyPos = -1;
+      output.innerHTML = '';
+      input.value = '';
+      printLine(output, WELCOME[window.XP.lang()]);
+    };
+
     let submitting = false;
     function submit() {
       if (submitting) return;
