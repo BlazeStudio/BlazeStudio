@@ -2013,11 +2013,9 @@
         <div class="nd-gh-langbar">${langs.map((x) => `<span style="flex-grow:${x.size};background:${langColor(x.name)}" title="${langTitle(x)}"></span>`).join('')}</div>
         <div class="nd-gh-legend">${langs.map((x) => `<span><i style="background:${langColor(x.name)}"></i>${x.name} <b>${pct(x)}</b></span>`).join('')}</div>`
       : '';
-    const linesNote =
-      repos.lines_repos && repos.lines_repos < repos.repos_total
-        ? t(`по ${repos.lines_repos} из ${repos.repos_total} репо`, `${repos.lines_repos} of ${repos.repos_total} repos so far — GitHub is still counting the rest`)
-        : t('чистый прирост по истории коммитов', 'net additions over the commit history');
-    const linesHtml = `<div class="nd-stat nd-gh-lines">${t('Строк кода', 'Lines of code')}<b>${repos.lines != null ? '≈ ' + repos.lines.toLocaleString('ru-RU') : t('считается…', 'counting…')}</b><span>${repos.lines != null ? linesNote : t('GitHub готовит статистику, загляните чуть позже', 'GitHub is preparing the stats — check back shortly')}</span></div>`;
+    const linesHtml = `<div class="nd-stat nd-gh-lines" title="${t('Оценка: объём кода на языках программирования (без HTML, CSS и ноутбуков) ÷ ~35 байт на строку', 'Estimate: code size in programming languages (no HTML, CSS or notebooks) ÷ ~35 bytes per line')}">${t('Строк кода', 'Lines of code')}<b>${
+      repos.lines != null ? '≈ ' + repos.lines.toLocaleString('ru-RU') : '—'
+    }</b><span>${t('оценка по объёму кода, без HTML/CSS и ноутбуков', 'estimated from code size, excluding HTML/CSS and notebooks')}</span></div>`;
     const contrib = s.contributions || {};
     const days = contrib.days || [];
     // Columns are weeks (Sunday on top, like GitHub's own graph): pad the first
@@ -2025,7 +2023,7 @@
     const lead = days.length ? new Date(days[0].date + 'T00:00:00Z').getUTCDay() : 0;
     const heatHtml = days.length
       ? `
-        <div class="nd-gh-heat-label"><span>${t('Активность за год', 'Activity, past year')}</span><span>${contrib.total ?? days.filter((d) => d.level > 0).length} ${t('контрибуций', 'contributions')}</span></div>
+        <div class="nd-gh-heat-label"><span>${t('Активность за год', 'Activity, past year')}</span><span>${contrib.total ?? days.filter((d) => d.level > 0).length} ${t('коммитов', 'contributions')}</span></div>
         <div class="nd-gh-heat-wrap" id="nd-gh-heat-wrap"><div class="nd-gh-heat">${'<span class="nd-gh-cell nd-gh-pad"></span>'.repeat(lead)}${days
           .map((d) => `<span class="nd-gh-cell" data-lvl="${d.level}" title="${d.date}"></span>`)
           .join('')}</div></div>`
@@ -2039,7 +2037,7 @@
         <div class="nd-stat">${t('Репозитории', 'Repos')}<b>${s.public_repos ?? '—'}</b></div>
         <div class="nd-stat">${t('Звёзды', 'Stars')}<b>${repos.stars ?? '—'}</b></div>
         <div class="nd-stat">${t('Подписчики', 'Followers')}<b>${s.followers ?? '—'}</b></div>
-        <div class="nd-stat" title="${t('Коммиты в любых репозиториях и ветках, PR, issues и ревью за все годы — как считает сам GitHub', 'Commits to any repo or branch, PRs, issues and reviews, all years — as GitHub itself counts them')}">${t('Контрибуций всего', 'Total contributions')}<b>${
+        <div class="nd-stat" title="${t('Коммиты в любых репозиториях и ветках, PR, issues и ревью за все годы — как считает сам GitHub', 'Commits to any repo or branch, PRs, issues and reviews, all years — as GitHub itself counts them')}">${t('Коммитов всего', 'Total contributions')}<b>${
           allTime.total != null ? allTime.total.toLocaleString('ru-RU') : '—'
         }</b></div>
         <div class="nd-stat">Pull requests<b>${repos.prs ?? '—'}</b></div>

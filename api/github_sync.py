@@ -144,6 +144,8 @@ def _search_total(key: str, query: str) -> int | None:
 
 
 TOP_LANGUAGES = 10
+BYTES_PER_LINE = 35  # typical average for Python/JS/Java/C-family source
+NON_CODE_LANGUAGES = {"HTML", "CSS", "SCSS", "Less", "Jupyter Notebook", "Markdown", "TeX", "Batchfile"}
 
 
 def _repo_languages(repo: str) -> dict[str, int]:
@@ -178,22 +180,6 @@ def _repo_commits(repo: str) -> int | None:
     return count
 
 
-def _repo_lines(repo: str) -> int | None:
-    """Net lines in the repo's history: weekly additions minus deletions from
-    /stats/code_frequency. GitHub computes that lazily — the first ask gets an
-    empty 202 and kicks off the job — so a repo counts once it's ready (the
-    empty answer is never cached, the next visit asks again)."""
-    data = _cached(
-        f"loc:{repo}",
-        f"https://api.github.com/repos/{GITHUB_USER}/{repo}/stats/code_frequency",
-        ttl=REPO_STATS_TTL,
-        valid=lambda v: isinstance(v, list) and len(v) > 0,
-    )
-    if not isinstance(data, list) or not data:
-        return None
-    return max(0, sum((week[1] or 0) + (week[2] or 0) for week in data if len(week) >= 3))
-
-
 def get_repo_stats() -> dict:
     """Totals across the user's own (non-fork) public repos — stars, forks,
     languages by bytes of code (up to TOP_LANGUAGES of them), lines of code —
@@ -205,14 +191,18 @@ def get_repo_stats() -> dict:
     names = [r["name"] for r in own]
     with ThreadPoolExecutor(max_workers=8) as pool:
         per_repo_langs = list(pool.map(_repo_languages, names))
-        per_repo_lines = list(pool.map(_repo_lines, names))
         per_repo_commits = list(pool.map(_repo_commits, names))
     language_bytes: Counter = Counter()
     for langs in per_repo_langs:
         language_bytes.update(langs)
     if not language_bytes:  # per-repo calls rate-limited — fall back to each repo's primary language
         language_bytes = Counter({lang: n for lang, n in Counter(r.get("language") for r in own if r.get("language")).items()})
-    counted = [n for n in per_repo_lines if n is not None]
+    # Lines of code, estimated from linguist's byte counts for actual programming
+    # languages — linguist already leaves out vendored and generated files, and
+    # markup/notebooks (HTML, CSS, .ipynb JSON) aren't hand-written code lines.
+    # Summing commit history (/stats/code_frequency) instead counted every
+    # dataset and minified library ever committed: ~1.5M "lines" — meaningless.
+    code_bytes = sum(size for lang, size in language_bytes.items() if lang not in NON_CODE_LANGUAGES) if per_repo_langs and any(per_repo_langs) else 0
     commits = [n for n in per_repo_commits if n is not None]
     by_repo = Counter(r.get("language") for r in own if r.get("language"))
     return {
@@ -225,8 +215,7 @@ def get_repo_stats() -> dict:
         "languages_by_repo": [{"name": name, "size": count} for name, count in by_repo.most_common(TOP_LANGUAGES)],
         "commits_total": sum(commits) if commits else None,
         "commits_repos": len(commits),
-        "lines": sum(counted) if counted else None,
-        "lines_repos": len(counted),
+        "lines": round(code_bytes / BYTES_PER_LINE, -2) if code_bytes else None,
         "repos_total": len(names),
         "prs": _search_total("search_prs", f"author:{GITHUB_USER}+type:pr"),
         "issues": _search_total("search_issues", f"author:{GITHUB_USER}+type:issue"),
