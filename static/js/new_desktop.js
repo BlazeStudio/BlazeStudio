@@ -1996,6 +1996,7 @@
     }
     const memberSince = s.created_at ? new Date(s.created_at).getFullYear() : null;
     const repos = s.repos && s.repos.synced ? s.repos : {};
+    const allTime = s.contributions_total || {};
     const byRepo = ghLangMode === 'repo';
     const langs = (byRepo ? repos.languages_by_repo : repos.languages) || [];
     const langTotal = langs.reduce((a, x) => a + x.size, 0);
@@ -2024,7 +2025,7 @@
     const lead = days.length ? new Date(days[0].date + 'T00:00:00Z').getUTCDay() : 0;
     const heatHtml = days.length
       ? `
-        <div class="nd-gh-heat-label"><span>${t('Активность за год', 'Activity, past year')}</span><span>${contrib.total ?? days.filter((d) => d.level > 0).length} ${t('коммитов', 'commits')}</span></div>
+        <div class="nd-gh-heat-label"><span>${t('Активность за год', 'Activity, past year')}</span><span>${contrib.total ?? days.filter((d) => d.level > 0).length} ${t('контрибуций', 'contributions')}</span></div>
         <div class="nd-gh-heat-wrap" id="nd-gh-heat-wrap"><div class="nd-gh-heat">${'<span class="nd-gh-cell nd-gh-pad"></span>'.repeat(lead)}${days
           .map((d) => `<span class="nd-gh-cell" data-lvl="${d.level}" title="${d.date}"></span>`)
           .join('')}</div></div>`
@@ -2038,9 +2039,9 @@
         <div class="nd-stat">${t('Репозитории', 'Repos')}<b>${s.public_repos ?? '—'}</b></div>
         <div class="nd-stat">${t('Звёзды', 'Stars')}<b>${repos.stars ?? '—'}</b></div>
         <div class="nd-stat">${t('Подписчики', 'Followers')}<b>${s.followers ?? '—'}</b></div>
-        <div class="nd-stat" title="${repos.commits_total != null ? t('Все коммиты во всех репозиториях', 'Every commit across all repos') + (repos.commits_repos < repos.repos_total ? ` (${repos.commits_repos}/${repos.repos_total})` : '') : ''}">${t('Коммитов всего', 'Total commits')}<b>${
-          repos.commits_total != null ? repos.commits_total.toLocaleString('ru-RU') : s.commit_count != null ? s.commit_count + '+' : '—'
-        }</b></div>
+        <div class="nd-stat" title="${t('Коммиты в любых репозиториях и ветках, PR, issues и ревью за все годы — как считает сам GitHub', 'Commits to any repo or branch, PRs, issues and reviews, all years — as GitHub itself counts them')}">${t('Контрибуций всего', 'Total contributions')}<b>${
+          allTime.total != null ? allTime.total.toLocaleString('ru-RU') : '—'
+        }</b>${repos.commits_total != null ? `<span class="nd-stat-sub">${t('коммитов в своих репо', 'commits in own repos')}: ${repos.commits_total.toLocaleString('ru-RU')}</span>` : ''}</div>
         <div class="nd-stat">Pull requests<b>${repos.prs ?? '—'}</b></div>
         <div class="nd-stat">Issues<b>${repos.issues ?? '—'}</b></div>
         ${linesHtml}

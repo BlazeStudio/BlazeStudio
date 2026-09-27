@@ -191,10 +191,12 @@ def github_stats():
         commits = pool.submit(github_sync.get_commit_count)
         contributions = pool.submit(github_sync.get_contribution_calendar)
         repos = pool.submit(github_sync.get_repo_stats)
+        all_time = pool.submit(github_sync.get_total_contributions)
         stats = profile.result()
         stats["commit_count"] = commits.result()
         stats["contributions"] = contributions.result()
         stats["repos"] = repos.result()
+        stats["contributions_total"] = all_time.result()
     return stats
 
 

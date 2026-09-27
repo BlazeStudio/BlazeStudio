@@ -111,6 +111,33 @@ def get_contribution_calendar() -> dict:
     return {"synced": bool(days), "total": total, "days": days}
 
 
+def _year_contributions(year: int) -> int | None:
+    html = _cached(
+        f"contrib-year:{year}",
+        f"https://github.com/users/{GITHUB_USER}/contributions?from={year}-01-01&to={year}-12-31",
+        parse="text",
+        ttl=CACHE_TTL if year == time.gmtime().tm_year else REPO_STATS_TTL,  # past years don't change
+    )
+    if not html:
+        return None
+    m = _CONTRIB_TOTAL_RE.search(html)
+    return int(m.group(1).replace(",", "")) if m else 0  # "No contributions in 2021" has no number
+
+
+def get_total_contributions() -> dict:
+    """All-time contributions the way GitHub itself counts them — commits on
+    any branch/repo, PRs, issues, reviews — summed from one calendar per year
+    since the account was made. This is the ~500 figure profile cards show;
+    commits in the user's own repos alone are a subset of it."""
+    profile = _cached("profile", API_BASE)
+    first = int(profile["created_at"][:4]) if isinstance(profile, dict) and profile.get("created_at") else 2008
+    years = list(range(first, time.gmtime().tm_year + 1))
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        counts = list(pool.map(_year_contributions, years))
+    known = [c for c in counts if c is not None]
+    return {"total": sum(known) if known else None, "complete": len(known) == len(years)}
+
+
 def _search_total(key: str, query: str) -> int | None:
     data = _cached(key, f"https://api.github.com/search/issues?q={query}&per_page=1")
     return data.get("total_count") if isinstance(data, dict) else None
