@@ -74,6 +74,9 @@ def main() -> None:
         if price is not None:
             prices[name] = round(price, 2)
         time.sleep(DELAY)
+    if not prices:
+        print("no prices fetched (Steam kept answering 429?) — snapshot left untouched; try again later")
+        return
     for it in list(payload.get("items") or []) + list(payload.get("all_marketable") or []):
         name = market_name(it.get("market_url"))
         if name in prices:

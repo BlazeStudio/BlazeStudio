@@ -1970,6 +1970,13 @@
   }
 
   let githubCache = null;
+  let ghLangMode = (() => {
+    try {
+      return localStorage.getItem('av-gh-lang-mode') === 'repo' ? 'repo' : 'code';
+    } catch (_) {
+      return 'code';
+    }
+  })();
   async function loadGithub() {
     try {
       const res = await fetch('/api/github/stats');
@@ -1989,20 +1996,25 @@
     }
     const memberSince = s.created_at ? new Date(s.created_at).getFullYear() : null;
     const repos = s.repos && s.repos.synced ? s.repos : {};
-    const langs = repos.languages || [];
+    const byRepo = ghLangMode === 'repo';
+    const langs = (byRepo ? repos.languages_by_repo : repos.languages) || [];
     const langTotal = langs.reduce((a, x) => a + x.size, 0);
     const pct = (x) => {
       const p = (x.size / langTotal) * 100;
       return p >= 1 ? Math.round(p) + '%' : '<1%';
     };
+    const langTitle = (x) => (byRepo ? `${x.name}: ${x.size} ${t('репо', 'repos')}` : `${x.name}: ${pct(x)}`);
     const langHtml = langTotal
-      ? `<div class="nd-gh-heat-label"><span>${t('Языки · по объёму кода', 'Languages · by code size')}</span></div>
-        <div class="nd-gh-langbar">${langs.map((x) => `<span style="flex-grow:${x.size};background:${langColor(x.name)}" title="${x.name}: ${pct(x)}"></span>`).join('')}</div>
+      ? `<div class="nd-gh-heat-label nd-gh-lang-head"><span>${t('Языки', 'Languages')}</span>
+          <span class="nd-gh-switch" role="group" aria-label="${t('Считать языки', 'Count languages')}">
+            <button type="button" data-mode="code" class="${byRepo ? '' : 'active'}" title="${t('Доля в объёме кода всех репозиториев', 'Share of the code across all repos')}">${t('по коду', 'by code')}</button><button type="button" data-mode="repo" class="${byRepo ? 'active' : ''}" title="${t('Сколько репозиториев написано в основном на языке', 'How many repos are mainly in the language')}">${t('по репозиториям', 'by repos')}</button>
+          </span></div>
+        <div class="nd-gh-langbar">${langs.map((x) => `<span style="flex-grow:${x.size};background:${langColor(x.name)}" title="${langTitle(x)}"></span>`).join('')}</div>
         <div class="nd-gh-legend">${langs.map((x) => `<span><i style="background:${langColor(x.name)}"></i>${x.name} <b>${pct(x)}</b></span>`).join('')}</div>`
       : '';
     const linesNote =
       repos.lines_repos && repos.lines_repos < repos.repos_total
-        ? t(`по ${repos.lines_repos} из ${repos.repos_total} репо — GitHub досчитывает остальные`, `${repos.lines_repos} of ${repos.repos_total} repos so far — GitHub is still counting the rest`)
+        ? t(`по ${repos.lines_repos} из ${repos.repos_total} репо`, `${repos.lines_repos} of ${repos.repos_total} repos so far — GitHub is still counting the rest`)
         : t('чистый прирост по истории коммитов', 'net additions over the commit history');
     const linesHtml = `<div class="nd-stat nd-gh-lines">${t('Строк кода', 'Lines of code')}<b>${repos.lines != null ? '≈ ' + repos.lines.toLocaleString('ru-RU') : t('считается…', 'counting…')}</b><span>${repos.lines != null ? linesNote : t('GitHub готовит статистику, загляните чуть позже', 'GitHub is preparing the stats — check back shortly')}</span></div>`;
     const contrib = s.contributions || {};
@@ -2026,7 +2038,9 @@
         <div class="nd-stat">${t('Репозитории', 'Repos')}<b>${s.public_repos ?? '—'}</b></div>
         <div class="nd-stat">${t('Звёзды', 'Stars')}<b>${repos.stars ?? '—'}</b></div>
         <div class="nd-stat">${t('Подписчики', 'Followers')}<b>${s.followers ?? '—'}</b></div>
-        <div class="nd-stat">${t('Коммиты', 'Commits')}<b>${s.commit_count != null ? s.commit_count + '+' : '—'}</b></div>
+        <div class="nd-stat" title="${repos.commits_total != null ? t('Все коммиты во всех репозиториях', 'Every commit across all repos') + (repos.commits_repos < repos.repos_total ? ` (${repos.commits_repos}/${repos.repos_total})` : '') : ''}">${t('Коммитов всего', 'Total commits')}<b>${
+          repos.commits_total != null ? repos.commits_total.toLocaleString('ru-RU') : s.commit_count != null ? s.commit_count + '+' : '—'
+        }</b></div>
         <div class="nd-stat">Pull requests<b>${repos.prs ?? '—'}</b></div>
         <div class="nd-stat">Issues<b>${repos.issues ?? '—'}</b></div>
         ${linesHtml}
@@ -2035,6 +2049,19 @@
       ${heatHtml}
       <a class="nd-btn98 nd-block" href="${PROFILE.contacts.github}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
+    body.querySelectorAll('.nd-gh-switch button').forEach((b) =>
+      b.addEventListener('click', () => {
+        ghLangMode = b.dataset.mode;
+        try {
+          localStorage.setItem('av-gh-lang-mode', ghLangMode);
+        } catch (_) {
+          /* not remembered, that's all */
+        }
+        const scroll = body.scrollTop;
+        renderGithub();
+        body.scrollTop = scroll;
+      })
+    );
     const heatWrap = document.getElementById('nd-gh-heat-wrap');
     if (heatWrap) heatWrap.scrollLeft = heatWrap.scrollWidth; // scrolled to the most recent weeks by default
   }

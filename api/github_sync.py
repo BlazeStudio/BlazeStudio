@@ -125,6 +125,32 @@ def _repo_languages(repo: str) -> dict[str, int]:
     return data if isinstance(data, dict) else {}
 
 
+_LAST_PAGE_RE = re.compile(r'[?&]page=(\d+)>;\s*rel="last"')
+
+
+def _repo_commits(repo: str) -> int | None:
+    """All commits on the repo's default branch. Asks for one commit per page:
+    the page number in the Link header's rel="last" *is* the commit count, so
+    it's a single cheap call per repo instead of paging through history."""
+    key = f"commits:{repo}"
+    now = time.time()
+    if key in _cache and now - _cache[key][0] < REPO_STATS_TTL:
+        return _cache[key][1]
+    req = urllib.request.Request(f"https://api.github.com/repos/{GITHUB_USER}/{repo}/commits?per_page=1", headers=_headers())
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            last = _LAST_PAGE_RE.search(resp.headers.get("Link", ""))
+            count = int(last.group(1)) if last else len(json.loads(resp.read() or b"[]"))
+    except urllib.error.HTTPError as e:
+        count = 0 if e.code == 409 else None  # 409 = empty repository
+    except (urllib.error.URLError, TimeoutError, ValueError):
+        count = None
+    if count is None:
+        return _cache[key][1] if key in _cache else None
+    _cache[key] = (now, count)
+    return count
+
+
 def _repo_lines(repo: str) -> int | None:
     """Net lines in the repo's history: weekly additions minus deletions from
     /stats/code_frequency. GitHub computes that lazily — the first ask gets an
@@ -153,17 +179,25 @@ def get_repo_stats() -> dict:
     with ThreadPoolExecutor(max_workers=8) as pool:
         per_repo_langs = list(pool.map(_repo_languages, names))
         per_repo_lines = list(pool.map(_repo_lines, names))
+        per_repo_commits = list(pool.map(_repo_commits, names))
     language_bytes: Counter = Counter()
     for langs in per_repo_langs:
         language_bytes.update(langs)
     if not language_bytes:  # per-repo calls rate-limited — fall back to each repo's primary language
         language_bytes = Counter({lang: n for lang, n in Counter(r.get("language") for r in own if r.get("language")).items()})
     counted = [n for n in per_repo_lines if n is not None]
+    commits = [n for n in per_repo_commits if n is not None]
+    by_repo = Counter(r.get("language") for r in own if r.get("language"))
     return {
         "synced": True,
         "stars": sum(r.get("stargazers_count") or 0 for r in own),
         "forks": sum(r.get("forks_count") or 0 for r in own),
+        # Two views the window can switch between: share of the code itself
+        # (linguist bytes across every repo) vs. how many repos are mainly in it.
         "languages": [{"name": name, "size": size} for name, size in language_bytes.most_common(TOP_LANGUAGES)],
+        "languages_by_repo": [{"name": name, "size": count} for name, count in by_repo.most_common(TOP_LANGUAGES)],
+        "commits_total": sum(commits) if commits else None,
+        "commits_repos": len(commits),
         "lines": sum(counted) if counted else None,
         "lines_repos": len(counted),
         "repos_total": len(names),
