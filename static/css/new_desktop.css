@@ -301,7 +301,25 @@ a:hover { color: #d00000; }
 .nd-github-body .nd-win-link { color: #58a6ff; }
 .nd-github-body .nd-not-connected { color: #8b949e; }
 .nd-github-body .nd-not-connected code { background: #161b22; color: #c9d1d9; }
-.nd-gh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nd-gh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.nd-gh-since { font-size: 11px; color: #8b949e; }
+.nd-gh-langbar { display: flex; height: 8px; gap: 2px; margin-bottom: 6px; border-radius: 4px; overflow: hidden; }
+.nd-gh-langbar span { min-width: 4px; }
+.nd-gh-legend { display: flex; flex-wrap: wrap; gap: 3px 12px; margin-bottom: 10px; font-size: 11.5px; color: #c9d1d9; }
+.nd-gh-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 50%; vertical-align: -1px; }
+.nd-gh-legend b { color: #8b949e; font-weight: normal; }
+
+/* ---- Codewars window: their dark UI with the kyu-colored hexagon badges ---- */
+.nd-codewars-body { background: #262729; color: #d6d6d6; }
+.nd-codewars-body .nd-win-name { color: #fff; }
+.nd-codewars-body .nd-not-connected { color: #a3a3a3; }
+.nd-codewars-body .nd-stat { background: #303133; border: 1px solid #3f4043; color: #a3a3a3; }
+.nd-codewars-body .nd-stat b { color: #fff; }
+.nd-cw-hex { flex: none; display: block; }
+.nd-cw-honor { font-size: 12px; color: #a3a3a3; }
+.nd-cw-honor b { color: #ecb613; }
+.nd-cw-langs { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0 0 10px; font-size: 12px; }
+.nd-cw-lang { display: inline-flex; align-items: center; gap: 5px; }
 .nd-github-body .nd-stat { background: #161b22; border: 1px solid #30363d; color: #8b949e; }
 .nd-github-body .nd-stat b { color: #fff; }
 .nd-gh-heat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b949e; margin: 4px 0 4px; display: flex; justify-content: space-between; }
@@ -553,6 +571,7 @@ a:hover { color: #d00000; }
 .nd-item-popup-name { font: bold 13px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
 .nd-item-popup-meta { font-size: 12px; color: #333; line-height: 1.5; }
 .nd-item-popup-price { font-weight: bold; color: #a45a00; }
+.nd-item-popup-note { display: block; font-weight: normal; font-size: 10.5px; color: #777; }
 
 
 /* ---- Winamp-style player chassis ---- */
@@ -626,6 +645,8 @@ a:hover { color: #d00000; }
 #nd-win-music .nd-tb button { width: 17px; height: 15px; border: 1px solid #55555f; border-radius: 1px; background: linear-gradient(#5a5a68, #2a2a32); }
 #nd-win-music .nd-tb button.nd-x { background: linear-gradient(#5a5a68, #2a2a32); }
 #nd-win-music .nd-body { padding: 8px; background: #1c1c22; }
+/* the resize grip in Winamp's own black instead of the XP-blue one every other window uses */
+#nd-win-music .nd-resize { background: linear-gradient(135deg, transparent 0 50%, #000 50% 58%, transparent 58% 66%, #000 66% 74%, transparent 74% 82%, #000 82% 90%, transparent 90%); opacity: 1; }
 
 .nd-links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .nd-svc { display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: #fff; border: 2px outset #fff; text-decoration: none; color: #000; }

@@ -66,6 +66,12 @@ BIOS logo is `static/img/energy-star.png`.
 | `xp-startup.*` | the chime on the welcome screen |
 | `xp-shutdown.*` | the chime on the "shutting down" / "restarting" screen |
 
+## Winamp playlist order
+
+Tracks are whatever audio files sit in `static/music/`. Their order (and, optionally, a
+title/artist that overrides the file's tags) is set in `api/data/music_meta.py`, keyed by
+filename — same idea as `api/data/video_meta.py` for videos.
+
 ## Switching the résumé content
 
 `api/config.py` has one constant:
@@ -97,6 +103,23 @@ breaking:
 | `STEAM_ID64` | Your 17-digit SteamID64 — https://steamid.io |
 | `FACEIT_API_KEY` | https://developers.faceit.com/apps → an app → "API keys" (server-side key, not OAuth) |
 | `FACEIT_NICKNAME` | Your FACEIT username |
+
+The CS inventory shown in the Steam window comes from `static/data/cs_inventory.json`
+(Steam blocks the live inventory endpoint from Vercel's IPs). Prices are asked from the
+Steam Market live and cached for hours, but its `priceoverview` endpoint allows only about
+20 lookups a minute per IP, so the snapshot also keeps the last known price of each skin.
+Refresh those from a home connection now and then and commit the file:
+
+```bash
+python scripts/refresh_cs_prices.py
+```
+
+The Codewars window reads the public Codewars API (no key) for `BlazeStudio`;
+set `CODEWARS_USER` to show someone else.
+
+The terminal's `whoami` shows the *visitor* their own IP, rough location, browser/OS
+and screen. The location comes from the geo headers Vercel adds in production
+(`x-vercel-ip-city` etc.), so locally it just says "unknown". Nothing of it is logged.
 
 Steam screenshots (Explorer → "Скриншоты Steam") use the community profile's public
 `?xml=1` feed (there's no official Web API for another user's screenshots) — your

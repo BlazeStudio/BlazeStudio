@@ -68,11 +68,35 @@ def _load_static_inventory(count: int = 12) -> dict | None:
             )
         if not clean:
             return None
+        # The snapshot fixes *which* skins to show and carries the prices
+        # scripts/refresh_cs_prices.py last recorded; a live Market price
+        # (cached for hours) replaces that whenever Steam's rate limit allows.
+        # Anything still unpriced gets asked for on demand by the item popup.
+        deadline = time.time() + PRICE_BUDGET_SECONDS
+        failures = 0
+        for it in clean:
+            name = _market_name(it.get("market_url"))
+            if not name:
+                continue
+            _KNOWN_MARKET_NAMES.add(name)
+            if it["price_rub"] is not None:
+                _SNAPSHOT_PRICES[name] = it["price_rub"]
+            it["price_source"] = "snapshot" if it["price_rub"] is not None else None
+            if time.time() >= deadline or failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
+                continue
+            price = _get_market_price(name)
+            if price is not None:
+                it["price_rub"] = round(price, 2)
+                it["price_source"] = "live"
+                failures = 0
+            else:
+                failures += 1
         return {
             "synced": True,
             "items": clean,
             "total": payload.get("total"),
             "source": "static_snapshot",
+            "prices_as_of": payload.get("prices_updated_at"),
         }
     except Exception as e:
         try:
@@ -369,7 +393,7 @@ _RARITY_RANK = {
 }
 
 PRICE_CURRENCY = "5"  # RUB
-PRICE_CACHE_TTL = 3600  # prices move slowly enough that an hour-old figure is fine
+PRICE_CACHE_TTL = 6 * 3600  # prices move slowly, and every lookup spends Steam's tight rate limit
 PRICE_TIMEOUT = 1.5  # the market endpoint is aggressively rate-limited — fail fast rather than stall the page
 PRICE_BUDGET_SECONDS = 2.5  # total wall-clock time this request may spend pricing items — kept a couple seconds under a typical 10s serverless function limit, on top of the inventory fetch itself
 PRICE_MAX_CONSECUTIVE_FAILURES = 3  # stop hammering an endpoint that's already started rate-limiting us
@@ -394,12 +418,63 @@ def _parse_price(price_str: str | None) -> float | None:
         return None
 
 
-def _get_market_price(market_hash_name: str) -> float | None:
-    url = f"https://steamcommunity.com/market/priceoverview/?appid=730&currency={PRICE_CURRENCY}&market_hash_name={urllib.parse.quote(market_hash_name)}"
-    data = _cached(f"steam:price:{market_hash_name}", url, ttl=PRICE_CACHE_TTL, timeout=PRICE_TIMEOUT)
-    if not data or not data.get("success"):
+# Only names we've actually shown get priced on demand — the endpoint
+# shouldn't turn this server into a free proxy for arbitrary Market lookups.
+_KNOWN_MARKET_NAMES: set[str] = set()
+_SNAPSHOT_PRICES: dict[str, float] = {}
+# priceoverview allows roughly 20 lookups a minute per IP and answers 429
+# beyond that; after a failure, leave that item alone for a while instead of
+# spending the rest of the budget (and the limit) retrying it.
+PRICE_RETRY_AFTER = 120
+_price_failed_at: dict[str, float] = {}
+
+
+def _market_name(market_url: str | None) -> str | None:
+    if not market_url or "/market/listings/730/" not in market_url:
         return None
-    return _parse_price(data.get("lowest_price") or data.get("median_price"))
+    return urllib.parse.unquote(market_url.rsplit("/", 1)[-1]) or None
+
+
+def _snapshot_market_names() -> set[str]:
+    try:
+        payload = json.loads(_STATIC_INV_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return set()
+    names = set()
+    for it in list(payload.get("items") or []) + list(payload.get("all_marketable") or []):
+        name = _market_name(it.get("market_url"))
+        if not name:
+            continue
+        names.add(name)
+        if it.get("price_rub") is not None:
+            _SNAPSHOT_PRICES[name] = it["price_rub"]
+    return names
+
+
+def get_item_price(market_hash_name: str) -> dict:
+    """One item's current lowest Market price in RUB, for the item popup."""
+    if market_hash_name not in _KNOWN_MARKET_NAMES:
+        _KNOWN_MARKET_NAMES.update(_snapshot_market_names())  # a cold instance may not have loaded the snapshot yet
+    if market_hash_name not in _KNOWN_MARKET_NAMES:
+        return {"price_rub": None, "source": None}
+    price = _get_market_price(market_hash_name)
+    if price is not None:
+        return {"price_rub": round(price, 2), "source": "live"}
+    snapshot = _SNAPSHOT_PRICES.get(market_hash_name)
+    return {"price_rub": snapshot, "source": "snapshot" if snapshot is not None else None}
+
+
+def _get_market_price(market_hash_name: str) -> float | None:
+    key = f"steam:price:{market_hash_name}"
+    fresh = key in _cache and time.time() - _cache[key][0] < PRICE_CACHE_TTL
+    if not fresh and time.time() - _price_failed_at.get(market_hash_name, 0) < PRICE_RETRY_AFTER:
+        return None
+    url = f"https://steamcommunity.com/market/priceoverview/?appid=730&currency={PRICE_CURRENCY}&market_hash_name={urllib.parse.quote(market_hash_name)}"
+    data = _cached(key, url, ttl=PRICE_CACHE_TTL, timeout=PRICE_TIMEOUT)
+    price = _parse_price(data.get("lowest_price") or data.get("median_price")) if data and data.get("success") else None
+    if price is None:
+        _price_failed_at[market_hash_name] = time.time()
+    return price
 
 
 def get_cs_inventory(count: int = 12) -> dict:
@@ -502,6 +577,7 @@ def get_cs_inventory(count: int = 12) -> dict:
         if not name or name in seen_names:
             continue
         seen_names.add(name)
+        _KNOWN_MARKET_NAMES.add(name)
         tags = d.get("tags", [])
         rarity = next((tag for tag in tags if tag.get("category") == "Rarity"), None)
         exterior = next((tag for tag in tags if tag.get("category") == "Exterior"), None)

@@ -2,7 +2,8 @@
 can show real track info instead of its built-in placeholders. Nothing to
 configure — an mp3/m4a/flac/ogg/wav file placed there just shows up, with
 title/artist read from its tags (falling back to the filename) and cover art
-read from whatever embedded picture the file carries, if any.
+read from whatever embedded picture the file carries, if any. Playlist order
+and title/artist overrides come from api/data/music_meta.py.
 
 mutagen is an optional dependency: if it isn't installed, tracks still show
 up (title/artist from filename, no cover art) instead of the endpoint
@@ -19,6 +20,8 @@ try:
     import mutagen
 except ImportError:
     mutagen = None
+
+from data.music_meta import MUSIC_META
 
 MUSIC_DIR = Path(__file__).resolve().parent.parent / "static" / "music"
 SUPPORTED_EXT = {".mp3", ".m4a", ".flac", ".ogg", ".wav"}
@@ -78,6 +81,11 @@ def _read_track(path: Path) -> dict[str, Any]:
             track["cover_url"] = f"/api/music/cover/{path.name}"
     except Exception:
         pass
+    meta = MUSIC_META.get(path.name, {})
+    if meta.get("title"):
+        track["title"] = meta["title"]
+    if meta.get("artist"):
+        track["artist"] = meta["artist"]
     return track
 
 
@@ -88,9 +96,11 @@ def get_tracks() -> dict:
         return {"tracks": _cache[1]}
     tracks = []
     if MUSIC_DIR.exists():
-        for path in sorted(MUSIC_DIR.iterdir()):
-            if path.is_file() and path.suffix.lower() in SUPPORTED_EXT:
-                tracks.append(_read_track(path))
+        files = [p for p in sorted(MUSIC_DIR.iterdir()) if p.is_file() and p.suffix.lower() in SUPPORTED_EXT]
+        # Files with an explicit order first (by that order), the rest after them in
+        # filename order — the sort is stable, so they keep the order they came in.
+        files.sort(key=lambda p: (MUSIC_META.get(p.name, {}).get("order") is None, MUSIC_META.get(p.name, {}).get("order")))
+        tracks = [_read_track(p) for p in files]
     _cache = (now, tracks)
     return {"tracks": tracks}
 

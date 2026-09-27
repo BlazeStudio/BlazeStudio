@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from collections import Counter
 import urllib.error
 import urllib.request
 from typing import Any
@@ -92,6 +93,31 @@ def get_contribution_calendar() -> dict:
     total_match = _CONTRIB_TOTAL_RE.search(html)
     total = int(total_match.group(1).replace(",", "")) if total_match else None
     return {"synced": bool(days), "total": total, "days": days}
+
+
+def _search_total(key: str, query: str) -> int | None:
+    data = _cached(key, f"https://api.github.com/search/issues?q={query}&per_page=1")
+    return data.get("total_count") if isinstance(data, dict) else None
+
+
+def get_repo_stats() -> dict:
+    """Totals across the user's own (non-fork) public repos — stars, forks,
+    primary language per repo — plus authored PR/issue counts from search.
+    "Top languages" here is by repo count, like github-readme-stats' "by repo"
+    card, not by bytes: one listing call instead of one per repo."""
+    repos = _cached("repos", f"{API_BASE}/repos?per_page=100&type=owner")
+    if not isinstance(repos, list):
+        return {"synced": False}
+    own = [r for r in repos if not r.get("fork")]
+    languages = Counter(r.get("language") for r in own if r.get("language"))
+    return {
+        "synced": True,
+        "stars": sum(r.get("stargazers_count") or 0 for r in own),
+        "forks": sum(r.get("forks_count") or 0 for r in own),
+        "languages": [{"name": name, "repos": count} for name, count in languages.most_common(6)],
+        "prs": _search_total("search_prs", f"author:{GITHUB_USER}+type:pr"),
+        "issues": _search_total("search_issues", f"author:{GITHUB_USER}+type:issue"),
+    }
 
 
 def get_repo_live(repo: str) -> dict:

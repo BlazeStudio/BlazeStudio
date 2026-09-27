@@ -35,13 +35,14 @@
   };
   GAME_KINDS.forEach((kind) => (APP_TITLES[gameWinId(kind)] = GAMES[kind].title));
 
-  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'hh', 'contacts', 'music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS];
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'codewars', 'hh', 'contacts', 'music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
     faceit: () => 'FACEIT',
     explorer: () => t('Проводник', 'Explorer'),
     github: () => 'GitHub',
+    codewars: () => 'Codewars',
     hh: () => 'hh.ru',
     console: () => t('Консоль', 'Console'),
     contacts: () => t('Контакты', 'Contacts'),
@@ -59,6 +60,7 @@
     faceit: 'ico-faceit',
     explorer: 'ico-folder',
     github: 'ico-github',
+    codewars: 'ico-codewars',
     hh: 'ico-hh',
     console: 'ico-console',
     contacts: 'ico-contacts',
@@ -907,10 +909,35 @@
     const link = document.getElementById('nd-item-popup-link');
     if (img) img.src = it.icon || '';
     if (name) name.textContent = it.name;
-    if (meta) {
-      const priceLabel = it.price_rub != null ? `${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽` : t('Цена неизвестна', 'Price unknown');
+    const paint = (loading) => {
+      if (!meta || overlay.dataset.item !== (it.market_url || '')) return; // another item was opened meanwhile
+      let price;
+      if (it.price_rub != null) {
+        const note = it.price_source === 'live' ? t('Steam Market, сейчас', 'Steam Market, now') : t('Steam Market, последняя известная', 'Steam Market, last known');
+        price = `${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽<span class="nd-item-popup-note">${note}</span>`;
+      } else {
+        price = loading ? t('Узнаём цену на Steam Market…', 'Checking the Steam Market price…') : t('Цена неизвестна', 'Price unknown');
+      }
       const bits = [it.exterior, it.rarity].filter(Boolean).join(' · ');
-      meta.innerHTML = `${bits ? `<div>${bits}</div>` : ''}<div class="nd-item-popup-price">${priceLabel}</div>`;
+      meta.innerHTML = `${bits ? `<div>${bits}</div>` : ''}<div class="nd-item-popup-price">${price}</div>`;
+    };
+    overlay.dataset.item = it.market_url || '';
+    // Not live-priced yet (snapshot figure or none at all) — ask the Market now.
+    const needsPrice = it.market_url && it.price_source !== 'live' && !it.priceChecked;
+    paint(needsPrice);
+    if (needsPrice) {
+      it.priceChecked = true;
+      const marketName = decodeURIComponent(it.market_url.split('/').pop());
+      fetch('/api/steam/price?name=' + encodeURIComponent(marketName))
+        .then((r) => r.json())
+        .then((res) => {
+          if (res && res.price_rub != null) {
+            it.price_rub = res.price_rub;
+            it.price_source = res.source;
+          }
+        })
+        .catch(() => {})
+        .finally(() => paint(false));
     }
     if (link) {
       if (it.market_url) {
@@ -997,6 +1024,7 @@
     explorer: 'explorer.exe',
     console: 'cmd.exe',
     github: 'github.exe',
+    codewars: 'codewars.exe',
     hh: 'iexplore.exe',
     contacts: 'msmsgs.exe',
     music: 'winamp.exe',
@@ -1031,7 +1059,7 @@
   const RUN_TARGETS = {
     calc: 'calc', notepad: 'notepad', cmd: 'console', command: 'console', console: 'console', taskmgr: 'taskmgr',
     explorer: 'explorer', winamp: 'music', wmplayer: 'videos', mspaint: 'avatar', iexplore: 'hh', steam: 'steam',
-    faceit: 'faceit', github: 'github', msmsgs: 'contacts', games: 'games', winmine: 'game-mines', mines: 'game-mines',
+    faceit: 'faceit', github: 'github', codewars: 'codewars', msmsgs: 'contacts', games: 'games', winmine: 'game-mines', mines: 'game-mines',
     slots: 'game-slots', snake: 'game-snake', tetris: 'game-tetris', arkanoid: 'game-breakout', breakout: 'game-breakout', 2048: 'game-g2048',
   };
 
@@ -1963,6 +1991,16 @@
       return;
     }
     const memberSince = s.created_at ? new Date(s.created_at).getFullYear() : null;
+    const repos = s.repos && s.repos.synced ? s.repos : {};
+    const langs = repos.languages || [];
+    const langTotal = langs.reduce((a, x) => a + x.repos, 0);
+    const langHtml = langTotal
+      ? `<div class="nd-gh-heat-label"><span>${t('Языки по репозиториям', 'Top languages by repo')}</span></div>
+        <div class="nd-gh-langbar">${langs.map((x) => `<span style="flex-grow:${x.repos};background:${langColor(x.name)}" title="${x.name}: ${x.repos}"></span>`).join('')}</div>
+        <div class="nd-gh-legend">${langs
+          .map((x) => `<span><i style="background:${langColor(x.name)}"></i>${x.name} <b>${Math.round((x.repos / langTotal) * 100)}%</b></span>`)
+          .join('')}</div>`
+      : '';
     const contrib = s.contributions || {};
     const days = contrib.days || [];
     const heatHtml = days.length
@@ -1973,19 +2011,79 @@
     body.innerHTML = `
       <div class="nd-win-head">
         <div class="nd-win-avatar-badge">${s.avatar_url ? `<img src="${s.avatar_url}" alt="">` : 'GH'}</div>
-        <div><div class="nd-win-name">BlazeStudio</div><a class="nd-win-link" href="${PROFILE.contacts.github}" target="_blank" rel="noopener">github.com/BlazeStudio</a></div>
+        <div><div class="nd-win-name">BlazeStudio</div><a class="nd-win-link" href="${PROFILE.contacts.github}" target="_blank" rel="noopener">github.com/BlazeStudio</a>${memberSince ? `<div class="nd-gh-since">${t('на GitHub с', 'on GitHub since')} ${memberSince}</div>` : ''}</div>
       </div>
       <div class="nd-stat-grid nd-gh-stats">
         <div class="nd-stat">${t('Репозитории', 'Repos')}<b>${s.public_repos ?? '—'}</b></div>
+        <div class="nd-stat">${t('Звёзды', 'Stars')}<b>${repos.stars ?? '—'}</b></div>
         <div class="nd-stat">${t('Подписчики', 'Followers')}<b>${s.followers ?? '—'}</b></div>
         <div class="nd-stat">${t('Коммиты', 'Commits')}<b>${s.commit_count != null ? s.commit_count + '+' : '—'}</b></div>
-        <div class="nd-stat">${t('На GitHub с', 'On GitHub since')}<b>${memberSince ?? '—'}</b></div>
+        <div class="nd-stat">Pull requests<b>${repos.prs ?? '—'}</b></div>
+        <div class="nd-stat">Issues<b>${repos.issues ?? '—'}</b></div>
       </div>
+      ${langHtml}
       ${heatHtml}
       <a class="nd-btn98 nd-block" href="${PROFILE.contacts.github}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>
     `;
     const heatWrap = document.getElementById('nd-gh-heat-wrap');
     if (heatWrap) heatWrap.scrollLeft = heatWrap.scrollWidth; // scrolled to the most recent weeks by default
+  }
+
+  // GitHub's own linguist colors (a couple of too-dark ones lifted so they read on the dark window).
+  const LANG_COLORS = {
+    Python: '#3572A5', HTML: '#e34c26', JavaScript: '#f1e05a', TypeScript: '#3178c6', Java: '#b07219', Lua: '#4b5fe0',
+    CSS: '#663399', 'C++': '#f34b7d', C: '#8b8b8b', 'C#': '#178600', Go: '#00ADD8', Shell: '#89e051', 'Jupyter Notebook': '#DA5B0B',
+  };
+  function langColor(name) {
+    return LANG_COLORS[name] || '#8b949e';
+  }
+
+  /* Codewars — rank, honor, leaderboard spot, katas and per-language kyu. */
+  const KYU_COLORS = { white: '#e6e6e6', yellow: '#ecb613', blue: '#3c7ebb', purple: '#866cc7', black: '#6b6b6b', red: '#b1361e' };
+  let codewarsCache = null;
+  async function loadCodewars() {
+    try {
+      const res = await fetch('/api/codewars');
+      codewarsCache = await res.json();
+    } catch (e) {
+      codewarsCache = { synced: false };
+    }
+    renderCodewars();
+  }
+  function kyuBadge(rank, size) {
+    const color = KYU_COLORS[(rank && rank.color) || 'white'] || '#e6e6e6';
+    const [num, unit] = String((rank && rank.name) || '? kyu').split(' ');
+    const s = size || 44;
+    return `<svg class="nd-cw-hex" width="${s}" height="${s}" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 3l16.5 9.5v19L22 41 5.5 31.5v-19z" fill="#1f2023" stroke="${color}" stroke-width="3" stroke-linejoin="round"/><text x="22" y="${unit ? 22 : 27}" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="14" fill="#fff">${num}</text>${
+      unit ? `<text x="22" y="33" text-anchor="middle" font-family="Verdana" font-size="8" fill="${color}">${unit}</text>` : ''
+    }</svg>`;
+  }
+  function renderCodewars() {
+    const body = document.getElementById('nd-codewars-body');
+    if (!body) return;
+    const c = codewarsCache;
+    if (!c) return;
+    const url = c.url || 'https://www.codewars.com/users/BlazeStudio';
+    if (!c.synced) {
+      body.innerHTML = `<p class="nd-not-connected">${t('Codewars сейчас недоступен.', 'Codewars is unreachable right now.')}</p><a class="nd-btn98 nd-block" href="${url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>`;
+      return;
+    }
+    const n = (v) => (v == null ? '—' : Number(v).toLocaleString('ru-RU'));
+    body.innerHTML = `
+      <div class="nd-win-head">
+        ${kyuBadge(c.rank, 48)}
+        <div><div class="nd-win-name">${c.username}</div><div class="nd-cw-honor">${t('Честь', 'Honor')} <b>${n(c.honor)}</b></div></div>
+      </div>
+      <div class="nd-stat-grid">
+        <div class="nd-stat">${t('Место в рейтинге', 'Leaderboard')}<b>#${n(c.leaderboard)}</b></div>
+        <div class="nd-stat">${t('Решено кат', 'Katas solved')}<b>${n(c.completed)}</b></div>
+      </div>
+      ${
+        (c.languages || []).length
+          ? `<div class="nd-cw-langs">${c.languages.map((l) => `<span class="nd-cw-lang" title="${l.score} ${t('очков', 'points')}">${kyuBadge(l, 22)}${l.lang}</span>`).join('')}</div>`
+          : ''
+      }
+      <a class="nd-btn98 nd-block" href="${url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>`;
   }
 
   /* Shared fetch helper for all three /api/steam* endpoints: logs to the
@@ -2438,6 +2536,7 @@
       contacts: () => show('contacts'),
       explorer: () => openExplorer(state.tab || 'resume'),
       github: () => show('github'),
+      codewars: () => show('codewars'),
       steam: () => show('steam'),
       faceit: () => show('faceit'),
       console: () => show('console'),
@@ -2773,6 +2872,7 @@
     loadGithub();
     loadSteamWin();
     loadFaceit();
+    loadCodewars();
     loadMusicTracks();
     initTurnOff();
 
@@ -2791,6 +2891,7 @@
       renderGithub();
       renderSteamWin();
       renderFaceitWin();
+      renderCodewars();
       renderContacts();
       renderGamesFolder();
       if (isOpen('taskmgr')) renderTaskmgr();

@@ -76,6 +76,21 @@
     }, 2000);
   }
 
+  // What only the page can know about the visitor — the server adds IP/geo/UA for `whoami`.
+  function clientInfo() {
+    let tz = '';
+    try {
+      tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    } catch (_) {
+      tz = '';
+    }
+    return {
+      screen: `${window.screen.width}×${window.screen.height}`,
+      tz,
+      langs: (navigator.languages || [navigator.language]).slice(0, 3).join(', '),
+    };
+  }
+
   async function runCommand(output, cmd) {
     const lang = window.XP.lang();
     stopFollow(); // a live tail stops the moment another command is submitted
@@ -93,7 +108,7 @@
       const res = await fetch('/api/terminal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cmd, lang, elevated_password: elevatedPassword }),
+        body: JSON.stringify({ cmd, lang, elevated_password: elevatedPassword, client: clientInfo() }),
       });
       const data = await res.json();
       if (data.output) printLine(output, data.output);

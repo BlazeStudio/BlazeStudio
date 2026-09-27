@@ -9,6 +9,8 @@ import json
 import os
 import sys
 import time
+import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -20,6 +22,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
+import codewars_sync
 import faceit_sync
 import github_sync
 import log_sync
@@ -181,10 +184,23 @@ def projects(live: bool = True):
 
 @app.get("/api/github/stats")
 def github_stats():
-    stats = github_sync.get_profile_stats()
-    stats["commit_count"] = github_sync.get_commit_count()
-    stats["contributions"] = github_sync.get_contribution_calendar()
+    # Independent GitHub calls — run them side by side instead of paying for
+    # each round-trip in turn on a cold (uncached) instance.
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        profile = pool.submit(github_sync.get_profile_stats)
+        commits = pool.submit(github_sync.get_commit_count)
+        contributions = pool.submit(github_sync.get_contribution_calendar)
+        repos = pool.submit(github_sync.get_repo_stats)
+        stats = profile.result()
+        stats["commit_count"] = commits.result()
+        stats["contributions"] = contributions.result()
+        stats["repos"] = repos.result()
     return stats
+
+
+@app.get("/api/codewars")
+def codewars_stats():
+    return codewars_sync.get_profile()
 
 
 @app.get("/api/steam")
@@ -220,6 +236,11 @@ def steam_inventory():
     return {"cs_inventory": steam_sync.get_cs_inventory()}
 
 
+@app.get("/api/steam/price")
+def steam_item_price(name: str = ""):
+    return steam_sync.get_item_price(name[:200])
+
+
 @app.get("/api/faceit")
 def faceit_stats():
     return {
@@ -252,6 +273,28 @@ class TerminalRequest(BaseModel):
     cmd: str = ""
     lang: str = "ru"
     elevated_password: str = ""
+    client: dict = {}  # screen / timezone / languages, as the page reports them — for `whoami`
+
+
+def _visitor(request: Request, client: dict) -> dict:
+    """Who's typing, for the terminal's `whoami`: IP from the proxy chain,
+    city/region/country from the geo headers Vercel adds in production, the
+    User-Agent, plus what the page itself reported. Only ever echoed back to
+    that same visitor — nothing here is logged (see _redact_cmd/log_sync)."""
+    h = request.headers
+    forwarded = h.get("x-forwarded-for", "")
+    ip = forwarded.split(",")[0].strip() or h.get("x-real-ip", "") or (request.client.host if request.client else "")
+    clip = lambda value, n: str(value or "")[:n]
+    return {
+        "ip": ip,
+        "city": urllib.parse.unquote(h.get("x-vercel-ip-city", "")),
+        "region": h.get("x-vercel-ip-country-region", ""),
+        "country": h.get("x-vercel-ip-country", ""),
+        "ua": clip(h.get("user-agent"), 400),
+        "screen": clip(client.get("screen"), 20),
+        "tz": clip(client.get("tz"), 40),
+        "langs": clip(client.get("langs"), 60),
+    }
 
 
 def _redact_cmd(cmd: str) -> str:
@@ -265,8 +308,8 @@ def _redact_cmd(cmd: str) -> str:
 
 
 @app.post("/api/terminal")
-def terminal_command(payload: TerminalRequest):
-    result = terminal.run_command(payload.cmd, payload.lang, payload.elevated_password)
+def terminal_command(payload: TerminalRequest, request: Request):
+    result = terminal.run_command(payload.cmd, payload.lang, payload.elevated_password, _visitor(request, payload.client))
     if payload.cmd.strip():
         log_sync.record(f"term: {_redact_cmd(payload.cmd)}")
     return JSONResponse(result)

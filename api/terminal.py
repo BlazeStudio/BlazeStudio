@@ -7,6 +7,7 @@ touches a real filesystem or shell. Effects are instructions the frontend interp
 from __future__ import annotations
 
 import random
+import re
 
 import log_sync
 from data.profile import PROFILE
@@ -241,7 +242,58 @@ def _bible_frame(verse: str, book: str, lang: str) -> str:
 """
 
 
-def run_command(raw: str, lang: str = "ru", elevated_password: str = "") -> dict:
+_BROWSERS = [
+    (r"YaBrowser/(\d+)", ("Яндекс Браузер", "Yandex Browser")),
+    (r"Edg(?:e|A|iOS)?/(\d+)", ("Edge", "Edge")),
+    (r"OPR/(\d+)", ("Opera", "Opera")),
+    (r"(?:Firefox|FxiOS)/(\d+)", ("Firefox", "Firefox")),
+    (r"(?:CriOS|Chrome)/(\d+)", ("Chrome", "Chrome")),
+    (r"Version/(\d+)[\d.]* .*Safari", ("Safari", "Safari")),
+]
+_SYSTEMS = [
+    (r"Windows NT 10", "Windows 10/11"),
+    (r"Windows NT 6\.3", "Windows 8.1"),
+    (r"Windows NT 6\.1", "Windows 7"),
+    (r"Windows", "Windows"),
+    (r"iPhone|iPad|iPod", "iOS"),
+    (r"Android", "Android"),
+    (r"Mac OS X|Macintosh", "macOS"),
+    (r"CrOS", "ChromeOS"),
+    (r"Linux", "Linux"),
+]
+
+
+def _browser_and_os(ua: str, lang: str) -> str:
+    browser = next((f"{names[0 if lang == 'ru' else 1]} {m.group(1)}" for rx, names in _BROWSERS if (m := re.search(rx, ua))), None)
+    system = next((label for rx, label in _SYSTEMS if re.search(rx, ua)), None)
+    return " · ".join(x for x in (browser, system) if x) or ("неизвестно" if lang == "ru" else "unknown")
+
+
+def _whoami(lang: str, v: dict) -> str:
+    """The visitor, not the site owner: IP and rough location (Vercel's geo
+    headers — only there in production), browser/OS from the User-Agent,
+    screen/timezone/languages as the page reports them. Shown back to that
+    same visitor only — none of it is logged or stored."""
+    ru = lang == "ru"
+    unknown = "неизвестно" if ru else "unknown"
+    place = ", ".join(x for x in (v.get("city"), v.get("region"), v.get("country")) if x)
+    screen = " · ".join(x for x in (v.get("screen"), v.get("tz"), v.get("langs")) if x)
+    rows = [
+        ("IP", v.get("ip") or unknown),
+        ("Откуда" if ru else "Where", (place + ("  (по IP, примерно)" if ru else "  (by IP, roughly)")) if place else unknown),
+        ("Браузер" if ru else "Browser", _browser_and_os(v.get("ua") or "", lang)),
+        ("Экран" if ru else "Screen", screen or unknown),
+    ]
+    head = "guest@blaze-studio — это вы (а не Антон):" if ru else "guest@blaze-studio — that's you (not Anton):"
+    tail = (
+        f"Ничего из этого не сохраняется. А Антон — {PROFILE['role'][lang]}, см. 'cv'."
+        if ru
+        else f"None of this is stored. Anton is a {PROFILE['role'][lang]} — see 'cv'."
+    )
+    return "\n".join([head, *(f"  {k:<9} {val}" for k, val in rows), tail])
+
+
+def run_command(raw: str, lang: str = "ru", elevated_password: str = "", visitor: dict | None = None) -> dict:
     lang = lang if lang in ("ru", "en") else "ru"
     cmd = (raw or "").strip()
     if not cmd:
@@ -256,12 +308,7 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "") -> dict
         return {"output": _help(lang), "effect": None}
 
     if name == "whoami":
-        msg = (
-            f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(я — просто слишком долго настраивал этот терминал)"
-            if lang == "ru"
-            else f"{PROFILE['name'][lang]}\n{PROFILE['role'][lang]}\n(me — spent way too long styling this terminal)"
-        )
-        return {"output": msg, "effect": None}
+        return {"output": _whoami(lang, visitor or {}), "effect": None}
 
     if name == "cv":
         return {"output": _cv_txt(lang), "effect": {"type": "open", "target": "resume"}}
@@ -507,7 +554,7 @@ def _help(lang: str) -> str:
     if lang == "en":
         rows = [
             ("help", "this list"),
-            ("whoami", "who's typing this"),
+            ("whoami", "who you are"),
             ("cv", "opens the résumé window"),
             ("projects", "opens the projects window"),
             ("contact", "opens the contact window"),
@@ -517,10 +564,10 @@ def _help(lang: str) -> str:
             ("matrix", "green rain, obviously"),
             ("bsod", "classic blue screen of death"),
             ("shutdown", "does what it says"),
-            ("bible", "random / by book + mystical frame"),
+            ("bible [book]", "verse from a book"),
             ("bible list", "available books"),
             ("coffee", "essential dependency"),
-            ("neofetch", "system info (sort of)"),
+            ("neofetch", "system info"),
             ("taskmgr", "task manager window"),
             ("explorer", "file explorer"),
             ("games", "games folder"),
@@ -535,7 +582,7 @@ def _help(lang: str) -> str:
     else:
         rows = [
             ("help", "этот список"),
-            ("whoami", "кто это печатает"),
+            ("whoami", "кто вы"),
             ("cv", "открывает окно резюме"),
             ("projects", "открывает окно проектов"),
             ("contact", "открывает окно контактов"),
@@ -545,10 +592,10 @@ def _help(lang: str) -> str:
             ("matrix", "зелёный дождь, а как же без него"),
             ("bsod", "классический синий экран смерти"),
             ("shutdown", "делает ровно то, что написано"),
-            ("bible", "случайный / по книге + мистика"),
+            ("bible [книга]", "стих из книги"),
             ("bible list", "список книг"),
             ("coffee", "критическая зависимость"),
-            ("neofetch", "информация о системе (почти)"),
+            ("neofetch", "информация о системе"),
             ("taskmgr", "диспетчер задач"),
             ("explorer", "проводник"),
             ("games", "папка с играми"),

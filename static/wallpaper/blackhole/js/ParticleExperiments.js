@@ -58,8 +58,17 @@ var BASE_ROTATOR_SIZE = settings.rotatorsize;
 var BASE_PARTICLESPEED_MIN = settings.particlespeed_min;
 var BASE_PARTICLESPEED_MAX = settings.particlespeed_max;
 
+// The canvas is sized ONCE, to the whole monitor, and never resized: when the
+// browser window (and with it this iframe) shrinks or grows, the page just
+// shows more or less of the same canvas, centered (see index.html's CSS).
+// Resizing the canvas used to leave every particle at its old coordinates in
+// a differently sized box — they visibly "spread out" — and could push the
+// black hole's wander bounds, fixed at setup, off-screen entirely.
+var CANVAS_W = 0;
+var CANVAS_H = 0;
+
 function applyResponsiveScale() {
-  var scaleFactor = Math.sqrt((windowWidth * windowHeight) / (REFERENCE_WIDTH * REFERENCE_HEIGHT));
+  var scaleFactor = Math.sqrt((CANVAS_W * CANVAS_H) / (REFERENCE_WIDTH * REFERENCE_HEIGHT));
   settings.rotatorsize = BASE_ROTATOR_SIZE * scaleFactor;
   settings.particlespeed_min = BASE_PARTICLESPEED_MIN * scaleFactor;
   settings.particlespeed_max = BASE_PARTICLESPEED_MAX * scaleFactor;
@@ -86,7 +95,11 @@ function setup() {
   // Embedded in a page instead, it needs to fill whatever box it's actually
   // given — its own window/iframe — so it uses windowWidth/Height plus
   // windowResized() below instead.
-  createCanvas(windowWidth, windowHeight);
+  if (!CANVAS_W) {
+    CANVAS_W = Math.max(window.screen.width || 0, windowWidth);
+    CANVAS_H = Math.max(window.screen.height || 0, windowHeight);
+  }
+  createCanvas(CANVAS_W, CANVAS_H);
   background(settings.backgroundcolor);
   applyResponsiveScale();
 
@@ -94,8 +107,7 @@ function setup() {
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-  applyResponsiveScale();
+  // Deliberately nothing — see CANVAS_W above.
 }
 
 function draw() {
