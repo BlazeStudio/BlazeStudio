@@ -2041,7 +2041,7 @@
         <div class="nd-stat">${t('Подписчики', 'Followers')}<b>${s.followers ?? '—'}</b></div>
         <div class="nd-stat" title="${t('Коммиты в любых репозиториях и ветках, PR, issues и ревью за все годы — как считает сам GitHub', 'Commits to any repo or branch, PRs, issues and reviews, all years — as GitHub itself counts them')}">${t('Контрибуций всего', 'Total contributions')}<b>${
           allTime.total != null ? allTime.total.toLocaleString('ru-RU') : '—'
-        }</b>${repos.commits_total != null ? `<span class="nd-stat-sub">${t('коммитов в своих репо', 'commits in own repos')}: ${repos.commits_total.toLocaleString('ru-RU')}</span>` : ''}</div>
+        }</b>${repos.commits_total != null ? `<span class="nd-stat-sub"></div>
         <div class="nd-stat">Pull requests<b>${repos.prs ?? '—'}</b></div>
         <div class="nd-stat">Issues<b>${repos.issues ?? '—'}</b></div>
         ${linesHtml}
