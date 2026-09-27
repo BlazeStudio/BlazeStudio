@@ -218,9 +218,6 @@ a:hover { color: #d00000; }
 .nd-win-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 .nd-win-avatar-badge { width: 44px; height: 44px; flex: none; border-radius: 6px; background: #0e141b; color: #57cbde; display: flex; align-items: center; justify-content: center; font: bold 14px Verdana, sans-serif; overflow: hidden; }
 .nd-win-avatar-badge img { width: 100%; height: 100%; object-fit: cover; }
-.nd-hh-badge { background: #d6001c; color: #fff; }
-.nd-hh-status { margin: 0 0 8px; font-size: 12px; }
-.nd-hh-status .nd-blink { color: #0a8a0a; }
 .nd-win-name { font-weight: bold; font-size: 14px; }
 .nd-win-sub { font-size: 11.5px; color: var(--nd-text-dim); }
 .nd-win-link { font-size: 12px; }

@@ -35,7 +35,7 @@
   };
   GAME_KINDS.forEach((kind) => (APP_TITLES[gameWinId(kind)] = GAMES[kind].title));
 
-  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'codewars', 'hh', 'contacts', 'music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS];
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'codewars', 'contacts', 'music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
@@ -43,7 +43,6 @@
     explorer: () => t('Проводник', 'Explorer'),
     github: () => 'GitHub',
     codewars: () => 'Codewars',
-    hh: () => 'hh.ru',
     console: () => t('Консоль', 'Console'),
     contacts: () => t('Контакты', 'Contacts'),
     music: () => 'Winamp',
@@ -61,7 +60,6 @@
     explorer: 'ico-folder',
     github: 'ico-github',
     codewars: 'ico-codewars',
-    hh: 'ico-hh',
     console: 'ico-console',
     contacts: 'ico-contacts',
     music: 'ico-music',
@@ -1025,7 +1023,6 @@
     console: 'cmd.exe',
     github: 'github.exe',
     codewars: 'codewars.exe',
-    hh: 'iexplore.exe',
     contacts: 'msmsgs.exe',
     music: 'winamp.exe',
     games: 'explorer.exe',
@@ -1058,7 +1055,7 @@
   // What "Новая задача…" understands — program names map onto this desktop's windows.
   const RUN_TARGETS = {
     calc: 'calc', notepad: 'notepad', cmd: 'console', command: 'console', console: 'console', taskmgr: 'taskmgr',
-    explorer: 'explorer', winamp: 'music', wmplayer: 'videos', mspaint: 'avatar', iexplore: 'hh', steam: 'steam',
+    explorer: 'explorer', winamp: 'music', wmplayer: 'videos', mspaint: 'avatar', steam: 'steam',
     faceit: 'faceit', github: 'github', codewars: 'codewars', msmsgs: 'contacts', games: 'games', winmine: 'game-mines', mines: 'game-mines',
     slots: 'game-slots', snake: 'game-snake', tetris: 'game-tetris', arkanoid: 'game-breakout', breakout: 'game-breakout', 2048: 'game-g2048',
   };
@@ -1959,12 +1956,12 @@
         </a>`
         )
         .join('')}</div>
-      <div class="nd-links-note">${t('GitHub и hh.ru есть и в виде отдельных окон со статистикой на рабочем столе.', 'GitHub and hh.ru also have their own windows with live stats on the desktop.')}</div>
+      <div class="nd-links-note">${t('GitHub и Codewars есть и в виде отдельных окон со статистикой на рабочем столе.', 'GitHub and Codewars also have their own windows with live stats on the desktop.')}</div>
     `;
   }
 
   /* =========================================================
-     Live-data windows: GitHub / Steam / FACEIT / hh.ru
+     Live-data windows: GitHub / Steam / FACEIT / Codewars
      ========================================================= */
   function notConnectedHtml(envVars, docsUrl) {
     return `<p class="nd-not-connected">${t('Ещё не подключено.', 'Not connected yet.')}<br>${t('Задайте', 'Set')} ${envVars.map((v) => `<code>${v}</code>`).join(', ')} ${t('в переменных окружения', 'as environment variables')}${
@@ -2446,20 +2443,6 @@
     `;
   }
 
-  function renderHh() {
-    const body = document.getElementById('nd-hh-body');
-    if (!body) return;
-    const l = lang();
-    body.innerHTML = `
-      <div class="nd-win-head">
-        <div class="nd-win-avatar-badge nd-hh-badge">hh</div>
-        <div><div class="nd-win-name">${PROFILE.role[l]}</div><div class="nd-win-sub">${PROFILE.location[l]}</div></div>
-      </div>
-      <p class="nd-hh-status"><span class="nd-blink">●</span> ${PROFILE.employment[l]}</p>
-      <a class="nd-btn98 nd-block" href="${PROFILE.contacts.hh}" target="_blank" rel="noopener">${t('Открыть резюме на hh.ru', 'Open résumé on hh.ru')}</a>
-    `;
-  }
-
   function renderAvatar() {
     const l = lang();
     const name = document.getElementById('nd-av-name');
@@ -2543,7 +2526,6 @@
       music: () => show('music'),
       games: () => show('games'),
       videos: () => show('videos'),
-      hh: () => show('hh'),
       avatar: () => show('avatar'),
       taskmgr: () => show('taskmgr'),
       calc: () => show('calc'),
@@ -2863,7 +2845,6 @@
     initItemPopup();
     setTab('resume');
     renderAvatar();
-    renderHh();
     renderContacts();
     initConsoleWindow();
     renderGamesFolder();
@@ -2887,7 +2868,6 @@
     window.XP.onLangChange.push(() => {
       syncTaskbar();
       renderAvatar();
-      renderHh();
       renderGithub();
       renderSteamWin();
       renderFaceitWin();

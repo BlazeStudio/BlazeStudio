@@ -14,7 +14,7 @@
         <a href="/dossier?lang=ru" class="{{ 'active' if lang=='ru' else '' }}">RU</a>
         <a href="/dossier?lang=en" class="{{ 'active' if lang=='en' else '' }}">EN</a>
       </div>
-      <button onclick="window.print()" class="print-btn">🖨 {{ "Печать / PDF" if lang == "ru" else "Print / Save PDF" }}</button>
+      <button onclick="document.title = {{ ('Васильев_Антон_Резюме' if lang == 'ru' else 'Vasiliev_Anton_Resume') | tojson | forceescape }}; window.print()" class="print-btn">🖨 {{ "Печать / PDF" if lang == "ru" else "Print / Save PDF" }}</button>
     </div>
 
     <header class="d-head">
