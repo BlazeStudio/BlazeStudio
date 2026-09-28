@@ -19,7 +19,6 @@ COMMANDS = [
     "cv",
     "projects",
     "contact",
-    "sudo hire-anton",
     "sudo su",
     "tail",
     "matrix",
@@ -35,7 +34,6 @@ COMMANDS = [
     "notepad",
     "glitch",
     "rickroll",
-    "fortune",
     "cowsay",
     "clear",
 ]
@@ -280,15 +278,15 @@ def _whoami(lang: str, v: dict) -> str:
     screen = " · ".join(x for x in (v.get("screen"), v.get("tz"), v.get("langs")) if x)
     rows = [
         ("IP", v.get("ip") or unknown),
-        ("Откуда" if ru else "Where", (place + ("  (по IP, примерно)" if ru else "  (by IP, roughly)")) if place else unknown),
+        ("Откуда" if ru else "Where", place if place else unknown),
         ("Браузер" if ru else "Browser", _browser_and_os(v.get("ua") or "", lang)),
         ("Экран" if ru else "Screen", screen or unknown),
     ]
-    head = "guest@blaze-studio — это вы (а не Антон):" if ru else "guest@blaze-studio — that's you (not Anton):"
+    head = "guest@blaze-studio — это Вы:" if ru else "guest@blaze-studio — that's you:"
     tail = (
-        f"Ничего из этого не сохраняется. А Антон — {PROFILE['role'][lang]}, см. 'cv'."
+        f"Ничего из этого не сохраняется."
         if ru
-        else f"None of this is stored. Anton is a {PROFILE['role'][lang]} — see 'cv'."
+        else f"None of this is stored."
     )
     return "\n".join([head, *(f"  {k:<9} {val}" for k, val in rows), tail])
 
@@ -318,14 +316,6 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "", visitor
 
     if name == "contact":
         return {"output": _contact_txt(lang), "effect": {"type": "open", "target": "contact"}}
-
-    if full == "sudo hire-anton":
-        msg = (
-            "[sudo] пароль для recruiter: ********\nдоступ разрешён. Готов начинать."
-            if lang == "ru"
-            else "[sudo] password for recruiter: ********\naccess granted. Ready to start."
-        )
-        return {"output": msg, "effect": {"type": "confetti"}}
 
     if name == "sudo" and arg.split(" ", 1)[0:1] == ["su"]:
         password = arg[len("su"):].strip()
@@ -520,9 +510,6 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "", visitor
         msg = "Never gonna give you up...\nNever gonna let you down..."
         return {"output": msg, "effect": {"type": "rickroll"}}
 
-    if name == "fortune":
-        return {"output": _fortune(lang), "effect": None}
-
     if name == "cowsay":
         text = arg or ("Мооо!" if lang == "ru" else "Moo!")
         art = f"""\
@@ -558,7 +545,6 @@ def _help(lang: str) -> str:
             ("cv", "opens the résumé window"),
             ("projects", "opens the projects window"),
             ("contact", "opens the contact window"),
-            ("sudo hire-anton", "???"),
             ("sudo su <password>", "elevate (needed for 'tail')"),
             ("tail [-n N] [-f]", "site log — root only"),
             ("matrix", "green rain, obviously"),
@@ -573,9 +559,8 @@ def _help(lang: str) -> str:
             ("games", "games folder"),
             ("calc", "calculator"),
             ("notepad", "simple notepad"),
-            ("glitch", "screen glitch effect"),
+            ("glitch", "glitch"),
             ("rickroll", "you know the rules"),
-            ("fortune", "wise (or not) words"),
             ("cowsay [text]", "talking cow"),
             ("clear", "clear the terminal"),
         ]
@@ -586,7 +571,6 @@ def _help(lang: str) -> str:
             ("cv", "открывает окно резюме"),
             ("projects", "открывает окно проектов"),
             ("contact", "открывает окно контактов"),
-            ("sudo hire-anton", "???"),
             ("sudo su <пароль>", "повышение прав (нужно для 'tail')"),
             ("tail [-n N] [-f]", "лог сайта — только для root"),
             ("matrix", "зелёный дождь, а как же без него"),
@@ -601,9 +585,8 @@ def _help(lang: str) -> str:
             ("games", "папка с играми"),
             ("calc", "калькулятор"),
             ("notepad", "блокнот"),
-            ("glitch", "глитч-эффект на экране"),
+            ("glitch", "глитч"),
             ("rickroll", "ты знаешь правила"),
-            ("fortune", "мудрые (или нет) слова"),
             ("cowsay [текст]", "говорящая корова"),
             ("clear", "очистить терминал"),
         ]

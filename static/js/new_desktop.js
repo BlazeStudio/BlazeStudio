@@ -1956,7 +1956,7 @@
         </a>`
         )
         .join('')}</div>
-      <div class="nd-links-note">${t('GitHub и Codewars есть и в виде отдельных окон со статистикой на рабочем столе.', 'GitHub and Codewars also have their own windows with live stats on the desktop.')}</div>
+      <div class="nd-links-note">${t('GitHub есть и в виде отдельного окна со статистикой.', 'GitHub also has its own window with live stats.')}</div>
     `;
   }
 
@@ -2013,9 +2013,9 @@
         <div class="nd-gh-langbar">${langs.map((x) => `<span style="flex-grow:${x.size};background:${langColor(x.name)}" title="${langTitle(x)}"></span>`).join('')}</div>
         <div class="nd-gh-legend">${langs.map((x) => `<span><i style="background:${langColor(x.name)}"></i>${x.name} <b>${pct(x)}</b></span>`).join('')}</div>`
       : '';
-    const linesHtml = `<div class="nd-stat nd-gh-lines" title="${t('Оценка: объём кода на языках программирования (без HTML, CSS и ноутбуков) ÷ ~35 байт на строку', 'Estimate: code size in programming languages (no HTML, CSS or notebooks) ÷ ~35 bytes per line')}">${t('Строк кода', 'Lines of code')}<b>${
+    const linesHtml = `<div class="nd-stat nd-gh-lines" title="${t('Оценка: объём кода на языках программирования', 'Estimate: code size in programming languages')}">${t('Строк кода', 'Lines of code')}<b>${
       repos.lines != null ? '≈ ' + repos.lines.toLocaleString('ru-RU') : '—'
-    }</b><span>${t('оценка по объёму кода, без HTML/CSS и ноутбуков', 'estimated from code size, excluding HTML/CSS and notebooks')}</span></div>`;
+    }</b><span>${t('без HTML/CSS и ноутбуков', 'excluding HTML/CSS and notebooks')}</span></div>`;
     const contrib = s.contributions || {};
     const days = contrib.days || [];
     // Columns are weeks (Sunday on top, like GitHub's own graph): pad the first
