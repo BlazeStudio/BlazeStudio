@@ -317,6 +317,12 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "", visitor
     if name == "projects":
         return {"output": _projects_txt(lang), "effect": {"type": "open", "target": "projects"}}
 
+    if name == "shitpost.exe":
+        return {
+            "output": '<a href="https://dist-alpha-sable-48.vercel.app/" target="_blank" rel="noopener noreferrer">Открыть ссылку</a>',
+            "effect": {"type": "horror"}
+    }
+
     if name == "contact":
         return {"output": _contact_txt(lang), "effect": {"type": "open", "target": "contact"}}
 
@@ -545,6 +551,7 @@ def _help(lang: str) -> str:
         rows = [
             ("help", "this list"),
             ("help.exe", "someone needs help"),
+            ("shitpost.exe", "???"),
             ("whoami", "who you are"),
             ("cv", "opens the résumé window"),
             ("projects", "opens the projects window"),
@@ -572,6 +579,7 @@ def _help(lang: str) -> str:
         rows = [
             ("help", "этот список"),
             ("help.exe", "кому-то нужна помощь"),
+            ("shitpost.exe", "???"),
             ("whoami", "кто вы"),
             ("cv", "открывает окно резюме"),
             ("projects", "открывает окно проектов"),
