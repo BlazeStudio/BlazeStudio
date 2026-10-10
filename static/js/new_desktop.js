@@ -1279,6 +1279,10 @@
       if (w) w.opener = null;
       return true;
     }
+    if (cmd.toLowerCase() === 'help.exe' && window.XP.effects.horror) {
+      setTimeout(window.XP.effects.horror, 0); // after the dialog has closed
+      return true;
+    }
     const name = cmd.toLowerCase().replace(/\.exe$/, '');
     const target = RUN_TARGETS[name];
     if (!target) return false;
@@ -2594,6 +2598,10 @@
       trashEasterEgg();
       return;
     }
+    if (btn.dataset.action === 'help') {
+      if (window.XP.effects.horror) window.XP.effects.horror();
+      return;
+    }
     const win = btn.dataset.win;
     if (win === 'explorer') openExplorer(btn.dataset.tab);
     else show(win);
@@ -2787,6 +2795,17 @@
     window.XP.effects.shutdown = shutdownNow;
   }
 
+  // help.exe (static/js/horror.js): whatever the desktop is playing stops before the screen goes dark.
+  function initHorror() {
+    window.XP.effects.horror = () => {
+      if (!window.XP.horror) return;
+      closeStartMenu();
+      stopMusicPlayback();
+      stopVideoPlayback();
+      window.XP.horror.start();
+    };
+  }
+
   /* =========================================================
      Init
      ========================================================= */
@@ -2895,6 +2914,7 @@
     loadCodewars();
     loadMusicTracks();
     initTurnOff();
+    initHorror();
 
     document.querySelectorAll('.nd-tabbtn').forEach((b) => onTap(b, () => setTab(b.dataset.tab)));
 

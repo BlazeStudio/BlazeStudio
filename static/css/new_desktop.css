@@ -676,6 +676,7 @@ a:hover { color: #d00000; }
 }
 .nd-console-wrap #term-output { flex-grow: 1; min-height: 0; overflow-y: auto; white-space: pre-wrap; color: #7dff7d; font: 13px 'Lucida Console', 'Courier New', monospace; line-height: 1.4; }
 .nd-console-wrap #term-output .cmd-line { color: #fff; }
+.nd-console-wrap #term-output .term-ghost { color: #ff3b2f; text-shadow: 0 0 6px rgba(255, 40, 30, 0.5); }
 .nd-console-wrap .term-input-row { flex: none; display: flex; align-items: center; gap: 8px; border-top: 1px solid #333; padding-top: 8px; margin-top: 6px; }
 .nd-console-wrap .prompt { color: var(--nd-accent); font-weight: bold; white-space: nowrap; }
 .nd-console-wrap #term-input { flex-grow: 1; background: transparent; border: 0; outline: 0; color: #fff; font: 14px 'Lucida Console', 'Courier New', monospace; padding: 0; min-width: 0; }

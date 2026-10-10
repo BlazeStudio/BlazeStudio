@@ -9,6 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%230a246a%22/><rect x=%2210%22 y=%2210%22 width=%2280%22 height=%2280%22 rx=%228%22 fill=%22%23ece9d8%22/><rect x=%2210%22 y=%2210%22 width=%2280%22 height=%2222%22 rx=%228%22 fill=%22%230a4fd0%22/></svg>">
 <link rel="stylesheet" href="/static/css/shared.css?v={{ v }}">
 <link rel="stylesheet" href="/static/css/new_desktop.css?v={{ v }}">
+<link rel="stylesheet" href="/static/css/horror.css?v={{ v }}">
 <script>try{if(sessionStorage.getItem('av-power')==='off')document.documentElement.classList.add('pc-off')}catch(e){}</script>
 </head>
 <body>
@@ -44,6 +45,7 @@
 <symbol id="ico-hh" viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="6" fill="#d6001c"/><text x="9" y="27" font-family="Verdana" font-weight="bold" font-size="17" fill="#fff">hh</text></symbol>
 <symbol id="ico-steam" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#1b2838"/><circle cx="25" cy="15" r="5" fill="#66c0f4"/><circle cx="14" cy="26" r="4" fill="#66c0f4"/><path d="M14 26l11-11" fill="none" stroke="#fff" stroke-width="2"/></symbol>
 <symbol id="ico-faceit" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#ff5500"/><path fill="#0a0a0a" d="M23.999 2.705a.167.167 0 00-.312-.1 1141.27 1141.27 0 00-6.053 9.375H.218c-.221 0-.301.282-.11.352 7.227 2.73 17.667 6.836 23.5 9.134.15.06.39-.08.39-.18z"/></symbol>
+<symbol id="ico-help" viewBox="0 0 40 40"><rect x="4" y="3" width="32" height="27" rx="3" fill="#8d8676" stroke="#4a463d" stroke-width="1.5"/><rect x="8" y="7" width="24" height="18" rx="2" fill="#0b0b0b"/><text x="20" y="22" text-anchor="middle" font-family="Lucida Console,Courier New,monospace" font-weight="bold" font-size="15" fill="#ff9a2e">?</text><rect x="15" y="30" width="10" height="3" fill="#5d584d"/><rect x="10" y="33" width="20" height="3" rx="1" fill="#4a463d"/></symbol>
 <symbol id="ico-trash" viewBox="0 0 40 40"><path d="M10 12h20l-2 22H12z" fill="#8fa8c8"/><path d="M8 12h24M16 12V8h8v4" fill="none" stroke="#fff" stroke-width="2"/></symbol>
 <symbol id="ico-avatar" viewBox="0 0 40 40"><circle cx="20" cy="15" r="8" fill="#ffd8b0"/><path d="M6 36c1-9 7-14 14-14s13 5 14 14z" fill="#0a4fd0"/></symbol>
 <symbol id="ico-console" viewBox="0 0 40 40"><rect x="3" y="5" width="34" height="30" rx="2" fill="#000" stroke="#7f9db9" stroke-width="1.5"/><rect x="3" y="5" width="34" height="6" rx="2" fill="#2a63d8"/><text x="7" y="24" font-family="Lucida Console,Courier New,monospace" font-weight="bold" font-size="9" fill="#c0c0c0">C:\&gt;</text><rect x="27" y="22" width="5" height="2" fill="#c0c0c0"/></symbol><symbol id="ico-network" viewBox="0 0 24 24"><rect x="1" y="4" width="14" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="6" width="10" height="6" fill="currentColor" opacity="0.55"/><rect x="9" y="10" width="14" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="12" width="10" height="6" fill="currentColor" opacity="0.55"/></symbol>
@@ -91,6 +93,10 @@
       <button class="nd-ico" data-win="console">
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-console"></use></svg>
         <span data-ru="Консоль" data-en="Console">Консоль</span>
+      </button>
+      <button class="nd-ico" data-action="help">
+        <svg width="30" height="30" aria-hidden="true"><use href="#ico-help"></use></svg>
+        <span>help.exe</span>
       </button>
       <button class="nd-ico" data-win="explorer" data-tab="links">
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-links"></use></svg>
@@ -297,7 +303,7 @@
 
 <div id="bsod" hidden>
   <div>:(</div>
-  <div style="margin-top:14px" data-ru="Ваш браузер столкнулся с проблемой: слишком крутое резюме." data-en="Your PC ran into a problem: this résumé was too impressive.">Ваш браузер столкнулся с проблемой: слишком крутое резюме.</div>
+  <div style="margin-top:14px" data-ru="Ваш браузер столкнулся с проблемой, и его необходимо перезагрузить" data-en="Your browser ran into a problem and needs to restart.">Ваш браузер столкнулся с проблемой, и его необходимо перезагрузить</div>
   <div style="margin-top:8px" data-ru="Собираем немного информации об ошибке, а потом перезапустим для вас этот сайт." data-en="We're just collecting some error info, then we'll restart this site for you.">Собираем немного информации об ошибке, а потом перезапустим для вас этот сайт.</div>
   <div class="bsod-hint" data-ru="0% завершено — нажмите в любом месте или Esc, чтобы вернуться" data-en="0% complete — click anywhere or press Esc to go back">0% завершено — нажмите в любом месте или Esc, чтобы вернуться</div>
 </div>
@@ -355,6 +361,7 @@
 <script src="/static/js/terminal.js?v={{ v }}"></script>
 <script src="/static/js/games.js?v={{ v }}"></script>
 <script src="/static/js/boot.js?v={{ v }}"></script>
+<script src="/static/js/horror.js?v={{ v }}"></script>
 <script src="/static/js/new_desktop.js?v={{ v }}"></script>
 </body>
 </html>

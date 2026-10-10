@@ -123,6 +123,7 @@
         else if (eff.type === 'shutdown') window.XP.effects.shutdown();
         else if (eff.type === 'glitch') window.XP.effects.glitch(1800);
         else if (eff.type === 'rickroll') window.XP.effects.rickroll();
+        else if (eff.type === 'horror' && window.XP.effects.horror) window.XP.effects.horror();
         else if (eff.type === 'elevate') {
           const m = cmd.trim().match(/^sudo\s+su\s+(.+)$/i);
           if (m) elevatedPassword = m[1].trim();
@@ -139,6 +140,12 @@
     const output = root.querySelector('#term-output');
     const input = root.querySelector('#term-input');
     printLine(output, WELCOME[window.XP.lang()]);
+
+    // Lets other programs (help.exe) leave a line in the console, optionally styled.
+    window.XP.termPrint = function (text, cls) {
+      printLine(output, text);
+      if (cls) output.lastChild.classList.add(cls);
+    };
 
     // A desktop restart wipes the session: output, history, any live tail and sudo.
     window.XP.resetConsole = function () {

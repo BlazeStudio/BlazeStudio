@@ -305,6 +305,9 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "", visitor
     if name in ("help", "?"):
         return {"output": _help(lang), "effect": None}
 
+    if name == "help.exe":
+        return {"output": "", "effect": {"type": "horror"}}
+
     if name == "whoami":
         return {"output": _whoami(lang, visitor or {}), "effect": None}
 
@@ -541,6 +544,7 @@ def _help(lang: str) -> str:
     if lang == "en":
         rows = [
             ("help", "this list"),
+            ("help.exe", "someone needs help"),
             ("whoami", "who you are"),
             ("cv", "opens the résumé window"),
             ("projects", "opens the projects window"),
@@ -567,6 +571,7 @@ def _help(lang: str) -> str:
     else:
         rows = [
             ("help", "этот список"),
+            ("help.exe", "кому-то нужна помощь"),
             ("whoami", "кто вы"),
             ("cv", "открывает окно резюме"),
             ("projects", "открывает окно проектов"),
