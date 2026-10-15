@@ -44,9 +44,8 @@ PROJECTS = [
         "category": "tools",
         "stack": ["Python", "Rich", "prompt_toolkit", "psutil", "WinAPI", "Windows Terminal"],
         "description": {
-            "ru": "Лаунчер программ для Windows в отдельном окне Windows Terminal: градиентный баннер, powerline-строка с загрузкой системы, индикаторы запущенных программ, автодополнение по Tab и вызов по Alt+`. Есть встроенные системные команды (процессы, сеть, IP, DNS, питание), а всё меню собирается из одного config.json и подхватывает правки без перезапуска.",
-            "en": "A Windows program launcher in its own Windows Terminal window: gradient banner, a powerline status bar with system load, running-app indicators, Tab completion and an Alt+` hotkey. Built-in system commands (processes, network, IP, DNS, power), with the whole menu driven by one config.json that reloads without a restart.",
-        },
+  "ru": "Лаунчер для Windows Terminal: градиентный баннер, powerline со статистикой нагрузки, индикаторы приложений, Tab-автодополнение, Alt+`, системные команды и меню из config.json с hot-reload.",
+  "en": "Windows Terminal launcher with gradient banner, powerline system stats, app indicators, Tab completion, Alt+` hotkey, system commands, and config.json menu with hot-reload."            },
         "role": {"ru": "CLI-утилита, соло", "en": "CLI tool, solo"},
         "github": "https://github.com/BlazeStudio/Fresh-Multitool",
         "homepage": None,
