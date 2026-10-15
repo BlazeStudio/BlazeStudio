@@ -66,6 +66,19 @@ BIOS logo is `static/img/energy-star.png`.
 | `xp-startup.*` | the chime on the welcome screen |
 | `xp-shutdown.*` | the chime on the "shutting down" / "restarting" screen |
 
+## help.exe
+
+The `help.exe` desktop icon, the console command of the same name (listed in `help`) and
+Task Manager → "Новая задача" all start a short horror game, `static/js/horror.js` +
+`static/css/horror.css`: the screen goes dark, an old orange terminal powers on, and you
+lead something out of a night forest, FAITH-style (about 5 minutes, Esc quits at any point).
+
+Its assets live in `static/horror/` and load only when the game starts. Sources and
+licences are in `static/horror/CREDITS.md`: CC0 recordings from freesound.org, the Press
+Start 2P font (OFL), and SAM, the 1982 speech synthesizer (`vendor/samjs.min.js`, an
+abandonware port with no formal licence). Delete that file to drop the voice and the
+game stays text-only.
+
 ## Winamp playlist order
 
 Tracks are whatever audio files sit in `static/music/`. Their order (and, optionally, a

@@ -79,6 +79,27 @@
 
 ---
 
+### ⭐ Главный проект — [HH-Auto-Response](https://github.com/BlazeStudio/HH-Auto-Response)
+
+<a href="https://github.com/BlazeStudio/HH-Auto-Response/stargazers" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/github/stars/BlazeStudio/HH-Auto-Response?style=for-the-badge&logo=github&label=Stars&color=FFD700" alt="GitHub stars">
+</a>
+<a href="https://github.com/BlazeStudio/HH-Auto-Response/releases/latest" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.shields.io/github/v/release/BlazeStudio/HH-Auto-Response?style=for-the-badge&label=Release&color=2563EB" alt="Latest release">
+</a>
+<img src="https://img.shields.io/badge/Windows_%7C_macOS_%7C_Linux_%7C_Docker-0078D6?style=for-the-badge" alt="Platforms">
+
+Десктоп-приложение, которое само откликается на вакансии hh.ru: проходит выдачу страница за страницей, пишет сопроводительное письмо под конкретную вакансию, заполняет анкеты работодателей по резюме и разбирает чаты с отказами. Живых рекрутеров, приглашения и всё про документы и деньги оставляет человеку.
+
+- 🔎 Все фильтры поиска hh плюс свои; настройки заполняются одной ссылкой с сайта
+- 🤖 Нейросеть на выбор: OpenRouter, DeepSeek или локальная Ollama
+- 🧾 Технологии, зарплату и сроки выхода берёт из резюме и настроек, а не придумывает
+- 📦 Сборки под Windows, macOS, Linux и Docker, обновляется само из релизов GitHub
+
+**Стек:** Python, Playwright, CustomTkinter, OpenRouter / DeepSeek / Ollama, Docker, GitHub Actions
+
+---
+
 ### 🚀 Избранные проекты
 
 | Проект | Описание | Стек | Ссылка |
@@ -86,7 +107,7 @@
 | **Ritm Goroda** | Сервис поиска досуга в Москве с картами, статистикой и ролями | Django, Yandex Maps, JS | [GitHub](https://github.com/BlazeStudio/Ritm-Goroda) |
 | **PostgreSQL Web GUI** | Веб-интерфейс для работы с PostgreSQL (аналог pgAdmin) | Flask, PostgreSQL | [GitHub](https://github.com/BlazeStudio/PostrgreSQL-Web-GUI) |
 | **Vostok Messenger** | Мессенджер с авторизацией, друзьями и real-time сообщениями | Flask, SQLite, Ajax | [GitHub](https://github.com/BlazeStudio/Vostok-Flask-Messenger) |
-| **Detective Board** | Интерактивная детективная доска (карточки, нити, экспорт) | Python, PyQt5 | [GitHub](https://github.com/BlazeStudio/Detecitve-Board) |
+| **Codewars Solutions** | 180+ решённых кат вплоть до 1 kyu, README обновляется скриптом синхронизации | Shell, Python, SQL, Go, C++ | [GitHub](https://github.com/BlazeStudio/Codewars-Solutions) |
 | **Fuh Anarchist Cookbook** | Веб-приложение (деплой на Vercel) | Django / JS | [Live](https://fuh-anarchist-cookbook.vercel.app) |
 | **TBoI Everlasting Summer** | Мод для The Binding of Isaac (9 персонажей, 20+ предметов) | Lua | [GitHub](https://github.com/BlazeStudio/TBoI-ES-Modification) |
 

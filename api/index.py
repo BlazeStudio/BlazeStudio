@@ -177,8 +177,10 @@ def status(lang: str = "ru"):
 
 
 @app.get("/api/projects")
-def projects(live: bool = True):
-    data = github_sync.merge_live_projects(PROJECTS) if live else PROJECTS
+def projects(live: bool = True, featured: bool = False):
+    # ?featured=true is the homepage's star refresh — one GitHub call, not one per project.
+    chosen = [p for p in PROJECTS if p.get("featured")] if featured else PROJECTS
+    data = github_sync.merge_live_projects(chosen) if live else chosen
     return {"projects": data}
 
 

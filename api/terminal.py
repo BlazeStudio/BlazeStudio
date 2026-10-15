@@ -39,6 +39,7 @@ COMMANDS = [
 ]
 
 MAX_TAIL_LINES = 200
+SHITPOST_URL = "https://dist-alpha-sable-48.vercel.app/"
 
 # Ключ — короткое имя книги (без главы:стиха).
 # Значение: (русский текст, английский текст)
@@ -318,10 +319,11 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "", visitor
         return {"output": _projects_txt(lang), "effect": {"type": "open", "target": "projects"}}
 
     if name == "shitpost.exe":
+        # The link stays in the output in case the browser blocks the new tab.
         return {
-            "output": '<a href="https://dist-alpha-sable-48.vercel.app/" target="_blank" rel="noopener noreferrer">Открыть ссылку</a>',
-            "effect": {"type": "horror"}
-    }
+            "output": f'<a href="{SHITPOST_URL}" target="_blank" rel="noopener noreferrer">{"Open link" if lang == "en" else "Открыть ссылку"}</a>',
+            "effect": {"type": "url", "url": SHITPOST_URL},
+        }
 
     if name == "contact":
         return {"output": _contact_txt(lang), "effect": {"type": "open", "target": "contact"}}

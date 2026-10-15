@@ -124,6 +124,10 @@
         else if (eff.type === 'glitch') window.XP.effects.glitch(1800);
         else if (eff.type === 'rickroll') window.XP.effects.rickroll();
         else if (eff.type === 'horror' && window.XP.effects.horror) window.XP.effects.horror();
+        else if (eff.type === 'url' && /^https?:\/\//i.test(eff.url)) {
+          const w = window.open(eff.url, '_blank');
+          if (w) w.opener = null;
+        }
         else if (eff.type === 'elevate') {
           const m = cmd.trim().match(/^sudo\s+su\s+(.+)$/i);
           if (m) elevatedPassword = m[1].trim();

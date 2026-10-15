@@ -377,7 +377,9 @@ a:hover { color: #d00000; }
 .nd-projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 .nd-card { border: 2px outset #fff; background: var(--nd-panel); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
 .nd-card-title { font: bold 14px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
-.nd-card-stack { font-size: 11.5px; color: #222; font-family: 'Courier New', monospace; }
+/* Solid chips rather than thin monospace text — that one drowned in the scanlines overlay. */
+.nd-card-stack { display: flex; flex-wrap: wrap; gap: 4px; }
+.nd-card-stack span { padding: 2px 7px; background: #fff; border: 1px solid #7f9db9; font: bold 11px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
 .nd-card-desc { font-size: 12.5px; }
 .nd-card-note { font-size: 11.5px; color: #a45a00; }
 .nd-card-links a { font-size: 12px; margin-right: 10px; }
@@ -397,6 +399,38 @@ a:hover { color: #d00000; }
   font-weight: 700;
 }
 .nd-card-links a:active { border-style: inset; }
+/* The featured project sits above the grid as one wide card in a slowly
+   running rainbow frame (two backgrounds: the panel fill on padding-box, the
+   rainbow on border-box showing through the transparent border). */
+.nd-featured {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 4px solid transparent;
+  background:
+    linear-gradient(var(--nd-panel), var(--nd-panel)) padding-box,
+    linear-gradient(90deg, #ff3b30, #ff9500, #ffd60a, #34c759, #0a84ff, #5e5ce6, #bf5af2, #ff3b30) 0 0 / 200% 100% border-box;
+  animation: nd-rainbow 8s linear infinite;
+}
+@keyframes nd-rainbow {
+  to { background-position: 0 0, 200% 0; }
+}
+.nd-featured-label { font: bold 11px Tahoma, Verdana, sans-serif; color: #a45a00; text-transform: uppercase; letter-spacing: 0.5px; }
+.nd-featured-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.nd-featured-head .nd-card-title { font-size: 17px; }
+.nd-featured-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 11px;
+  border: 1px solid #b8860b;
+  border-radius: 12px;
+  background: linear-gradient(#fff6c2, #ffd23f);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  font: bold 13px Tahoma, Verdana, sans-serif;
+  color: #5a3b00;
+}
+.nd-featured-list { margin: 2px 0 0; padding-left: 18px; font-size: 12.5px; }
+.nd-featured-list li { margin: 2px 0; }
 
 .nd-screens { display: flex; flex-direction: column; gap: 12px; }
 .nd-big-shot-row { display: flex; align-items: stretch; gap: 8px; }

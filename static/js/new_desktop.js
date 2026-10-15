@@ -544,8 +544,10 @@
     const l = lang();
     if (tab === 'resume') panel.innerHTML = resumeHtml(l);
     else if (tab === 'pdf') panel.innerHTML = pdfHtml(l);
-    else if (tab === 'projects') panel.innerHTML = projectsHtml(l);
-    else if (tab === 'screens') {
+    else if (tab === 'projects') {
+      panel.innerHTML = projectsHtml(l);
+      loadFeaturedStars();
+    } else if (tab === 'screens') {
       panel.innerHTML = screensHtml();
       loadScreens(panel);
     } else if (tab === 'links') panel.innerHTML = linksHtml(l);
@@ -612,17 +614,71 @@
     `;
   }
 
+  function projectLinksHtml(p, l) {
+    return `<div class="nd-card-links"><a href="${p.github}" target="_blank" rel="noopener">GitHub</a>${
+      p.homepage ? `<a href="${p.homepage}" target="_blank" rel="noopener">${(p.homepage_label && p.homepage_label[l]) || t('демо', 'demo')}</a>` : ''
+    }</div>`;
+  }
+
+  // Featured projects show a star count: the snapshot from projects.py first,
+  // then GitHub's live number once /api/projects?featured=true answers.
+  const liveStars = {};
+  let liveStarsLoading = false;
+
+  function loadFeaturedStars() {
+    if (liveStarsLoading || Object.keys(liveStars).length) return;
+    liveStarsLoading = true;
+    fetch('/api/projects?featured=true')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        ((data && data.projects) || []).forEach((p) => {
+          if (p.live && p.live.synced && p.live.stars != null) liveStars[p.id] = p.live.stars;
+        });
+        document.querySelectorAll('[data-stars-for]').forEach((el) => {
+          const n = liveStars[el.dataset.starsFor];
+          if (n != null) el.textContent = n;
+        });
+      })
+      .catch(() => {})
+      .finally(() => {
+        liveStarsLoading = false;
+      });
+  }
+
+  function stackHtml(p) {
+    return `<div class="nd-card-stack">${p.stack.map((s) => `<span>${s}</span>`).join('')}</div>`;
+  }
+
+  function featuredHtml(p, l) {
+    const stars = liveStars[p.id] != null ? liveStars[p.id] : p.stars;
+    return `
+      <div class="nd-card nd-featured">
+        <div class="nd-featured-label">${t('Главный проект', 'Featured project')}</div>
+        <div class="nd-featured-head">
+          <div class="nd-card-title">${p.name}</div>
+          ${
+            stars != null
+              ? `<span class="nd-featured-stars">★ <span data-stars-for="${p.id}">${stars}</span> ${t('на GitHub', 'on GitHub')}</span>`
+              : ''
+          }
+        </div>
+        ${stackHtml(p)}
+        <div class="nd-card-desc">${p.description[l]}</div>
+        ${p.highlights ? `<ul class="nd-featured-list">${p.highlights[l].map((h) => `<li>${h}</li>`).join('')}</ul>` : ''}
+        ${projectLinksHtml(p, l)}
+      </div>`;
+  }
+
   function projectsHtml(l) {
-    return `<div class="nd-projects-grid">${PROJECTS.map(
+    return `${PROJECTS.filter((p) => p.featured).map((p) => featuredHtml(p, l)).join('')}
+      <div class="nd-projects-grid">${PROJECTS.filter((p) => !p.featured).map(
       (p) => `
       <div class="nd-card">
         <div class="nd-card-title">${p.name}</div>
-        <div class="nd-card-stack">${p.stack.join(' · ')}</div>
+        ${stackHtml(p)}
         <div class="nd-card-desc">${p.description[l]}</div>
         ${p.note ? `<div class="nd-card-note">${p.note[l]}</div>` : ''}
-        <div class="nd-card-links"><a href="${p.github}" target="_blank" rel="noopener">GitHub</a>${
-          p.homepage ? `<a href="${p.homepage}" target="_blank" rel="noopener">${(p.homepage_label && p.homepage_label[l]) || t('демо', 'demo')}</a>` : ''
-        }</div>
+        ${projectLinksHtml(p, l)}
       </div>`
     ).join('')}</div>`;
   }

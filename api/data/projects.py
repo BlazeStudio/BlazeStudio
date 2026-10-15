@@ -5,6 +5,39 @@ request time by api/github.py; this file is the offline fallback and source of c
 
 PROJECTS = [
     {
+        "id": "hh-auto-response",
+        "repo": "HH-Auto-Response",
+        "name": "HH-Auto-Response",
+        "category": "tools",
+        # Shown on its own above the grid, with a star count (live from GitHub
+        # when it answers, else this snapshot).
+        "featured": True,
+        "stars": 22,
+        "stack": ["Python", "Playwright", "CustomTkinter", "OpenRouter / DeepSeek / Ollama", "Docker", "GitHub Actions"],
+        "description": {
+            "ru": "Десктоп-приложение, которое само откликается на вакансии hh.ru: проходит выдачу страница за страницей, пишет сопроводительное письмо под конкретную вакансию, заполняет анкеты работодателей по резюме и разбирает чаты с отказами. Живых рекрутеров, приглашения и всё про документы и деньги оставляет человеку.",
+            "en": "A desktop app that applies to hh.ru vacancies by itself: it walks the search results page by page, writes a cover letter for each vacancy, fills in employer questionnaires from the résumé and sorts out rejection chats. Live recruiters, invitations and anything about documents or money stay with the human.",
+        },
+        "highlights": {
+            "ru": [
+                "Все фильтры поиска hh плюс свои; настройки заполняются одной ссылкой с сайта",
+                "Нейросеть на выбор: OpenRouter, DeepSeek или локальная Ollama",
+                "Технологии, зарплату и сроки выхода берёт из резюме и настроек, а не придумывает",
+                "Сборки под Windows, macOS, Linux и Docker, обновляется само из релизов GitHub",
+            ],
+            "en": [
+                "Every hh search filter plus its own; settings fill in from a single hh link",
+                "LLM of your choice: OpenRouter, DeepSeek or a local Ollama",
+                "Skills, salary and start date come from the résumé and settings, never made up",
+                "Builds for Windows, macOS, Linux and Docker, self-updating from GitHub releases",
+            ],
+        },
+        "role": {"ru": "Desktop-приложение, соло", "en": "Desktop app, solo"},
+        "github": "https://github.com/BlazeStudio/HH-Auto-Response",
+        "homepage": "https://github.com/BlazeStudio/HH-Auto-Response/releases/latest",
+        "homepage_label": {"ru": "Скачать", "en": "Download"},
+    },
+    {
         "id": "ritm-goroda",
         "repo": "Ritm-Goroda",
         "name": "Ritm Goroda",
@@ -45,24 +78,6 @@ PROJECTS = [
         "role": {"ru": "Fullstack, соло", "en": "Fullstack, solo"},
         "github": "https://github.com/BlazeStudio/Vostok-Flask-Messenger",
         "homepage": None,
-    },
-    {
-        "id": "detective-board",
-        "repo": "Detecitve-Board",
-        "name": "Detective Board",
-        "category": "tools",
-        "stack": ["Python", "PyQt5"],
-        "description": {
-            "ru": "Десктопная «доска расследования»: карточки с описаниями, нити-связи со стрелками, теги, поиск, undo/redo, сохранение дела в файл и экспорт доски в изображение.",
-            "en": "A desktop \"investigation board\" app: evidence cards, threaded connections with arrows, tags, search, undo/redo, save-to-file, and board-to-image export.",
-        },
-        "role": {"ru": "Desktop-приложение, соло", "en": "Desktop app, solo"},
-        "github": "https://github.com/BlazeStudio/Detecitve-Board",
-        "homepage": None,
-        "note": {
-            "ru": "Да, эта штука реально существует и не является метафорой.",
-            "en": "Yes, this thing genuinely exists and is not a metaphor.",
-        },
     },
     {
         "id": "des-ofb",
@@ -112,10 +127,10 @@ PROJECTS = [
         "repo": "Codewars-Solutions",
         "name": "Codewars Solutions",
         "category": "practice",
-        "stack": ["Python"],
+        "stack": ["Shell", "Python", "SQL", "Go", "C++"],
         "description": {
-            "ru": "Решения задач с Codewars — тренировочная площадка для алгоритмов и структур данных между рабочими проектами.",
-            "en": "Codewars problem solutions — an algorithms-and-data-structures training ground between production projects.",
+            "ru": "Решения кат с Codewars — больше 180 задач на Shell, Python, SQL, Go и C++, вплоть до 1 kyu (Tiny Three-Pass Compiler, Simple Interactive Interpreter). Файлы и таблица в README с разбивкой по языкам и сложности обновляются собственным скриптом синхронизации.",
+            "en": "Codewars kata solutions — over 180 problems in Shell, Python, SQL, Go and C++, up to 1 kyu (Tiny Three-Pass Compiler, Simple Interactive Interpreter). The files and the README table, broken down by language and rank, are kept up to date by a custom sync script.",
         },
         "role": {"ru": "Практика", "en": "Practice"},
         "github": "https://github.com/BlazeStudio/Codewars-Solutions",
