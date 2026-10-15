@@ -381,6 +381,9 @@ a:hover { color: #d00000; }
 .nd-card-stack { display: flex; flex-wrap: wrap; gap: 4px; }
 .nd-card-stack span { padding: 2px 7px; background: #fff; border: 1px solid #7f9db9; font: bold 11px Tahoma, Verdana, sans-serif; color: #0a2f8f; }
 .nd-card-desc { font-size: 12.5px; }
+.nd-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.nd-card-stars { flex: none; padding: 1px 7px; border: 1px solid #c9a227; border-radius: 9px; background: #fff6d6; font: bold 11px Tahoma, Verdana, sans-serif; color: #6b4200; white-space: nowrap; }
+.nd-card-stars[hidden], .nd-featured-stars[hidden] { display: none; }
 .nd-card-note { font-size: 11.5px; color: #a45a00; }
 .nd-card-links a { font-size: 12px; margin-right: 10px; }
 /* margin-top:auto pins the buttons to the card bottom, and wrap-reverse keeps

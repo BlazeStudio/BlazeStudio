@@ -222,20 +222,19 @@ def get_repo_stats() -> dict:
     }
 
 
-def get_repo_live(repo: str) -> dict:
-    data = _cached(f"repo:{repo}", f"https://api.github.com/repos/{GITHUB_USER}/{repo}")
-    if not data:
-        return {"stars": None, "pushed_at": None, "synced": False}
-    return {
-        "stars": data.get("stargazers_count"),
-        "pushed_at": data.get("pushed_at"),
-        "synced": True,
-    }
-
-
 def merge_live_projects(projects: list[dict]) -> list[dict]:
+    """Stars and last push for each project, all from the one repo listing that
+    get_repo_stats() already caches — a single API call however many cards
+    there are, instead of one per repo."""
+    repos = _cached("repos", f"{API_BASE}/repos?per_page=100&type=owner")
+    by_name = {r["name"].lower(): r for r in repos if r.get("name")} if isinstance(repos, list) else {}
     merged = []
     for project in projects:
-        live = get_repo_live(project["repo"])
+        repo = by_name.get(project["repo"].lower())
+        live = (
+            {"stars": repo.get("stargazers_count"), "pushed_at": repo.get("pushed_at"), "synced": True}
+            if repo
+            else {"stars": None, "pushed_at": None, "synced": False}
+        )
         merged.append({**project, "live": live})
     return merged

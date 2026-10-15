@@ -79,7 +79,7 @@
 
 ---
 
-### ⭐ Главный проект — [HH-Auto-Response](https://github.com/BlazeStudio/HH-Auto-Response)
+### ⭐ Самый популярный проект — [HH-Auto-Response](https://github.com/BlazeStudio/HH-Auto-Response)
 
 <a href="https://github.com/BlazeStudio/HH-Auto-Response/stargazers" target="_blank" rel="noopener noreferrer">
   <img src="https://img.shields.io/github/stars/BlazeStudio/HH-Auto-Response?style=for-the-badge&logo=github&label=Stars&color=FFD700" alt="GitHub stars">
@@ -104,11 +104,11 @@
 
 | Проект | Описание | Стек | Ссылка |
 |--------|----------|------|--------|
+| **Fresh Multitool** | Лаунчер программ в отдельном окне Windows Terminal: powerline-статус системы, автодополнение, горячая клавиша, меню из одного `config.json` | Python, Rich, prompt_toolkit, WinAPI | [GitHub](https://github.com/BlazeStudio/Fresh-Multitool) |
 | **Ritm Goroda** | Сервис поиска досуга в Москве с картами, статистикой и ролями | Django, Yandex Maps, JS | [GitHub](https://github.com/BlazeStudio/Ritm-Goroda) |
 | **PostgreSQL Web GUI** | Веб-интерфейс для работы с PostgreSQL (аналог pgAdmin) | Flask, PostgreSQL | [GitHub](https://github.com/BlazeStudio/PostrgreSQL-Web-GUI) |
 | **Vostok Messenger** | Мессенджер с авторизацией, друзьями и real-time сообщениями | Flask, SQLite, Ajax | [GitHub](https://github.com/BlazeStudio/Vostok-Flask-Messenger) |
 | **Codewars Solutions** | 180+ решённых кат вплоть до 1 kyu, README обновляется скриптом синхронизации | Shell, Python, SQL, Go, C++ | [GitHub](https://github.com/BlazeStudio/Codewars-Solutions) |
-| **Fuh Anarchist Cookbook** | Веб-приложение (деплой на Vercel) | Django / JS | [Live](https://fuh-anarchist-cookbook.vercel.app) |
 | **TBoI Everlasting Summer** | Мод для The Binding of Isaac (9 персонажей, 20+ предметов) | Lua | [GitHub](https://github.com/BlazeStudio/TBoI-ES-Modification) |
 
 ---

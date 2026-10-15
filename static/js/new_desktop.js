@@ -546,7 +546,7 @@
     else if (tab === 'pdf') panel.innerHTML = pdfHtml(l);
     else if (tab === 'projects') {
       panel.innerHTML = projectsHtml(l);
-      loadFeaturedStars();
+      loadLiveStars();
     } else if (tab === 'screens') {
       panel.innerHTML = screensHtml();
       loadScreens(panel);
@@ -620,15 +620,16 @@
     }</div>`;
   }
 
-  // Featured projects show a star count: the snapshot from projects.py first,
-  // then GitHub's live number once /api/projects?featured=true answers.
+  // Every card carries its GitHub star count, live from /api/projects (one
+  // cached repo listing server-side). Until it answers, a project shows its
+  // snapshot from projects.py if it has one, else no stars at all.
   const liveStars = {};
   let liveStarsLoading = false;
 
-  function loadFeaturedStars() {
+  function loadLiveStars() {
     if (liveStarsLoading || Object.keys(liveStars).length) return;
     liveStarsLoading = true;
-    fetch('/api/projects?featured=true')
+    fetch('/api/projects')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         ((data && data.projects) || []).forEach((p) => {
@@ -636,7 +637,9 @@
         });
         document.querySelectorAll('[data-stars-for]').forEach((el) => {
           const n = liveStars[el.dataset.starsFor];
-          if (n != null) el.textContent = n;
+          if (n == null) return;
+          el.textContent = n;
+          el.parentElement.hidden = false;
         });
       })
       .catch(() => {})
@@ -645,22 +648,22 @@
       });
   }
 
+  function starsHtml(p, cls, suffix) {
+    const n = liveStars[p.id] != null ? liveStars[p.id] : p.stars;
+    return `<span class="${cls}"${n == null ? ' hidden' : ''} title="${t('Звёзды на GitHub', 'GitHub stars')}">★ <span data-stars-for="${p.id}">${n == null ? '' : n}</span>${suffix || ''}</span>`;
+  }
+
   function stackHtml(p) {
     return `<div class="nd-card-stack">${p.stack.map((s) => `<span>${s}</span>`).join('')}</div>`;
   }
 
   function featuredHtml(p, l) {
-    const stars = liveStars[p.id] != null ? liveStars[p.id] : p.stars;
     return `
       <div class="nd-card nd-featured">
-        <div class="nd-featured-label">${t('Главный проект', 'Featured project')}</div>
+        <div class="nd-featured-label">${t('Самый популярный проект', 'Most popular project')}</div>
         <div class="nd-featured-head">
           <div class="nd-card-title">${p.name}</div>
-          ${
-            stars != null
-              ? `<span class="nd-featured-stars">★ <span data-stars-for="${p.id}">${stars}</span> ${t('на GitHub', 'on GitHub')}</span>`
-              : ''
-          }
+          ${starsHtml(p, 'nd-featured-stars', ` ${t('на GitHub', 'on GitHub')}`)}
         </div>
         ${stackHtml(p)}
         <div class="nd-card-desc">${p.description[l]}</div>
@@ -674,7 +677,10 @@
       <div class="nd-projects-grid">${PROJECTS.filter((p) => !p.featured).map(
       (p) => `
       <div class="nd-card">
-        <div class="nd-card-title">${p.name}</div>
+        <div class="nd-card-head">
+          <div class="nd-card-title">${p.name}</div>
+          ${starsHtml(p, 'nd-card-stars')}
+        </div>
         ${stackHtml(p)}
         <div class="nd-card-desc">${p.description[l]}</div>
         ${p.note ? `<div class="nd-card-note">${p.note[l]}</div>` : ''}
