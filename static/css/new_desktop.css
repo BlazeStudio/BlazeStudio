@@ -57,9 +57,11 @@ a:hover { color: #d00000; }
 #nd-surface { position: absolute; inset: 0 0 40px 0; overflow: hidden; display: flex; }
 
 /* ============ desktop icons ============ */
-/* Icons fill top-to-bottom and wrap into a second column on short screens
-   (a 768px-tall laptop used to cut the last few off). */
-#nd-icons { flex: 0 0 auto; padding: 10px 6px 10px 10px; display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 56px); grid-auto-columns: 88px; column-gap: 4px; min-height: 0; align-content: start; }
+/* Icons fill top-to-bottom in a strip exactly one column wide. On a screen
+   too short for all of them the rest wrap into a second column that spills
+   out under the windows (they paint above it) instead of widening the strip
+   and pushing every window aside — the Recycle Bin, last in line, goes first. */
+#nd-icons { flex: 0 0 auto; width: 104px; padding: 10px 6px 10px 10px; display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 56px); grid-auto-columns: 88px; column-gap: 4px; min-height: 0; align-content: start; }
 .nd-ico {
   background: none;
   color: #fff;
@@ -1254,7 +1256,7 @@ html.cmos-mono #nd-desktop, html.cmos-mono #nd-boot { filter: grayscale(1); }
      already being off below this breakpoint. Windows go full-screen here
      anyway, so there's rarely open desktop for it to show through. */
   #nd-wallpaper { display: none; }
-  #nd-icons { flex-direction: row; flex-wrap: wrap; padding: 8px; }
+  #nd-icons { width: auto; flex-direction: row; flex-wrap: wrap; padding: 8px; }
   /* display:contents drops the grid/column boxes from layout without hiding
      their .nd-win children — those go position:fixed below, so they'd
      vanish under a display:none ancestor instead of escaping it */
