@@ -20,7 +20,8 @@
    Assets load only once the game starts (static/horror/, see CREDITS.md):
    CC0 recordings, the Press Start 2P font and SAM (sam-js). Each is
    optional: a missing sound stays silent, no SAM means text without voice.
-   Esc (or the corner button on phones) leaves at any moment.
+   Esc leaves at any moment (nothing on screen says so). +/- set the
+   volume, shown for a moment in a small readout in the corner.
    ========================================================= */
 (function () {
   const BASE = '/static/horror/';
@@ -32,6 +33,9 @@
   const ACT_KEYS = new Set(['KeyE', 'Space', 'Enter', 'NumpadEnter']);
   const ABORT = { abort: true }; // the player quit: every pending step of the story unwinds
   const STALE = { stale: true }; // the room changed under a running story beat
+  const VOL_UP = new Set(['Equal', 'NumpadAdd']);
+  const VOL_DOWN = new Set(['Minus', 'NumpadSubtract']);
+  const VOL_STORE = 'av-hx-vol'; // 0–10, remembered between runs
 
   /* ---------------- text ----------------
      Lines the thing on the line says aloud carry `p`: the same line as SAM
@@ -43,8 +47,7 @@
       warn: ['В ЭТОЙ ПРОГРАММЕ ЕСТЬ ГРОМКИЕ ЗВУКИ И МЕРЦАНИЕ.', 'ЛУЧШЕ В НАУШНИКАХ. И С ВЫКЛЮЧЕННЫМ СВЕТОМ.'],
       anyKey: 'НАЖМИТЕ ЛЮБУЮ КЛАВИШУ',
       anyTap: 'КОСНИТЕСЬ ЭКРАНА',
-      quitKey: 'ESC — ВЫХОД',
-      quitTap: '× ВЫХОД',
+      vol: 'ГРОМК.',
       boot: ['HELP.EXE  ВЕРСИЯ 1.0', '(C) 1986 ЛЕСХОЗ №7'],
       mem: 'ПРОВЕРКА ПАМЯТИ ....... 640K ОК',
       dial: 'ПОИСК АБОНЕНТА ........ ',
@@ -132,8 +135,7 @@
       warn: ['THIS PROGRAM CONTAINS LOUD NOISES AND FLICKERING.', 'BEST WITH HEADPHONES. AND THE LIGHTS OFF.'],
       anyKey: 'PRESS ANY KEY',
       anyTap: 'TAP THE SCREEN',
-      quitKey: 'ESC — QUIT',
-      quitTap: '× QUIT',
+      vol: 'VOL',
       boot: ['HELP.EXE  VERSION 1.0', '(C) 1986 FORESTRY UNIT 7'],
       mem: 'MEMORY CHECK .......... 640K OK',
       dial: 'SEARCHING FOR CALLER .. ',
@@ -300,14 +302,17 @@
     comp.ratio.value = 8;
     comp.attack.value = 0.002;
     comp.release.value = 0.25;
+    const vol = ctx.createGain();
+    vol.gain.value = volGain();
     out.connect(comp);
-    comp.connect(ctx.destination);
+    comp.connect(vol);
+    vol.connect(ctx.destination);
     const bus = () => {
       const g = ctx.createGain();
       g.connect(out);
       return g;
     };
-    const A = { ctx, out, comp, sfx: bus(), amb: bus(), voice: bus(), nodes: new Set() };
+    const A = { ctx, out, comp, vol, sfx: bus(), amb: bus(), voice: bus(), nodes: new Set() };
     // a short dark room around the voice
     const verb = ctx.createConvolver();
     const len = Math.floor(ctx.sampleRate * 1.6);
@@ -340,6 +345,7 @@
       });
       A.nodes.clear();
       A.comp.disconnect();
+      A.vol.disconnect();
     }, 200);
   }
 
@@ -1540,7 +1546,7 @@
         </div>
         <button type="button" class="hx-act" aria-label="act">E</button>
       </div>
-      <button type="button" class="hx-esc"></button>`;
+      <div class="hx-vol" aria-hidden="true"><span></span><b>${'<i></i>'.repeat(10)}</b></div>`;
     document.body.appendChild(root);
     return root;
   }
@@ -2071,6 +2077,35 @@
     resolve();
   }
 
+  let volume = 10;
+  try {
+    const saved = localStorage.getItem(VOL_STORE);
+    if (saved !== null && Number(saved) >= 0 && Number(saved) <= 10) volume = Math.round(Number(saved));
+  } catch (_) {
+    /* no storage — full volume */
+  }
+  let volTimer = null;
+  function volGain() {
+    return Math.pow(volume / 10, 2); // by ear, not linear
+  }
+
+  function nudgeVolume(dir) {
+    const s = S;
+    volume = clamp(volume + dir, 0, 10);
+    try {
+      localStorage.setItem(VOL_STORE, String(volume));
+    } catch (_) {
+      /* not remembered, still applied */
+    }
+    if (s.audio) s.audio.vol.gain.setTargetAtTime(volGain(), s.audio.ctx.currentTime, 0.03);
+    const el = s.el.vol;
+    el.firstChild.textContent = L().vol;
+    el.querySelectorAll('i').forEach((seg, i) => seg.classList.toggle('lit', i < volume));
+    el.classList.add('on');
+    clearTimeout(volTimer);
+    volTimer = setTimeout(() => el.classList.remove('on'), 1200);
+  }
+
   function onKey(e) {
     const s = S;
     if (!s) return;
@@ -2093,6 +2128,11 @@
     if (!down) return;
     if (e.key === 'Escape') {
       quit();
+      return;
+    }
+    const vol = VOL_UP.has(e.code) || e.key === '+' ? 1 : VOL_DOWN.has(e.code) || e.key === '-' ? -1 : 0;
+    if (vol) {
+      nudgeVolume(vol); // before the repeat check: holding the key keeps going
       return;
     }
     if (e.repeat) return;
@@ -2133,8 +2173,6 @@
   }
 
   function wire(root) {
-    const s = S;
-    root.querySelector('.hx-esc').addEventListener('click', quit);
     root.querySelectorAll('.hx-dpad button').forEach((btn) => {
       const set = (v) => (e) => {
         if (!S) return;
@@ -2170,8 +2208,6 @@
     window.addEventListener('resize', fit);
     window.addEventListener('blur', onBlur);
     document.addEventListener('visibilitychange', onVisibility);
-    const esc = root.querySelector('.hx-esc');
-    esc.textContent = s.touch ? L().quitTap : L().quitKey;
   }
 
   function start() {
@@ -2219,6 +2255,7 @@
       hint: root.querySelector('.hx-hint'),
       face: root.querySelector('.hx-face'),
       pad: root.querySelector('.hx-pad'),
+      vol: root.querySelector('.hx-vol'),
       input: null,
     };
     S.cx = S.el.cv.getContext('2d');

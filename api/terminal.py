@@ -319,9 +319,8 @@ def run_command(raw: str, lang: str = "ru", elevated_password: str = "", visitor
         return {"output": _projects_txt(lang), "effect": {"type": "open", "target": "projects"}}
 
     if name == "shitpost.exe":
-        # The link stays in the output in case the browser blocks the new tab.
         return {
-            "output": f'<a href="{SHITPOST_URL}" target="_blank" rel="noopener noreferrer">{"Open link" if lang == "en" else "Открыть ссылку"}</a>',
+            "output": "",
             "effect": {"type": "url", "url": SHITPOST_URL},
         }
 

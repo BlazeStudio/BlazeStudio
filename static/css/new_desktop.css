@@ -134,10 +134,11 @@ a:hover { color: #d00000; }
    windows), so they need their own default box instead of one handed out
    by the responsive grid — new_desktop.js only takes over with inline
    left/top/width/height once the window is actually dragged or resized. */
-#nd-win-music, #nd-win-games, #nd-win-videos, .nd-app { position: absolute; }
+#nd-win-music, #nd-win-games, #nd-win-videos, #nd-win-lol, .nd-app { position: absolute; }
 #nd-win-music { left: 40px; top: 56px; width: 300px; height: 460px; }
 #nd-win-games { left: 320px; top: 36px; width: 470px; height: 320px; }
 #nd-win-videos { left: 200px; top: 90px; width: 480px; height: 420px; }
+#nd-win-lol { left: 240px; top: 40px; width: 400px; height: 580px; }
 
 .nd-resize {
   position: absolute;
@@ -326,6 +327,32 @@ a:hover { color: #d00000; }
 .nd-cw-honor b { color: #ecb613; }
 .nd-cw-langs { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0 0 10px; font-size: 12px; }
 .nd-cw-lang { display: inline-flex; align-items: center; gap: 5px; }
+/* League of Legends: the client's navy-and-gold */
+.nd-lol-body { padding: 0; background: #010a13; color: #a09b8c; }
+.nd-lol-hero { position: relative; min-height: 170px; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; padding: 12px; box-sizing: border-box; background: #0a1428 center 25% / cover no-repeat; border-bottom: 2px solid #c8aa6e; }
+.nd-lol-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(1, 10, 19, 0) 30%, rgba(1, 10, 19, 0.92)); }
+.nd-lol-hero > * { position: relative; }
+.nd-lol-kicker { font: bold 10.5px Tahoma, Verdana, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #0ac8b9; }
+.nd-lol-champ { font: bold 30px/1.1 Georgia, 'Times New Roman', serif; letter-spacing: 0.05em; text-transform: uppercase; color: #f0e6d2; text-shadow: 0 2px 6px #000; }
+.nd-lol-id { font-size: 11.5px; color: #c8aa6e; }
+.nd-lol-mastery { flex: none; width: 54px; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #c8aa6e; border-radius: 50%; background: radial-gradient(#1e2328, #010a13); box-shadow: 0 0 12px rgba(200, 170, 110, 0.45); color: #f0e6d2; font: bold 20px/1 Georgia, serif; }
+.nd-lol-mastery span { margin-top: 2px; font: 8px Tahoma, sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: #c8aa6e; }
+.nd-lol-stats { padding: 10px 12px 0; margin-bottom: 4px; }
+.nd-lol-body .nd-stat { background: #0a1428; border: 1px solid #463714; color: #a09b8c; }
+.nd-lol-body .nd-stat b { color: #f0e6d2; }
+.nd-lol-stats .nd-stat span { display: block; font-size: 10.5px; color: #7e7a6f; }
+.nd-lol-label { margin: 6px 12px 5px; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+.nd-lol-bars { display: flex; flex-direction: column; gap: 5px; padding: 0 12px; }
+.nd-lol-bar { display: grid; grid-template-columns: 24px 64px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 11.5px; }
+.nd-lol-bar img { width: 24px; height: 24px; object-fit: cover; border: 1px solid #463714; }
+.nd-lol-bar.main { color: #f0e6d2; font-weight: bold; }
+.nd-lol-track { height: 8px; background: #1e2328; overflow: hidden; }
+.nd-lol-track span { display: block; height: 100%; background: #5b5a56; }
+.nd-lol-bar.main .nd-lol-track span { background: linear-gradient(90deg, #785a28, #c8aa6e); }
+.nd-lol-pts { font: 11px 'Courier New', monospace; text-align: right; }
+.nd-lol-links { display: flex; gap: 6px; padding: 12px 12px 0; }
+.nd-lol-links .nd-btn98 { flex: 1 1 0; }
+.nd-lol-note { padding: 8px 12px 12px; font-size: 10.5px; color: #5b5a56; }
 .nd-github-body .nd-stat { background: #161b22; border: 1px solid #30363d; color: #8b949e; }
 .nd-github-body .nd-stat b { color: #fff; }
 .nd-gh-heat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #8b949e; margin: 4px 0 4px; display: flex; justify-content: space-between; }
@@ -1072,14 +1099,80 @@ html.pc-off #nd-desktop, html.pc-off #nd-scanlines { visibility: hidden; }
 #nd-boot[hidden] { display: none; }
 #nd-boot.boot-fade { opacity: 0; }
 .boot-stage[hidden] { display: none !important; }
-.boot-skip { position: absolute; right: 14px; bottom: 12px; z-index: 2; padding: 4px 8px; color: #555; font: 12px Tahoma, Verdana, sans-serif; cursor: pointer; }
-.boot-skip:hover { color: #aaa; }
-.boot-skip[hidden] { display: none; }
 
 /* 80×25 text mode: the font scales so the whole screen always fits */
 .boot-post { position: absolute; inset: 0; padding: 2vh 2vw; font: min(2vw, 3.3vh) / 1.2 'Lucida Console', 'Courier New', monospace; }
 .boot-post pre { margin: 0; font: inherit; white-space: pre; color: #aaa; }
 .boot-post-foot { position: absolute; left: 2vw; bottom: 2vh; }
+/* "Press DEL to enter SETUP" — plain POST text that also takes a click/tap (phones have no DEL) */
+.boot-del { font: inherit; color: inherit; background: none; border: 0; margin: -0.8em 0; padding: 0.8em 0; cursor: pointer; }
+.boot-del:hover, .boot-del:focus-visible { color: #fff; outline: none; }
+@media (pointer: coarse) { .boot-del { text-decoration: underline; } }
+
+/* ---- BIOS setup (bios.js): Award-style, blue main menu, grey submenus ---- */
+.boot-setup { position: absolute; inset: 0; cursor: default; }
+.bios {
+  --b-blue: #0000a8; --b-grey: #a8a8a8; --b-yellow: #fcfc54; --b-red: #a80000; --b-white: #fcfcfc;
+  position: absolute; inset: 0; overflow-y: auto; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 0.7em; padding: 1.2em 1em;
+  font: max(12px, min(1.6vw, 2.7vh)) / 1.4 'Lucida Console', 'Courier New', monospace;
+}
+:where(.bios) button { font: inherit; color: inherit; background: none; border: 0; margin: 0; padding: 0; text-align: left; cursor: pointer; outline: none; }
+.bios-main { background: var(--b-blue); color: var(--b-yellow); }
+.bios-sub { background: var(--b-grey); color: var(--b-blue); }
+.bios-title { text-align: center; color: var(--b-white); }
+.bios-sub .bios-title { color: var(--b-blue); }
+.bios-box { width: min(100%, 78ch); border: 0.25em double var(--b-white); box-sizing: border-box; }
+.bios-sub .bios-box { border-color: var(--b-blue); }
+.bios-menu { display: grid; grid-template-columns: 1fr 1fr; }
+.bios-col { display: flex; flex-direction: column; padding: 0.6em 1ch; }
+.bios-col + .bios-col { border-left: 0.25em double var(--b-white); }
+.bios-mi { padding: 0.1em 1ch; white-space: nowrap; }
+.bios-mi.sel { background: var(--b-red); color: var(--b-white); }
+.bios-keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.2em 3ch; padding: 0.4em 1ch; color: var(--b-white); }
+.bios-main .bios-keys, .bios-desc { border-top: 0.25em double var(--b-white); }
+.bios-sub .bios-keys { width: min(100%, 78ch); color: var(--b-blue); }
+.bios-keys button:hover { color: var(--b-yellow); }
+.bios-sub .bios-keys button:hover { color: var(--b-red); }
+.bios-desc { padding: 0.4em 1ch; text-align: center; color: var(--b-white); }
+.bios-body { display: grid; grid-template-columns: minmax(0, 1fr) 24ch; }
+.bios-items { display: flex; flex-direction: column; padding: 0.6em 1ch; }
+.bios-row { display: grid; grid-template-columns: 27ch minmax(0, 1fr); gap: 1ch; padding: 0.05em 1ch; }
+.bios-gap { min-height: 1.4em; }
+.bios-val { justify-self: start; }
+.bios-set.sel .bios-val { background: var(--b-red); color: var(--b-white); }
+.bios-set:hover .bios-lbl { color: var(--b-red); }
+.bios-help { border-left: 0.25em double var(--b-blue); }
+.bios-help-title { padding: 0.3em 1ch; text-align: center; border-bottom: 0.25em double var(--b-blue); }
+.bios-help-text { padding: 0.5em 1.5ch; }
+.bios-shade { position: absolute; inset: 0; }
+.bios-pop, .bios .bios-dlg {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: calc(100% - 2em); box-sizing: border-box;
+  border: 0.25em double var(--b-white); color: var(--b-white); box-shadow: 0.7em 0.7em 0 rgba(0, 0, 0, 0.55);
+}
+.bios-pop { min-width: 30ch; background: var(--b-blue); }
+.bios-pop-title { padding: 0.2em 1ch; text-align: center; border-bottom: 0.25em double var(--b-white); }
+.bios-pop-list { display: flex; flex-direction: column; padding: 0.4em 1ch; }
+.bios-pop-opt { display: flex; justify-content: space-between; gap: 3ch; padding: 0.05em 1ch; }
+.bios-pop-opt.sel { background: var(--b-red); }
+.bios-pop-keys { padding: 0.2em 1ch; border-top: 0.25em double var(--b-white); }
+.bios .bios-dlg { padding: 0.8em 3ch; background: var(--b-red); color: var(--b-yellow); text-align: center; white-space: nowrap; }
+.bios-dlg-btns { display: flex; justify-content: center; gap: 4ch; margin-top: 0.5em; color: var(--b-white); }
+.bios-dlg-btns button:hover { color: var(--b-yellow); }
+.bios-cursor { animation: nd-blink 1s steps(2, start) infinite; }
+@media (max-width: 700px) {
+  .bios-menu, .bios-body { grid-template-columns: 1fr; }
+  .bios-col + .bios-col { border-left: 0; border-top: 0.25em double var(--b-white); }
+  .bios-help { border-left: 0; border-top: 0.25em double var(--b-blue); }
+  .bios-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .bios .bios-dlg { white-space: normal; }
+}
+
+/* ---- what the BIOS setup changes on the desktop (bios.js → apply) ---- */
+html[data-wallpaper='classic'] #nd-desktop { background-color: #3a6ea5; }
+html[data-wallpaper='classic'] #nd-wallpaper, html[data-wallpaper='off'] #nd-wallpaper { display: none; }
+html.cmos-no-scanlines #nd-scanlines { display: none; }
+html.cmos-mono #nd-desktop, html.cmos-mono #nd-boot { filter: grayscale(1); }
 .boot-post-logo { position: absolute; top: 2vh; right: 3vw; width: 13em; height: auto; image-rendering: pixelated; }
 .boot-post-logo[hidden] { display: none; }
 

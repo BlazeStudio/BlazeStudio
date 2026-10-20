@@ -31,6 +31,7 @@ import steam_sync
 import terminal
 import video_sync
 from config import RESUME_SOURCE
+from data.lol import LOL
 from data.profile import PROFILE
 from data.projects import CATEGORIES, PROJECTS
 
@@ -123,6 +124,7 @@ def _site_data_json() -> str:
         "categories": CATEGORIES,
         "resume_source": RESUME_SOURCE,
         "sounds": _sound_files(),
+        "lol": LOL,
     }
     return json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 

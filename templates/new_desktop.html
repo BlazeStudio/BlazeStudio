@@ -45,6 +45,7 @@
 <symbol id="ico-hh" viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" rx="6" fill="#d6001c"/><text x="9" y="27" font-family="Verdana" font-weight="bold" font-size="17" fill="#fff">hh</text></symbol>
 <symbol id="ico-steam" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#1b2838"/><circle cx="25" cy="15" r="5" fill="#66c0f4"/><circle cx="14" cy="26" r="4" fill="#66c0f4"/><path d="M14 26l11-11" fill="none" stroke="#fff" stroke-width="2"/></symbol>
 <symbol id="ico-faceit" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#ff5500"/><path fill="#0a0a0a" d="M23.999 2.705a.167.167 0 00-.312-.1 1141.27 1141.27 0 00-6.053 9.375H.218c-.221 0-.301.282-.11.352 7.227 2.73 17.667 6.836 23.5 9.134.15.06.39-.08.39-.18z"/></symbol>
+<symbol id="ico-lol" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#0a1428" stroke="#c8aa6e" stroke-width="2.5"/><circle cx="20" cy="20" r="12.5" fill="none" stroke="#0ac8b9" stroke-width="1.2" opacity="0.7"/><path d="M14.5 10.5h5v15h7.5l-2.5 4h-10z" fill="#c8aa6e"/></symbol>
 <symbol id="ico-help" viewBox="0 0 40 40"><rect x="4" y="3" width="32" height="27" rx="3" fill="#8d8676" stroke="#4a463d" stroke-width="1.5"/><rect x="8" y="7" width="24" height="18" rx="2" fill="#0b0b0b"/><text x="20" y="22" text-anchor="middle" font-family="Lucida Console,Courier New,monospace" font-weight="bold" font-size="15" fill="#ff9a2e">?</text><rect x="15" y="30" width="10" height="3" fill="#5d584d"/><rect x="10" y="33" width="20" height="3" rx="1" fill="#4a463d"/></symbol>
 <symbol id="ico-trash" viewBox="0 0 40 40"><path d="M10 12h20l-2 22H12z" fill="#8fa8c8"/><path d="M8 12h24M16 12V8h8v4" fill="none" stroke="#fff" stroke-width="2"/></symbol>
 <symbol id="ico-avatar" viewBox="0 0 40 40"><circle cx="20" cy="15" r="8" fill="#ffd8b0"/><path d="M6 36c1-9 7-14 14-14s13 5 14 14z" fill="#0a4fd0"/></symbol>
@@ -113,6 +114,10 @@
       <button class="nd-ico" data-win="faceit">
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-faceit"></use></svg>
         <span>FACEIT</span>
+      </button>
+      <button class="nd-ico" data-win="lol">
+        <svg width="30" height="30" aria-hidden="true"><use href="#ico-lol"></use></svg>
+        <span data-ru="LoL" data-en="LoL">LoL</span>
       </button>
       <button class="nd-ico" data-win="contacts">
         <svg width="30" height="30" aria-hidden="true"><use href="#ico-contacts"></use></svg>
@@ -244,6 +249,12 @@
       <div class="nd-resize" aria-hidden="true"></div>
     </div>
 
+    <div class="nd-win nd-hidden" id="nd-win-lol">
+      <div class="nd-tb"><span class="nd-cap" data-ru="League of Legends — Брайер" data-en="League of Legends — Briar">League of Legends — Брайер</span><button class="nd-min" aria-label="Свернуть окно League of Legends">_</button><button class="nd-max" aria-label="Развернуть окно League of Legends"><svg width="14" height="14" aria-hidden="true"><use href="#ico-maximize"></use></svg></button><button class="nd-x" aria-label="Закрыть окно League of Legends">×</button></div>
+      <div class="nd-body nd-lol-body" id="nd-lol-body"></div>
+      <div class="nd-resize" aria-hidden="true"></div>
+    </div>
+
   </div>
 
   <!-- ============ start menu ============ -->
@@ -270,6 +281,7 @@
         <button class="nd-sm-item" data-win="codewars"><svg width="20" height="20" aria-hidden="true"><use href="#ico-codewars"></use></svg> <span>Codewars</span></button>
         <button class="nd-sm-item" data-win="steam"><svg width="20" height="20" aria-hidden="true"><use href="#ico-steam"></use></svg> <span>Steam</span></button>
         <button class="nd-sm-item" data-win="faceit"><svg width="20" height="20" aria-hidden="true"><use href="#ico-faceit"></use></svg> <span>FACEIT</span></button>
+        <button class="nd-sm-item" data-win="lol"><svg width="20" height="20" aria-hidden="true"><use href="#ico-lol"></use></svg> <span>League of Legends</span></button>
         <button class="nd-sm-item" data-win="contacts"><svg width="20" height="20" aria-hidden="true"><use href="#ico-contacts"></use></svg> <span data-ru="Контакты" data-en="Contacts">Контакты</span></button>
         <div class="nd-sm-sep"></div>
         <button class="nd-sm-item" data-win="taskmgr"><svg width="20" height="20" aria-hidden="true"><use href="#ico-taskmgr"></use></svg> <span data-ru="Диспетчер задач" data-en="Task Manager">Диспетчер задач</span></button>
@@ -360,6 +372,7 @@
 <script src="/static/js/app.js?v={{ v }}"></script>
 <script src="/static/js/terminal.js?v={{ v }}"></script>
 <script src="/static/js/games.js?v={{ v }}"></script>
+<script src="/static/js/bios.js?v={{ v }}"></script>
 <script src="/static/js/boot.js?v={{ v }}"></script>
 <script src="/static/js/horror.js?v={{ v }}"></script>
 <script src="/static/js/new_desktop.js?v={{ v }}"></script>

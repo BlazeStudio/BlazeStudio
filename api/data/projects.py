@@ -12,7 +12,7 @@ PROJECTS = [
         # Shown on its own above the grid, with a star count (live from GitHub
         # when it answers, else this snapshot).
         "featured": True,
-        "stars": 22,
+        "stars": 0,
         "stack": ["Python", "Playwright", "CustomTkinter", "OpenRouter / DeepSeek / Ollama", "Docker", "GitHub Actions"],
         "description": {
             "ru": "Десктоп-приложение, которое само откликается на вакансии hh.ru: проходит выдачу страница за страницей, пишет сопроводительное письмо под конкретную вакансию, заполняет анкеты работодателей по резюме и разбирает чаты с отказами. Живых рекрутеров, приглашения и всё про документы и деньги оставляет человеку.",

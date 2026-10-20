@@ -51,7 +51,33 @@ Start → Выключение → "Перезагрузка" plays a full cold 
 BIOS POST screen with fan, hard-drive, floppy and POST-beep sounds, the Windows XP loading
 screen, then the XP welcome screen with a chime. "Выключение" ends on a powered-off
 screen; its power button runs the same boot (browsers only allow sound after a click,
-which is why it waits for one). Esc skips the boot.
+which is why it waits for one). The boot can't be skipped.
+
+## BIOS setup
+
+While the POST shows "Press DEL to enter SETUP", DEL (or a tap on that line — phones have
+no DEL key) opens an Award-style CMOS Setup Utility (`static/js/bios.js`). Keyboard works
+like the real thing (arrows, Enter, Esc, +/−, PgUp/PgDn, F7 defaults, F10 save), and every
+item takes a click/tap. After Save & Exit / Exit Without Saving the POST carries on from the
+configuration table, which already shows the changes.
+
+What's saved goes to the visitor's `localStorage` (`av-cmos`) and actually does something:
+
+| Setting | Effect |
+| --- | --- |
+| Standard CMOS → Language | switches the site language |
+| Standard CMOS → Video: MONO | the whole desktop goes grayscale |
+| Standard CMOS → Drive A, Halt On | floppy / keyboard-error behaviour in the POST |
+| Advanced BIOS → Quick Power On Self Test | memory test finishes instantly |
+| Advanced BIOS → First Boot Device | Floppy: "Non-System disk", CDROM: "Press any key to boot from CD" starts help.exe, LAN: a failing PXE boot; all fall back to HDD |
+| Advanced BIOS → Small Logo(EPA) Show | the Energy Star logo in the POST |
+| Advanced Chipset → Desktop Wallpaper | Black Hole / Classic Blue / off (unloads the animated iframe) |
+| Advanced Chipset → CRT Scanlines | the scanline overlay |
+| Integrated Peripherals → Onboard AC97 Audio | all boot/startup/shutdown sounds |
+| Integrated Peripherals → USB Keyboard Support | off = "Keyboard error" in the POST (halts with Halt On = All Errors) |
+| Frequency/Voltage → CPU Clock Ratio | shown in the POST and the config table; heats the CPU (PC Health Status) — over the Shutdown Temperature the next POST resets it to x2 |
+
+Everything else in the menus is decoration.
 
 Sounds live in `static/sounds/` (`.mp3`, `.ogg`, `.wav` or `.m4a`) — `api/index.py` picks up
 whichever exist, and any that's missing is synthesized in the browser instead.
@@ -71,7 +97,7 @@ BIOS logo is `static/img/energy-star.png`.
 The `help.exe` desktop icon, the console command of the same name (listed in `help`) and
 Task Manager → "Новая задача" all start a short horror game, `static/js/horror.js` +
 `static/css/horror.css`: the screen goes dark, an old orange terminal powers on, and you
-lead something out of a night forest, FAITH-style (about 5 minutes, Esc quits at any point).
+lead something out of a night forest, FAITH-style (about 5 minutes; Esc quits at any point, +/- set the volume).
 
 Its assets live in `static/horror/` and load only when the game starts. Sources and
 licences are in `static/horror/CREDITS.md`: CC0 recordings from freesound.org, the Press
@@ -137,6 +163,7 @@ all-time contributions are summed from GitHub's yearly contribution calendars.
 
 The Codewars window reads the public Codewars API (no key) for `BlazeStudio`;
 set `CODEWARS_USER` to show someone else.
+
 
 The terminal's `whoami` shows the *visitor* their own IP, rough location, browser/OS
 and screen. The location comes from the geo headers Vercel adds in production

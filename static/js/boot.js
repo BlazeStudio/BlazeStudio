@@ -14,17 +14,24 @@
    is why a shutdown ends on a "powered off" screen with a power button
    (that click is what unlocks audio for the boot that follows), while a
    restart runs straight through — the click on "Restart" already did.
+
+   There's no skipping it. DEL (or a tap on "Press DEL to enter SETUP")
+   opens the BIOS setup (bios.js) instead, and what's saved there shapes
+   the next POST: quick memory test, logo, CPU ratio, keyboard errors,
+   sounds, and what it boots from.
    ========================================================= */
 (function () {
   const t = (ru, en) => window.XP.t(ru, en);
   const SOUND_FILES = (window.XP.data && window.XP.data.sounds) || {};
+  const bios = window.XP.bios;
+  const muted = () => bios.settings().sounds === 'off'; // BIOS → Onboard AC97 Audio
 
   /* ---------------- audio ---------------- */
   let ctx = null;
   let master = null;
   let reverb = null;
   let noiseBuf = null;
-  const stoppers = new Set(); // everything that's still making noise, so a skip can silence it
+  const stoppers = new Set(); // everything that's still making noise, so the end of the boot can silence it
 
   function unlock() {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -32,9 +39,9 @@
     if (!ctx) {
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 0.55;
       master.connect(ctx.destination);
     }
+    master.gain.value = muted() ? 0 : 0.55;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     return ctx;
   }
@@ -69,7 +76,7 @@
   // 'chime' (the XP startup sound — allowed to ring on over the desktop).
   function playFile(key, volume, group) {
     const url = SOUND_FILES[key];
-    if (!url) return null;
+    if (!url || muted()) return null;
     const a = new Audio(url);
     a.volume = volume == null ? 1 : volume;
     a.play().catch(() => {});
@@ -112,8 +119,9 @@
   }
 
   // Case fan + hard drive spinning up (a rising motor whine), left humming.
+  // spunUp: fade straight into the steady hum (taking over from the recording mid-boot).
   let hum = null;
-  function humStart() {
+  function humStart(spunUp) {
     if (!ctx || hum) return;
     const t0 = ctx.currentTime;
     const fan = ctx.createBufferSource();
@@ -124,30 +132,30 @@
     fanLp.frequency.value = 420;
     const fanG = ctx.createGain();
     fanG.gain.setValueAtTime(0, t0);
-    fanG.gain.linearRampToValueAtTime(0.5, t0 + 1.4);
+    fanG.gain.linearRampToValueAtTime(0.5, t0 + (spunUp ? 0.8 : 1.4));
     fan.connect(fanLp).connect(fanG).connect(master);
 
     const motor = ctx.createOscillator();
     motor.type = 'sawtooth';
-    motor.frequency.setValueAtTime(25, t0);
-    motor.frequency.exponentialRampToValueAtTime(120, t0 + 4);
+    motor.frequency.setValueAtTime(spunUp ? 120 : 25, t0);
+    if (!spunUp) motor.frequency.exponentialRampToValueAtTime(120, t0 + 4);
     const motorLp = ctx.createBiquadFilter();
     motorLp.type = 'lowpass';
     motorLp.frequency.value = 500;
     const motorG = ctx.createGain();
     motorG.gain.setValueAtTime(0, t0);
-    motorG.gain.linearRampToValueAtTime(0.05, t0 + 0.6);
-    motorG.gain.linearRampToValueAtTime(0.028, t0 + 5);
+    if (!spunUp) motorG.gain.linearRampToValueAtTime(0.05, t0 + 0.6);
+    motorG.gain.linearRampToValueAtTime(0.028, t0 + (spunUp ? 0.8 : 5));
     motor.connect(motorLp).connect(motorG).connect(master);
 
     const whine = ctx.createOscillator();
     whine.type = 'sine';
-    whine.frequency.setValueAtTime(180, t0);
-    whine.frequency.exponentialRampToValueAtTime(1800, t0 + 4);
+    whine.frequency.setValueAtTime(spunUp ? 1800 : 180, t0);
+    if (!spunUp) whine.frequency.exponentialRampToValueAtTime(1800, t0 + 4);
     const whineG = ctx.createGain();
     whineG.gain.setValueAtTime(0, t0);
-    whineG.gain.linearRampToValueAtTime(0.012, t0 + 1.2);
-    whineG.gain.linearRampToValueAtTime(0.004, t0 + 6);
+    if (!spunUp) whineG.gain.linearRampToValueAtTime(0.012, t0 + 1.2);
+    whineG.gain.linearRampToValueAtTime(0.004, t0 + (spunUp ? 0.8 : 6));
     whine.connect(whineG).connect(master);
 
     [fan, motor, whine].forEach((n) => n.start(t0));
@@ -273,6 +281,7 @@
         <pre class="boot-post-text"></pre>
         <pre class="boot-post-foot"></pre>
       </div>
+      <div class="boot-stage boot-setup" hidden></div>
       <div class="boot-stage boot-xp" hidden>
         <div class="boot-xp-logo">
           <svg width="96" height="96" aria-hidden="true"><use href="#ico-winflag"></use></svg>
@@ -291,14 +300,16 @@
         <button type="button" class="boot-power"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.6 7.4a6.2 6.2 0 1 0 8.8 0M12 4v7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
         <div class="boot-off-hint"></div>
       </div>
-      <div class="boot-crt" hidden></div>
-      <button type="button" class="boot-skip" hidden></button>`;
+      <div class="boot-crt" hidden></div>`;
     document.body.appendChild(root);
-    el('.boot-skip').addEventListener('click', skip);
+    // Phones have no DEL key, so the "Press DEL" line takes a tap as well.
+    root.addEventListener('click', (e) => {
+      if (e.target.closest('.boot-del')) askSetup();
+    });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && run && !root.hidden) {
+      if (e.key === 'Delete' && run && run.canSetup) {
         e.preventDefault();
-        skip();
+        askSetup();
       }
     });
     return root;
@@ -308,26 +319,33 @@
     root.querySelectorAll('.boot-stage').forEach((s) => (s.hidden = !s.classList.contains('boot-' + name)));
   }
 
+  // The POST is 80×25 text mode: whatever runs off the bottom scrolls the top away.
+  const POST_ROWS = 24;
+  function write(s) {
+    const text = el('.boot-post-text');
+    text.textContent = (text.textContent + s).split('\n').slice(-POST_ROWS).join('\n');
+  }
+  function print(s) {
+    write(s + '\n');
+  }
+
   /* ---------------- sequence ---------------- */
   let run = null;
 
   function sleep(ms) {
-    return new Promise((resolve) => {
-      const id = setTimeout(resolve, ms);
-      if (run) run.timers.push(id);
-    });
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   function pad(s, n) {
     return (s + ' '.repeat(n)).slice(0, n);
   }
 
-  function configTable() {
+  function configTable(s) {
     const rows = [
       ['CPU Type', 'ANTON-III', 'Base Memory', '640K'],
-      ['Co-Processor', 'Coffee x2', 'Extended Memory', '523264K'],
+      ['Co-Processor', bios.fuel(s.ratio), 'Extended Memory', '523264K'],
       ['CPU Clock', '3+ years', 'Cache Memory', '512K'],
-      ['Diskette Drive A', '1.44M, 3.5 in.', 'Display Type', 'EGA/VGA'],
+      ['Diskette Drive A', s.floppy === 'none' ? 'None' : '1.44M, 3.5 in.', 'Display Type', s.video === 'mono' ? 'MONO' : 'EGA/VGA'],
       ['Diskette Drive B', 'None', 'Serial Port(s)', '3F8 2F8'],
       ['Pri. Master Disk', 'PYTHON, 3000MB', 'Parallel Port(s)', '378'],
       ['Pri. Slave  Disk', 'DATA, 2000MB', 'Frameworks', 'Django, FastAPI'],
@@ -335,7 +353,7 @@
       ['Sec. Slave  Disk', 'None', 'Status', 'Open to offers'],
     ];
     const inner = 74;
-    const line = (s) => '║' + pad(s, inner) + '║';
+    const line = (str) => '║' + pad(str, inner) + '║';
     const out = [
       '╔' + '═'.repeat(inner) + '╗',
       line(pad('', 13) + 'System Configurations  (C) Copyright 1998-' + new Date().getFullYear() + ', BlazeStudio'),
@@ -392,14 +410,57 @@
     });
   }
 
-  async function post(r) {
-    const text = el('.boot-post-text');
+  // Resolves with the key pressed (any key, or one of `keys`) or 'tap' for a
+  // click/tap anywhere on the screen — or with null after `ms`, if given.
+  function waitKey(keys, ms) {
+    return new Promise((resolve) => {
+      let timer = null;
+      const done = (e) => {
+        if (e && e.type === 'keydown') {
+          if (keys && !keys.includes(e.key)) return;
+          e.preventDefault();
+        }
+        clearTimeout(timer);
+        document.removeEventListener('keydown', done, true);
+        root.removeEventListener('pointerdown', done);
+        resolve(!e ? null : e.type === 'keydown' ? e.key : 'tap');
+      };
+      document.addEventListener('keydown', done, true);
+      root.addEventListener('pointerdown', done);
+      if (ms) timer = setTimeout(() => done(null), ms);
+    });
+  }
+
+  // Waiting on the user (a "strike any key" prompt, the BIOS setup) breaks the
+  // lock-step with the boot recording: the synthesized PC noises take over
+  // from it, and the rest of the timeline moves on by however long it took.
+  function handOff(r) {
+    if (!r.file) return;
+    r.file.fade(0.8);
+    r.file = null;
+    humStart(true);
+  }
+  async function hold(r, wait) {
+    handOff(r);
+    const from = performance.now();
+    const result = await wait;
+    r.t0 += performance.now() - from;
+    return result;
+  }
+
+  function askSetup() {
+    if (!run || !run.canSetup || run.setup) return;
+    run.setup = true;
+    const del = el('.boot-del');
+    if (del) del.textContent = 'Entering SETUP...';
+  }
+
+  // First screen: banner, CPU, memory count, drive detection. Cut short once
+  // DEL has been pressed — the setup opens right after the step in progress.
+  async function postScreen(r, s) {
     const foot = el('.boot-post-foot');
     const logo = el('.boot-post-logo');
-    const print = (s) => {
-      text.textContent += s + '\n';
-    };
-    text.textContent = '';
+    el('.boot-post-text').textContent = '';
     foot.textContent = '';
     logo.hidden = true;
     stage('post');
@@ -408,48 +469,60 @@
 
     r.file = playFile('pc_boot', 0.9, 'hw');
     if (r.file) await whenPlaying(r.file.audio, 1500);
-    if (r.cancelled) return;
     r.t0 = performance.now() - (r.file ? r.file.audio.currentTime * 1000 : 0);
     if (!r.file) humStart();
 
     await at(r, CUE.monitorOn);
-    if (r.cancelled) return;
-    logo.hidden = false;
+    logo.hidden = s.logo === 'off';
     print(' BlazeBIOS v4.51PG, An Energy Star Ally');
     print(' Copyright (C) 1998-' + now.getFullYear() + ', BlazeStudio Software, Inc.');
     print('');
     print(' #401A0-0203');
     print('');
-    foot.textContent = ' Press DEL to enter SETUP\n ' + mdY + '-i440BX-8671-2A69KA1AC-00';
+    foot.innerHTML = ' <button type="button" class="boot-del">Press DEL to enter SETUP</button>\n ' + mdY + '-i440BX-8671-2A69KA1AC-00';
+    r.canSetup = true;
     await at(r, CUE.cpu);
-    if (r.cancelled) return;
-    print(' ANTON-III CPU at 3.0 YRS');
-    text.textContent += ' Memory Test :        ';
+    print(' ANTON-III CPU at 3.0 YRS' + (s.ratio === '2' ? '' : ', ' + bios.fuel(s.ratio)));
+    if (bios.overheated(s)) {
+      print(' CPU Over Temperature!! Clock ratio restored to ' + bios.fuel('2'));
+      bios.set('ratio', '2');
+    }
+    write(' Memory Test :        ');
     await at(r, CUE.memStart);
-    if (r.cancelled) return;
-    // Count the memory up like the real thing, landing on the one-beep "OK".
+    // Count the memory up like the real thing, landing on the one-beep "OK" —
+    // or all of it at once with Quick POST.
+    const text = el('.boot-post-text');
+    const base = text.textContent.slice(0, -8);
     const total = 524288;
-    const base = text.textContent;
-    const span = CUE.memEnd - CUE.memStart;
-    await new Promise((resolve) => {
-      const tick = () => {
-        if (r.cancelled) {
-          resolve();
-          return;
-        }
-        const k = Math.min(1, Math.max(0, (performance.now() - r.t0) / 1000 - CUE.memStart) / span);
-        text.textContent = base.slice(0, -8) + String(Math.round((total * k) / 1024) * 1024).padStart(7, ' ') + 'K';
-        if (k < 1) requestAnimationFrame(tick);
-        else resolve();
-      };
-      tick();
-    });
-    if (r.cancelled) return;
+    const shown = (k) => {
+      text.textContent = base + String(Math.round((total * k) / 1024) * 1024).padStart(7, ' ') + 'K';
+    };
+    if (s.quickPost === 'on') shown(1);
+    else {
+      const span = CUE.memEnd - CUE.memStart;
+      // A timer, not requestAnimationFrame: that one stops in a background tab and would hang the POST there.
+      await new Promise((resolve) => {
+        const tick = () => {
+          const k = Math.min(1, Math.max(0, (performance.now() - r.t0) / 1000 - CUE.memStart) / span);
+          shown(k);
+          if (k < 1) setTimeout(tick, 16);
+          else resolve();
+        };
+        tick();
+      });
+    }
     print(' OK');
     await at(r, CUE.beep);
     if (!r.file) beep();
+    if (s.usbKbd === 'off') {
+      print(' Keyboard error or no keyboard present');
+      if (s.halt === 'all') {
+        print(' Press F1 to continue, DEL to enter SETUP');
+        await hold(r, waitKey(['F1', 'Delete']));
+      }
+    }
+    if (r.setup) return;
     await at(r, CUE.pnp);
-    if (r.cancelled) return;
     print('');
     print(' BlazeBIOS Plug and Play Extension v1.0A');
     print(' Copyright (C) ' + now.getFullYear() + ', BlazeStudio Software, Inc.');
@@ -462,80 +535,140 @@
     for (let i = 0; i < drives.length; i += 1) {
       const [slot, name] = drives[i];
       await at(r, CUE.drives[i]);
-      if (r.cancelled) return;
-      text.textContent += '    Detecting HDD ' + slot + ' ... ';
+      write('    Detecting HDD ' + slot + ' ... ');
       await at(r, CUE.drives[i] + 0.3);
-      if (r.cancelled) return;
       print(name);
       if (!r.file && name !== 'None') seek(2 + Math.floor(Math.random() * 3));
+      if (r.setup) return;
     }
     await at(r, CUE.floppy);
-    if (!r.file) floppy();
+    if (!r.file && s.floppy !== 'none') floppy();
+  }
+
+  // DEL was pressed: the BIOS setup holds the screen until it's left, then the
+  // POST picks up at the configuration summary, which already shows the changes.
+  async function setup(r) {
+    await hold(r, sleep(500)); // a moment on "Entering SETUP..."
+    stage('setup');
+    await bios.open(el('.boot-setup'));
+    unlock(); // Onboard AC97 Audio may have been switched
+    stage('none');
+    r.t0 = performance.now() - (CUE.table - 0.6) * 1000;
+  }
+
+  // Second screen: the configuration summary, then whatever the BIOS boots
+  // from. Resolves false if that wasn't Windows on the hard disk.
+  async function postSummary(r, s) {
     await at(r, CUE.table);
-    if (r.cancelled) return;
-    // Second screen: the configuration summary, then off to the OS.
-    logo.hidden = true;
-    text.textContent = '\n' + configTable() + '\n\n';
-    foot.textContent = '';
+    stage('post');
+    el('.boot-post-logo').hidden = true;
+    el('.boot-post-foot').textContent = '';
+    el('.boot-post-text').textContent = '';
+    print('');
+    write(configTable(s) + '\n\n');
     await at(r, CUE.dmi);
-    if (r.cancelled) return;
-    text.textContent += ' Verifying DMI Pool Data ';
+    write(' Verifying DMI Pool Data ');
     for (let i = 1; i <= 8; i += 1) {
       await at(r, CUE.dmi + i * 0.1);
-      if (r.cancelled) return;
-      text.textContent += '.';
+      write('.');
     }
     if (!r.file) seek(4);
     await at(r, CUE.bootHdd);
-    if (r.cancelled) return;
     print('');
+    if (s.bootDev === 'floppy' && s.floppy !== 'none') await floppyBoot(r);
+    else if (s.bootDev === 'cdrom' && (await cdBoot(r))) return false;
+    else if (s.bootDev === 'lan' && s.lan === 'on') await hold(r, pxeBoot());
     print(' Boot from HDD 0 ...');
+    return true;
+  }
+
+  // Floppy first: the disk left in drive A isn't a boot disk.
+  async function floppyBoot(r) {
+    handOff(r);
+    floppy();
+    await hold(r, sleep(900));
+    print('');
+    print('Non-System disk or disk error');
+    print('Replace and strike any key when ready');
+    await hold(r, waitKey());
+    print('');
+  }
+
+  // CD-ROM first: the disc in the drive is help.exe. Like a Windows CD it only
+  // boots if a key is pressed in time — otherwise it's on to the hard disk.
+  async function cdBoot(r) {
+    await hold(r, sleep(700));
+    print('');
+    write('Press any key to boot from CD');
+    let key = null;
+    for (let i = 0; i < 5 && !key; i += 1) {
+      key = await hold(r, waitKey(null, 1000));
+      if (!key) write('.');
+    }
+    print('');
+    if (!key || !window.XP.effects.horror) return false;
+    stage('none');
+    window.XP.effects.horror(); // its screen goes over this one
+    finish();
+    return true;
+  }
+
+  // LAN first: the network boot ROM asks for an address nobody hands out.
+  async function pxeBoot() {
+    print('');
+    print('Intel UNDI, PXE-2.0 (build 082)');
+    print('Copyright (C) 1997-2000  Intel Corporation');
+    print('');
+    print('CLIENT MAC ADDR: 00 0B 1A 2E 04 20  GUID: C0FFEE00-2004-4B1D-A000-000000000000');
+    write('DHCP.  ');
+    const text = el('.boot-post-text');
+    for (let i = 0; i < 18; i += 1) {
+      await sleep(170);
+      text.textContent = text.textContent.slice(0, -1) + '|/-\\'[i % 4];
+    }
+    print('');
+    print('');
+    print('PXE-E51: No DHCP or proxy DHCP offers were received.');
+    print('');
+    print('PXE-M0F: Exiting Intel PXE ROM.');
+    await sleep(900);
   }
 
   async function xpLoading(r) {
     await at(r, CUE.bootHdd + 0.5);
-    if (r.cancelled) return;
     stage('none');
     await at(r, CUE.xpOn);
-    if (r.cancelled) return;
     stage('xp');
     while (performance.now() < r.t0 + CUE.xpOff * 1000 - 300) {
       await sleep(350 + Math.random() * 550);
-      if (r.cancelled) return;
       if (!r.file) seek(1 + Math.floor(Math.random() * 4));
     }
     await at(r, CUE.xpOff);
-    if (r.cancelled) return;
     stage('none');
   }
 
   // XP shows "welcome" while the desktop loads; the startup sound plays as the desktop appears.
   async function welcome(r) {
     await at(r, CUE.welcome);
-    if (r.cancelled) return;
     el('.boot-welcome-text').textContent = t('приветствие', 'welcome');
     stage('welcome');
     if (r.file) r.file.fade(0.9);
     humStop(1.5);
     await at(r, CUE.desktop);
-    if (r.cancelled) return;
     chime('startup');
     await sleep(250);
   }
 
-  // Skipped: silence everything. Finished normally: only the PC's own noise
-  // stops — the XP startup sound rings on over the freshly shown desktop.
-  function finish(skipped) {
+  // The PC's own noise stops; the XP startup sound rings on over the freshly shown desktop.
+  function finish() {
     if (!run) return;
     const r = run;
     run = null;
-    r.timers.forEach(clearTimeout);
     stoppers.forEach((stop) => {
-      if (!skipped && stop.group === 'chime') return;
+      if (stop.group === 'chime') return;
       if (stop.fade) stop.fade(0.4);
       else stop(0.4);
     });
-    el('.boot-skip').hidden = true;
     root.classList.add('boot-fade');
     setTimeout(() => {
       root.hidden = true;
@@ -546,35 +679,28 @@
     r.resolve();
   }
 
-  function skip() {
-    if (!run) return;
-    run.cancelled = true;
-    finish(true);
-  }
-
   // The whole cold boot, POST to welcome. Resolves when the desktop should show.
   function boot() {
     if (run) return run.promise;
     build();
     unlock();
-    const r = { cancelled: false, timers: [], t0: performance.now() };
+    const r = { t0: performance.now(), file: null, canSetup: false, setup: false };
     run = r;
     r.promise = new Promise((resolve) => {
       r.resolve = resolve;
     });
     root.hidden = false;
     stage('none');
-    const skipBtn = el('.boot-skip');
-    skipBtn.textContent = t('Esc — пропустить', 'Esc — skip');
-    skipBtn.hidden = false;
     (async () => {
-      await post(r);
-      if (r.cancelled) return;
+      await postScreen(r, bios.settings());
+      if (!r.setup) await at(r, CUE.table);
+      r.canSetup = false;
+      if (r.setup) await setup(r);
+      // Read again: the setup may have changed them, and so may an overheat in the POST.
+      if (!(await postSummary(r, bios.settings()))) return;
       await xpLoading(r);
-      if (r.cancelled) return;
       await welcome(r);
-      if (r.cancelled) return;
-      finish(false);
+      finish();
     })();
     return r.promise;
   }

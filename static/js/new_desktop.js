@@ -35,7 +35,7 @@
   };
   GAME_KINDS.forEach((kind) => (APP_TITLES[gameWinId(kind)] = GAMES[kind].title));
 
-  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'codewars', 'contacts', 'music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS];
+  const WIN_ORDER = ['avatar', 'steam', 'faceit', 'explorer', 'console', 'github', 'codewars', 'contacts', 'music', 'games', 'videos', 'lol', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS];
   const WIN_LABEL = {
     avatar: () => 'avatar.gif',
     steam: () => t('Steam', 'Steam'),
@@ -48,6 +48,7 @@
     music: () => 'Winamp',
     games: () => t('Игры', 'Games'),
     videos: () => t('Видео', 'Videos'),
+    lol: () => 'League of Legends',
     taskmgr: () => t('Диспетчер задач', 'Task Manager'),
   };
   Object.keys(APP_TITLES).forEach((id) => {
@@ -65,6 +66,7 @@
     music: 'ico-music',
     games: 'ico-games',
     videos: 'ico-videos',
+    lol: 'ico-lol',
     taskmgr: 'ico-taskmgr',
     calc: 'ico-calc',
     notepad: 'ico-notepad',
@@ -77,6 +79,7 @@
     music: [300, 460],
     games: [470, 320],
     videos: [480, 420],
+    lol: [400, 580],
     taskmgr: [440, 440],
     calc: [262, 322],
     notepad: [500, 380],
@@ -178,7 +181,7 @@
   // #nd-surface's OWN row flex (icons + grid), squeezing #nd-grid every time
   // one of these was dragged or maximized — worse with each one, since each
   // left its own leftover placeholder competing for the same row.
-  const FLOATING_WIN_IDS = new Set(['music', 'games', 'videos', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS]);
+  const FLOATING_WIN_IDS = new Set(['music', 'games', 'videos', 'lol', 'taskmgr', 'calc', 'notepad', ...GAME_WIN_IDS]);
   function syncPlaceholder(id) {
     if (FLOATING_WIN_IDS.has(id)) {
       hidePlaceholder(id);
@@ -1089,6 +1092,7 @@
     music: 'winamp.exe',
     games: 'explorer.exe',
     videos: 'wmplayer.exe',
+    lol: 'LeagueClient.exe',
     taskmgr: 'taskmgr.exe',
     calc: 'calc.exe',
     notepad: 'notepad.exe',
@@ -1118,7 +1122,7 @@
   const RUN_TARGETS = {
     calc: 'calc', notepad: 'notepad', cmd: 'console', command: 'console', console: 'console', taskmgr: 'taskmgr',
     explorer: 'explorer', winamp: 'music', wmplayer: 'videos', mspaint: 'avatar', steam: 'steam',
-    faceit: 'faceit', github: 'github', codewars: 'codewars', msmsgs: 'contacts', games: 'games', winmine: 'game-mines', mines: 'game-mines',
+    faceit: 'faceit', github: 'github', codewars: 'codewars', msmsgs: 'contacts', lol: 'lol', league: 'lol', leagueclient: 'lol', games: 'games', winmine: 'game-mines', mines: 'game-mines',
     slots: 'game-slots', snake: 'game-snake', tetris: 'game-tetris', arkanoid: 'game-breakout', breakout: 'game-breakout', 2048: 'game-g2048',
   };
 
@@ -2188,6 +2192,55 @@
       <a class="nd-btn98 nd-block" href="${url}" target="_blank" rel="noopener">${t('Открыть профиль', 'Open profile')}</a>`;
   }
 
+  const DDRAGON_ART = 'https://ddragon.leagueoflegends.com/cdn/img/champion/';
+  function renderLol() {
+    const body = document.getElementById('nd-lol-body');
+    const lol = window.XP.data.lol;
+    if (!body || !lol) return;
+    const l = lang();
+    const locale = l === 'ru' ? 'ru-RU' : 'en-US';
+    const n = (v) => Number(v).toLocaleString(locale);
+    const m = lol.main;
+    const champs = [m, ...lol.others];
+    const lead = Math.floor(m.mastery_points / Math.max(...lol.others.map((c) => c.mastery_points)));
+    const share = Math.round((m.games / lol.season_games) * 100);
+    const asOf = new Date(lol.as_of + 'T00:00:00').toLocaleDateString(locale);
+    body.innerHTML = `
+      <div class="nd-lol-hero" style="background-image:url('${DDRAGON_ART}centered/${m.id}_0.jpg')">
+        <div>
+          <div class="nd-lol-kicker">${t('Мейн', 'Main')} · ${lol.role[l]}</div>
+          <div class="nd-lol-champ">${m.name[l]}</div>
+          <div class="nd-lol-id">${lol.riot_id} · ${lol.region} · ${t('ур.', 'lvl')} ${lol.level}</div>
+        </div>
+        <div class="nd-lol-mastery" title="${t('Уровень мастерства', 'Mastery level')}">${m.mastery_level}<span>${t('мастер.', 'mastery')}</span></div>
+      </div>
+      <div class="nd-stat-grid nd-lol-stats">
+        <div class="nd-stat">${t('Победы', 'Win rate')}<b>${m.win_rate}%</b><span>${m.games} ${t('ранкед-игр', 'ranked games')}</span></div>
+        <div class="nd-stat">KDA<b>${m.kda.toFixed(2)}</b><span>${m.kills} / ${m.deaths} / ${m.assists}</span></div>
+        <div class="nd-stat">${t('Игр на', 'Games on')} ${m.name[l]}<b>${share}%</b><span>${t('от всех ранкедов сезона', 'of all ranked this season')}</span></div>
+        <div class="nd-stat">${t('Очки мастерства', 'Mastery points')}<b>${n(m.mastery_points)}</b><span>${t(`в ${lead} раз больше второго`, `${lead}× the runner-up`)}</span></div>
+      </div>
+      <div class="nd-lol-label">${t('Мастерство по чемпионам', 'Mastery by champion')}</div>
+      <div class="nd-lol-bars">${champs
+        .map(
+          (c, i) => `<div class="nd-lol-bar${i === 0 ? ' main' : ''}">
+            <img src="${DDRAGON_ART}tiles/${c.id}_0.jpg" alt="" loading="lazy">
+            <span>${c.name[l]}</span>
+            <span class="nd-lol-track"><span style="width:${((c.mastery_points / m.mastery_points) * 100).toFixed(1)}%"></span></span>
+            <span class="nd-lol-pts">${n(c.mastery_points)}</span>
+          </div>`
+        )
+        .join('')}</div>
+      <div class="nd-lol-links">
+        <a class="nd-btn98" href="${lol.links.leagueofgraphs}" target="_blank" rel="noopener">League of Graphs ↗</a>
+        <a class="nd-btn98" href="${lol.links.opgg}" target="_blank" rel="noopener">OP.GG ↗</a>
+      </div>
+      <div class="nd-lol-note">${t(`Ранкед, сезон ${lol.season} · данные op.gg на ${asOf}`, `Ranked, season ${lol.season} · op.gg data as of ${asOf}`)}<br>${t(
+        'Сайт не связан с Riot Games и не одобрен ею.',
+        'Not endorsed by Riot Games.'
+      )}</div>`;
+  }
+
   /* Shared fetch helper for all three /api/steam* endpoints: logs to the
      console on any failure (bad status, network error, or a hang) instead
      of failing silently into "stuck on loading forever" with nothing to go
@@ -2631,6 +2684,7 @@
       music: () => show('music'),
       games: () => show('games'),
       videos: () => show('videos'),
+      lol: () => show('lol'),
       avatar: () => show('avatar'),
       taskmgr: () => show('taskmgr'),
       calc: () => show('calc'),
@@ -2974,6 +3028,7 @@
     loadSteamWin();
     loadFaceit();
     loadCodewars();
+    renderLol();
     loadMusicTracks();
     initTurnOff();
     initHorror();
@@ -2993,6 +3048,7 @@
       renderSteamWin();
       renderFaceitWin();
       renderCodewars();
+      renderLol();
       renderContacts();
       renderGamesFolder();
       if (isOpen('taskmgr')) renderTaskmgr();
