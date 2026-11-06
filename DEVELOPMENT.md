@@ -128,6 +128,11 @@ content lives in `api/data/profile_hh.py` and `api/data/profile_linkedin.py` —
 those directly to change wording, dates, skills, etc. Projects (`api/data/projects.py`)
 are shared between both résumé versions.
 
+The total shown next to the "Experience" heading isn't written by hand: it's computed
+per request from each job's `start`/`end` (`"YYYY-MM"`, `end: None` for a current job)
+by `current_profile()` in `api/data/profile.py`. Changing a job's dates means updating
+both `period` (the displayed text) and `start`/`end`.
+
 ## Steam / FACEIT integration on the homepage
 
 The `/` homepage's Steam and FACEIT windows (avatar, status, recent games/matches) are

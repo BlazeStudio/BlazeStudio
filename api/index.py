@@ -32,7 +32,7 @@ import terminal
 import video_sync
 from config import RESUME_SOURCE
 from data.lol import LOL
-from data.profile import PROFILE
+from data.profile import current_profile
 from data.projects import CATEGORIES, PROJECTS
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -119,7 +119,7 @@ def _sound_files() -> dict:
 
 def _site_data_json() -> str:
     payload = {
-        "profile": PROFILE,
+        "profile": current_profile(),
         "projects": PROJECTS,
         "categories": CATEGORIES,
         "resume_source": RESUME_SOURCE,
@@ -131,7 +131,7 @@ def _site_data_json() -> str:
 
 def _base_context() -> dict:
     return {
-        "profile": PROFILE,
+        "profile": current_profile(),
         "projects": PROJECTS,
         "categories": CATEGORIES,
         "resume_source": RESUME_SOURCE,
@@ -157,7 +157,7 @@ def dossier(request: Request, lang: str = "ru"):
     return templates.TemplateResponse(
         request,
         "dossier.html",
-        {"profile": PROFILE, "lang": lang, "resume_source": RESUME_SOURCE, "site_host": host, "v": ASSET_VERSION},
+        {"profile": current_profile(), "lang": lang, "resume_source": RESUME_SOURCE, "site_host": host, "v": ASSET_VERSION},
     )
 
 

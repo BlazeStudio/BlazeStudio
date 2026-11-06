@@ -91,7 +91,8 @@ PROFILE = {
     "experience": [
         {
             "period": {"ru": "Июнь 2024 — настоящее время", "en": "Jun 2024 — Present"},
-            "duration": {"ru": "2 года 3 месяца", "en": "2 yr 3 mo"},
+            "start": "2024-06",
+            "end": None,
             "company": {"ru": "Ominimo (Будапешт, Венгрия)", "en": "Ominimo (Budapest, Hungary)"},
             "title": {"ru": "Middle Backend Developer", "en": "Middle Backend Developer"},
             "summary": {
@@ -124,7 +125,8 @@ PROFILE = {
         },
         {
             "period": {"ru": "Март 2022 — Июнь 2024", "en": "Mar 2022 — Jun 2024"},
-            "duration": {"ru": "2 года 4 месяца", "en": "2 yr 4 mo"},
+            "start": "2022-03",
+            "end": "2024-06",
             "company": {"ru": "RTL Consulting (бывш. SAS Enterprise)", "en": "RTL Consulting (ex. SAS Enterprise)"},
             "title": {"ru": "Python Backend Developer", "en": "Python Backend Developer"},
             "summary": {
@@ -157,7 +159,8 @@ PROFILE = {
         },
         {
             "period": {"ru": "Сентябрь 2022 — Май 2024", "en": "Sep 2022 — May 2024"},
-            "duration": {"ru": "1 год 9 месяцев", "en": "1 yr 9 mo"},
+            "start": "2022-09",
+            "end": "2024-05",
             "company": {"ru": "YA-Networks RU (Москва)", "en": "YA-Networks RU (Moscow)"},
             "title": {"ru": "FullStack Developer", "en": "FullStack Developer"},
             "summary": {

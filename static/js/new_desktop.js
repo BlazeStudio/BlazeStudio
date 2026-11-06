@@ -573,7 +573,7 @@
       <div class="nd-doc-role">${PROFILE.role[l]}</div>
       <div class="nd-doc-meta">${PROFILE.location[l]} · <b>${c.email}</b> · <b>${c.telegram_handle}</b> · <a href="${c.github}" target="_blank" rel="noopener">github.com/BlazeStudio</a></div>
       <div class="nd-doc-about">${PROFILE.about[l].map((p) => `<p>${p}</p>`).join('')}</div>
-      <h3 class="nd-h2">${t('Опыт работы', 'Experience')}</h3>
+      <h3 class="nd-h2">${t('Опыт работы', 'Experience')} — ${PROFILE.experience_total[l]}</h3>
       ${PROFILE.experience
         .map(
           (job) => `

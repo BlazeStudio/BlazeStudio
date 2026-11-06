@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=22&duration=3000&pause=1000&color=00D9FF&center=true&vCenter=true&width=700&lines=Python+Backend+Developer;Data+Analyst+%7C+ETL+%26+Analytics;FinTech+%26+InsurTech+Specialist;Exploring+LLM+%26+RAG+Applications" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=22&duration=3000&pause=1000&color=00D9FF&center=true&vCenter=true&width=700&lines=Python+Developer;Backend+%7C+LLM+%2F+AI+Agents+%7C+Data;FinTech+%26+InsurTech+Specialist;Local+LLM%2C+RAG+%26+AI+Agents" alt="Typing SVG" />
 
 <br><br>
 
@@ -25,9 +25,10 @@
 
 - 💼 **3+ года** коммерческой разработки на Python  
 - 🏦 **2+ года** в **FinTech / InsurTech** (актуарные расчёты для НПФ, страховых и банков)  
-- 📊 Глубоко погружён в **data-инженерию** (Pandas / Polars) и инфраструктуру (Docker / Kubernetes)  
-- 🤖 В свободное время изучаю **LLM, RAG** и создание AI-агентов  
-- 🎓 Закончил **РУТ (МИИТ)** — Управление информационными процессами  
+- 📊 Глубоко погружён в **data-инженерию** (Polars / DuckDB / Pandas) и инфраструктуру (Docker / Kubernetes)  
+- 🤖 Разворачиваю локальные **LLM** и строю на них **RAG** и **AI-агентов** для внутренних процессов  
+- ⚙️ Превращаю ручную рутину команды в инструменты: CLI, с которым релиз выходит за 20 минут вместо рабочего дня  
+- 🎓 **РУТ (МИИТ)** — Управление информационными процессами, выпуск 2027  
 
 ---
 
@@ -46,6 +47,7 @@
 ![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
 ![DRF](https://img.shields.io/badge/DRF-092E20?style=for-the-badge&logo=django&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
 ![Asyncio](https://img.shields.io/badge/Asyncio-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
@@ -57,6 +59,10 @@
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![ETL](https://img.shields.io/badge/ETL-FF6F00?style=for-the-badge&logo=databricks&logoColor=white)
+![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)
+![ClickHouse](https://img.shields.io/badge/ClickHouse-FFCC01?style=for-the-badge&logo=clickhouse&logoColor=black)
+![Airflow](https://img.shields.io/badge/Apache_Airflow-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white)
+![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge)
 
 **Инфраструктура:**  
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -66,16 +72,21 @@
 ![GitLab CI](https://img.shields.io/badge/GitLab_CI-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white)
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
+![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 
-**Практики & AI:**  
+**LLM & AI:**  
+![LLM](https://img.shields.io/badge/LLM-412991?style=for-the-badge&logo=openai&logoColor=white)
+![RAG](https://img.shields.io/badge/RAG-FF6F00?style=for-the-badge&logo=python&logoColor=white)
+![vLLM](https://img.shields.io/badge/vLLM-30A2FF?style=for-the-badge&logo=python&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
+![ML](https://img.shields.io/badge/Machine_Learning-F9AB00?style=for-the-badge&logo=tensorflow&logoColor=white)
+
+**Практики:**  
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
 ![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 ![Agile](https://img.shields.io/badge/Agile-0052CC?style=for-the-badge&logo=jira&logoColor=white)
 ![Jira](https://img.shields.io/badge/Jira-0052CC?style=for-the-badge&logo=jira&logoColor=white)
-![LLM](https://img.shields.io/badge/LLM-412991?style=for-the-badge&logo=openai&logoColor=white)
-![RAG](https://img.shields.io/badge/RAG-FF6F00?style=for-the-badge&logo=python&logoColor=white)
-![ML](https://img.shields.io/badge/ML_basics-F9AB00?style=for-the-badge&logo=tensorflow&logoColor=white)
 
 ---
 

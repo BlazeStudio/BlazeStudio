@@ -41,7 +41,7 @@
     </section>
 
     <section class="d-section">
-      <h2>{{ "Опыт работы" if lang == "ru" else "Experience" }}</h2>
+      <h2>{{ "Опыт работы" if lang == "ru" else "Experience" }} — {{ profile.experience_total[lang] }}</h2>
       {% for job in profile.experience %}
       <div class="d-job">
         <div class="d-job-head">

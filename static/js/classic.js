@@ -101,7 +101,7 @@
 
   function renderSkills() {
     const lang = window.XP.lang();
-    const icons = { backend: '⚙️', data: '📊', infra: '🧱', practice: '✅' };
+    const icons = { backend: '⚙️', data: '📊', infra: '🧱', ai: '🤖', practice: '✅' };
     document.getElementById('c-skills-section').innerHTML = `
       <div class="c-section-title">${t('Стек', 'Stack')}</div>
       <div class="c-section-sub">${t('Проценты — самооценка, не сертификат', 'Percentages are self-rated, not certified')}</div>
@@ -146,6 +146,7 @@
     const edu = PROFILE.education;
     document.getElementById('c-experience-section').innerHTML = `
       <div class="c-section-title">${t('Опыт и образование', 'Experience & education')}</div>
+      <div class="c-section-sub">${t('Опыт работы', 'Work experience')} — ${PROFILE.experience_total[lang]}</div>
       <div class="c-timeline">
         ${PROFILE.experience
           .map(
