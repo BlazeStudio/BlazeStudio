@@ -1,6 +1,8 @@
-"""FastAPI backend for Anton Vasiliev's portfolio — a fake desktop OS. Deliberately
-stateless: every route reads from the Python modules in api/data/ or from GitHub's
-public API, so the whole thing runs on Vercel's free tier without a database.
+"""FastAPI app for Anton Vasiliev's portfolio — a fake desktop OS. In production
+nothing runs it: scripts/build_static.py requests every GET route once and writes
+the responses to dist/ for GitHub Pages. Locally it's the dev server. So a route
+only belongs here if it can be frozen: its URL is a file path, and its answer is
+the same for every visitor.
 """
 
 from __future__ import annotations
@@ -9,26 +11,22 @@ import json
 import os
 import sys
 import time
-import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
 import codewars_sync
 import faceit_sync
 import github_sync
-import log_sync
 import music_sync
 import steam_sync
-import terminal
 import video_sync
 from config import RESUME_SOURCE
 from data.lol import LOL
@@ -36,8 +34,10 @@ from data.profile import current_profile
 from data.projects import CATEGORIES, PROJECTS
 
 ROOT = Path(__file__).resolve().parent.parent
-START_TIME = time.time()
-ASSET_VERSION = str(int(START_TIME))  # busts browser cache for static/* on every (re)deploy
+# Busts browser cache for static/*. The commit in a Pages build, so the hourly
+# data refresh doesn't make every visitor re-download all the assets; the server
+# start locally.
+ASSET_VERSION = os.environ.get("GITHUB_SHA", "")[:8] or str(int(time.time()))
 
 app = FastAPI(title="Anton Vasiliev", docs_url=None, redoc_url=None)
 
@@ -59,23 +59,6 @@ class NoCacheStaticMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class AccessLogMiddleware(BaseHTTPMiddleware):
-    """Feeds the terminal's `tail`/`log` easter egg (see log_sync.py) — a
-    minimal access log of method + path + status, deliberately nothing else
-    (no query string, no IP, no user agent), since this ends up readable by
-    anyone the site owner hands the TERMINAL_ROOT_PASSWORD to. /static/* is
-    excluded as pure noise, and the log endpoint itself is excluded so a
-    `tail -f` polling loop doesn't spend its time logging its own polling."""
-
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        path = request.url.path
-        if not path.startswith("/static/") and path != "/api/terminal/log":
-            log_sync.record(f"{request.method} {path} -> {response.status_code}")
-        return response
-
-
-app.add_middleware(AccessLogMiddleware)
 app.add_middleware(NoCacheStaticMiddleware)
 
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
@@ -83,23 +66,6 @@ templates = Jinja2Templates(directory=str(ROOT / "templates"))
 static_dir = ROOT / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-
-STATUS_MESSAGES = {
-    "ru": [
-        "Кофе-машина: онлайн",
-        "Продакшен: без инцидентов",
-        "Код-ревью: в очереди 0",
-        "Дедлайны: под контролем",
-        "Миграции БД: применены",
-    ],
-    "en": [
-        "Coffee machine: online",
-        "Production: no incidents",
-        "Code review queue: empty",
-        "Deadlines: under control",
-        "DB migrations: applied",
-    ],
-}
 
 
 # Optional real recordings for the desktop's power cycle (static/js/boot.js):
@@ -145,14 +111,12 @@ def home(request: Request):
     return templates.TemplateResponse(request, "new_desktop.html", _base_context())
 
 
-@app.get("/desktop")
+@app.get("/desktop/")
 def desktop(request: Request):
     return templates.TemplateResponse(request, "index.html", _base_context())
 
 
-@app.get("/dossier")
-def dossier(request: Request, lang: str = "ru"):
-    lang = lang if lang in ("ru", "en") else "ru"
+def _dossier(request: Request, lang: str):
     host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.hostname
     return templates.TemplateResponse(
         request,
@@ -161,33 +125,25 @@ def dossier(request: Request, lang: str = "ru"):
     )
 
 
-@app.get("/api/health")
-def health():
-    return {"status": "ok", "uptime_seconds": round(time.time() - START_TIME, 1)}
+@app.get("/dossier/")
+def dossier_ru(request: Request):
+    return _dossier(request, "ru")
 
 
-@app.get("/api/status")
-def status(lang: str = "ru"):
-    lang = lang if lang in STATUS_MESSAGES else "ru"
-    messages = STATUS_MESSAGES[lang]
-    idx = int(time.time() / 15) % len(messages)
-    return {
-        "time": time.strftime("%H:%M:%S"),
-        "message": messages[idx],
-        "uptime_seconds": round(time.time() - START_TIME, 1),
-    }
+@app.get("/dossier/en/")
+def dossier_en(request: Request):
+    return _dossier(request, "en")
 
 
-@app.get("/api/projects")
-def projects(live: bool = True):
-    data = github_sync.merge_live_projects(PROJECTS) if live else PROJECTS
-    return {"projects": data}
+@app.get("/api/projects.json")
+def projects():
+    return {"projects": github_sync.merge_live_projects(PROJECTS)}
 
 
-@app.get("/api/github/stats")
+@app.get("/api/github/stats.json")
 def github_stats():
     # Independent GitHub calls — run them side by side instead of paying for
-    # each round-trip in turn on a cold (uncached) instance.
+    # each round-trip in turn.
     with ThreadPoolExecutor(max_workers=4) as pool:
         profile = pool.submit(github_sync.get_profile_stats)
         commits = pool.submit(github_sync.get_commit_count)
@@ -202,26 +158,16 @@ def github_stats():
     return stats
 
 
-@app.get("/api/codewars")
+@app.get("/api/codewars.json")
 def codewars_stats():
     return codewars_sync.get_profile()
 
 
-@app.get("/api/steam")
+@app.get("/api/steam.json")
 def steam_stats():
-    # Screenshots and the CS inventory both live on their own endpoints
-    # (see below) rather than being bundled in here, for the same reason in
-    # both cases: this endpoint's profile/extra/games calls are the official,
-    # API-key'd Web API and answer near-instantly, while inventory pricing
-    # and the screenshot scrape each hit steamcommunity.com directly and can
-    # legitimately take several seconds (or get rate-limited and fail) on
-    # their own. Bundling either into this one meant a slow/failing one of
-    # them held the whole response hostage — worst case actually timing out
-    # the request outright on a serverless deploy's function-duration limit —
-    # so profile/stats never even rendered even though they'd been ready
-    # instantly. Splitting them out means each piece loads (or fails) on its
-    # own, on its own retry schedule, without blocking or re-triggering the
-    # others.
+    # Screenshots and the CS inventory get their own files because the page
+    # loads them separately: screenshots only when the Explorer tab opens,
+    # the inventory without holding up the profile.
     return {
         "profile": steam_sync.get_profile(),
         "extra": steam_sync.get_extra_stats(),
@@ -230,22 +176,17 @@ def steam_stats():
     }
 
 
-@app.get("/api/steam/screenshots")
+@app.get("/api/steam/screenshots.json")
 def steam_screenshots():
     return {"screenshots": steam_sync.get_recent_screenshots(count=12)}
 
 
-@app.get("/api/steam/inventory")
+@app.get("/api/steam/inventory.json")
 def steam_inventory():
     return {"cs_inventory": steam_sync.get_cs_inventory()}
 
 
-@app.get("/api/steam/price")
-def steam_item_price(name: str = ""):
-    return steam_sync.get_item_price(name[:200])
-
-
-@app.get("/api/faceit")
+@app.get("/api/faceit.json")
 def faceit_stats():
     return {
         "player": faceit_sync.get_player(),
@@ -254,7 +195,7 @@ def faceit_stats():
     }
 
 
-@app.get("/api/music")
+@app.get("/api/music.json")
 def music_tracks():
     return music_sync.get_tracks()
 
@@ -268,64 +209,6 @@ def music_cover(filename: str):
     return Response(content=data, media_type=mime, headers={"Cache-Control": "public, max-age=3600"})
 
 
-@app.get("/api/video")
+@app.get("/api/video.json")
 def video_list():
     return video_sync.get_videos()
-
-
-class TerminalRequest(BaseModel):
-    cmd: str = ""
-    lang: str = "ru"
-    elevated_password: str = ""
-    client: dict = {}  # screen / timezone / languages, as the page reports them — for `whoami`
-
-
-def _visitor(request: Request, client: dict) -> dict:
-    """Who's typing, for the terminal's `whoami`: IP from the proxy chain,
-    city/region/country from the geo headers Vercel adds in production, the
-    User-Agent, plus what the page itself reported. Only ever echoed back to
-    that same visitor — nothing here is logged (see _redact_cmd/log_sync)."""
-    h = request.headers
-    forwarded = h.get("x-forwarded-for", "")
-    ip = forwarded.split(",")[0].strip() or h.get("x-real-ip", "") or (request.client.host if request.client else "")
-    clip = lambda value, n: str(value or "")[:n]
-    return {
-        "ip": ip,
-        "city": urllib.parse.unquote(h.get("x-vercel-ip-city", "")),
-        "region": h.get("x-vercel-ip-country-region", ""),
-        "country": h.get("x-vercel-ip-country", ""),
-        "ua": clip(h.get("user-agent"), 400),
-        "screen": clip(client.get("screen"), 20),
-        "tz": clip(client.get("tz"), 40),
-        "langs": clip(client.get("langs"), 60),
-    }
-
-
-def _redact_cmd(cmd: str) -> str:
-    """A 'sudo su <password>' the log records verbatim would defeat the
-    point of gating tail behind that same password — so this is the one
-    command whose argument never reaches the log."""
-    parts = cmd.strip().split(maxsplit=2)
-    if len(parts) >= 2 and parts[0].lower() == "sudo" and parts[1].lower() == "su":
-        return "sudo su ********"
-    return cmd
-
-
-@app.post("/api/terminal")
-def terminal_command(payload: TerminalRequest, request: Request):
-    result = terminal.run_command(payload.cmd, payload.lang, payload.elevated_password, _visitor(request, payload.client))
-    if payload.cmd.strip():
-        log_sync.record(f"term: {_redact_cmd(payload.cmd)}")
-    return JSONResponse(result)
-
-
-@app.get("/api/terminal/log")
-def terminal_log(password: str = "", since: int = -1, n: int = 20):
-    if not log_sync.check_password(password):
-        return JSONResponse({"error": "permission denied"}, status_code=403)
-    n = max(1, min(n, terminal.MAX_TAIL_LINES))
-    entries = log_sync.tail(since=since) if since >= 0 else log_sync.tail(n=n)
-    return {
-        "lines": [log_sync.format_entry(e) for e in entries],
-        "next_id": entries[-1]["id"] if entries else since,
-    }

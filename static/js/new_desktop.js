@@ -598,7 +598,7 @@
   }
 
   function pdfHtml(l) {
-    const href = `/dossier?lang=${l}`;
+    const href = l === 'en' ? '/dossier/en/' : '/dossier/';
     return `
       <div class="nd-pdf-bar">
         <b>${t('резюме.pdf · стр. 1', 'resume.pdf · page 1')}</b>
@@ -623,16 +623,16 @@
     }</div>`;
   }
 
-  // Every card carries its GitHub star count, live from /api/projects (one
-  // cached repo listing server-side). Until it answers, a project shows its
-  // snapshot from projects.py if it has one, else no stars at all.
+  // Every card carries its GitHub star count from /api/projects.json (refreshed
+  // by the hourly build). Until it answers, a project shows its snapshot from
+  // projects.py if it has one, else no stars at all.
   const liveStars = {};
   let liveStarsLoading = false;
 
   function loadLiveStars() {
     if (liveStarsLoading || Object.keys(liveStars).length) return;
     liveStarsLoading = true;
-    fetch('/api/projects')
+    fetch('/api/projects.json')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         ((data && data.projects) || []).forEach((p) => {
@@ -853,7 +853,7 @@
     const app = document.getElementById('nd-videos-app');
     if (!app) return;
     try {
-      const res = await fetch('/api/video');
+      const res = await fetch('/api/video.json');
       const data = await res.json();
       videoState.videos = (data && data.videos) || [];
     } catch (e) {
@@ -972,35 +972,14 @@
     const link = document.getElementById('nd-item-popup-link');
     if (img) img.src = it.icon || '';
     if (name) name.textContent = it.name;
-    const paint = (loading) => {
-      if (!meta || overlay.dataset.item !== (it.market_url || '')) return; // another item was opened meanwhile
-      let price;
+    if (meta) {
+      let price = t('Цена неизвестна', 'Price unknown');
       if (it.price_rub != null) {
-        const note = it.price_source === 'live' ? t('Steam Market, сейчас', 'Steam Market, now') : t('Steam Market, последняя известная', 'Steam Market, last known');
+        const note = it.price_source === 'live' ? t('Steam Market, за последний час', 'Steam Market, within the last hour') : t('Steam Market, последняя известная', 'Steam Market, last known');
         price = `${Math.round(it.price_rub).toLocaleString('ru-RU')} ₽<span class="nd-item-popup-note">${note}</span>`;
-      } else {
-        price = loading ? t('Узнаём цену на Steam Market…', 'Checking the Steam Market price…') : t('Цена неизвестна', 'Price unknown');
       }
       const bits = [it.exterior, it.rarity].filter(Boolean).join(' · ');
       meta.innerHTML = `${bits ? `<div>${bits}</div>` : ''}<div class="nd-item-popup-price">${price}</div>`;
-    };
-    overlay.dataset.item = it.market_url || '';
-    // Not live-priced yet (snapshot figure or none at all) — ask the Market now.
-    const needsPrice = it.market_url && it.price_source !== 'live' && !it.priceChecked;
-    paint(needsPrice);
-    if (needsPrice) {
-      it.priceChecked = true;
-      const marketName = decodeURIComponent(it.market_url.split('/').pop());
-      fetch('/api/steam/price?name=' + encodeURIComponent(marketName))
-        .then((r) => r.json())
-        .then((res) => {
-          if (res && res.price_rub != null) {
-            it.price_rub = res.price_rub;
-            it.price_source = res.source;
-          }
-        })
-        .catch(() => {})
-        .finally(() => paint(false));
     }
     if (link) {
       if (it.market_url) {
@@ -1759,7 +1738,7 @@
 
   async function loadMusicTracks() {
     try {
-      const res = await fetch('/api/music');
+      const res = await fetch('/api/music.json');
       const data = await res.json();
       musicTracks = (data && data.tracks) || [];
     } catch (e) {
@@ -2049,7 +2028,7 @@
   })();
   async function loadGithub() {
     try {
-      const res = await fetch('/api/github/stats');
+      const res = await fetch('/api/github/stats.json');
       githubCache = await res.json();
     } catch (e) {
       githubCache = { synced: false };
@@ -2149,7 +2128,7 @@
   let codewarsCache = null;
   async function loadCodewars() {
     try {
-      const res = await fetch('/api/codewars');
+      const res = await fetch('/api/codewars.json');
       codewarsCache = await res.json();
     } catch (e) {
       codewarsCache = { synced: false };
@@ -2241,12 +2220,12 @@
       )}</div>`;
   }
 
-  /* Shared fetch helper for all three /api/steam* endpoints: logs to the
+  /* Shared fetch helper for all three /api/steam* files: logs to the
      console on any failure (bad status, network error, or a hang) instead
      of failing silently into "stuck on loading forever" with nothing to go
      on, and aborts a request that's taking too long rather than leaving a
      dangling fetch() that (fetch has no default timeout) could otherwise
-     wait forever on a server that never responds. */
+     wait forever. */
   function fetchJsonSafe(url, fallback, timeoutMs) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -2262,31 +2241,17 @@
       .finally(() => clearTimeout(timer));
   }
 
-  /* /api/steam (profile + extra stats + recent/top games) backs the bulk of
-     the Steam window. It's all the official, API-key'd Web API, so
-     profile.synced is a reliable "did this actually connect" signal and a
-     couple of quick retries is enough for a transient hiccup. */
-  const STEAM_RETRY_DELAYS_MS = [1500, 3000];
+  /* These are files the hourly build wrote, so asking again wouldn't change
+     the answer: each one is fetched once and kept. */
+
+  /* /api/steam.json (profile + extra stats + recent/top games) backs the bulk
+     of the Steam window. */
   let steamData = null;
   let steamPromise = null;
-  function fetchSteamOnce() {
-    return fetchJsonSafe('/api/steam', { profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] } }, 12000);
-  }
   function fetchSteam() {
     if (steamData) return Promise.resolve(steamData);
     if (!steamPromise) {
-      steamPromise = (async () => {
-        let data = await fetchSteamOnce();
-        for (const delay of STEAM_RETRY_DELAYS_MS) {
-          if (data && data.profile && data.profile.synced) break;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          data = await fetchSteamOnce();
-        }
-        if (!data || !data.profile || !data.profile.synced) {
-          console.error('[steam] /api/steam never synced after retries — giving up. Last response:', data);
-        }
-        return data;
-      })();
+      steamPromise = fetchJsonSafe('/api/steam.json', { profile: { synced: false }, extra: { synced: false }, recent_games: { games: [] }, top_games: { games: [] } }, 12000);
     }
     return steamPromise.then((data) => {
       steamData = data;
@@ -2294,37 +2259,13 @@
     });
   }
 
-  /* /api/steam/inventory is its own endpoint on purpose: it scrapes
-     steamcommunity.com's anonymous inventory listing AND prices each item
-     via the Market (rate-limited hard by Steam, up to a several-second
-     budget server-side — see PRICE_BUDGET_SECONDS in steam_sync.py). Bundled
-     into /api/steam like it used to be, a slow or rate-limited inventory
-     held the whole response hostage — on a real deploy, sometimes past a
-     serverless function's time limit, which killed the request outright and
-     took profile/stats down with it even though those were ready instantly.
-     Split out, a slow inventory just means the inventory section takes a
-     moment (or, after retrying, stays empty) while the rest of the window
-     works fine. Retries are capped at two (not screenshots' ten): retrying
-     re-runs the same rate-limited price lookups, so hammering it harder
-     would fight the very throttling that's slowing it down. */
-  const INVENTORY_RETRY_DELAYS_MS = [1500, 3000];
+  /* /api/steam/inventory.json backs the inventory section of the Steam window. */
   let inventoryData = null;
   let inventoryPromise = null;
-  function fetchInventoryOnce() {
-    return fetchJsonSafe('/api/steam/inventory', { cs_inventory: { synced: false, items: [] } }, 20000);
-  }
   function fetchInventory() {
     if (inventoryData) return Promise.resolve(inventoryData);
     if (!inventoryPromise) {
-      inventoryPromise = (async () => {
-        let data = await fetchInventoryOnce();
-        for (const delay of INVENTORY_RETRY_DELAYS_MS) {
-          if (data && data.cs_inventory && data.cs_inventory.synced) break;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          data = await fetchInventoryOnce();
-        }
-        return data;
-      })();
+      inventoryPromise = fetchJsonSafe('/api/steam/inventory.json', { cs_inventory: { synced: false, items: [] } }, 20000);
     }
     return inventoryPromise.then((data) => {
       inventoryData = data;
@@ -2332,35 +2273,13 @@
     });
   }
 
-  /* /api/steam/screenshots backs only the Explorer's Screenshots tab. Its
-     scrape (a community-profile page fetch plus one detail-page fetch per
-     screenshot) is the genuinely flaky part, so this is the one that gets
-     the long, patient retry — up to SCREENSHOTS_MAX_ATTEMPTS — without ever
-     touching the Steam window's data or its rate-limited inventory pricing.
-     (An account with genuinely zero public screenshots looks the same as
-     "failed to load" here and pays for the full retry budget too — an
-     acceptable tradeoff since this profile does have public screenshots.) */
-  const SCREENSHOTS_MAX_ATTEMPTS = 10;
-  const SCREENSHOTS_RETRY_DELAY_MS = 1500;
+  /* /api/steam/screenshots.json backs only the Explorer's Screenshots tab. */
   let screenshotsData = null;
   let screenshotsPromise = null;
-  function fetchScreenshotsOnce() {
-    return fetchJsonSafe('/api/steam/screenshots', { screenshots: { synced: false, screenshots: [] } }, 12000);
-  }
   function fetchScreenshots() {
     if (screenshotsData) return Promise.resolve(screenshotsData);
     if (!screenshotsPromise) {
-      screenshotsPromise = (async () => {
-        let data = await fetchScreenshotsOnce();
-        for (let attempt = 1; attempt < SCREENSHOTS_MAX_ATTEMPTS && !(data && data.screenshots && data.screenshots.synced); attempt++) {
-          await new Promise((resolve) => setTimeout(resolve, SCREENSHOTS_RETRY_DELAY_MS));
-          data = await fetchScreenshotsOnce();
-        }
-        if (!data || !data.screenshots || !data.screenshots.synced) {
-          console.error('[steam] screenshots never synced after retries — giving up. Last response:', data);
-        }
-        return data;
-      })();
+      screenshotsPromise = fetchJsonSafe('/api/steam/screenshots.json', { screenshots: { synced: false, screenshots: [] } }, 12000);
     }
     return screenshotsPromise.then((data) => {
       screenshotsData = data;
@@ -2546,7 +2465,7 @@
   let faceitCache = null;
   async function loadFaceit() {
     try {
-      const res = await fetch('/api/faceit');
+      const res = await fetch('/api/faceit.json');
       faceitCache = await res.json();
     } catch (e) {
       faceitCache = { player: { synced: false } };
@@ -2610,8 +2529,7 @@
   }
 
   /* =========================================================
-     Console — the real thing: terminal.js + POST /api/terminal.
-     No fake canned answers here.
+     Console: terminal.js + terminal_commands.js.
      ========================================================= */
   function initConsoleWindow() {
     const root = document.getElementById('nd-console-root');
@@ -2661,10 +2579,10 @@
   }
 
   /* Terminal effects can ask to "open" a window by id — map the
-     three targets terminal.py's effect payloads use onto this
+     three targets terminal_commands.js's effects use onto this
      page's actual windows/tabs. */
   window.XP.open = function (id) {
-    // Targets come from terminal.py effect payloads (cv/projects/contact/…)
+    // Targets come from terminal_commands.js effects (cv/projects/contact/…)
     // and a few aliases for convenience / future commands.
     const openers = {
       resume: () => openExplorer('resume'),

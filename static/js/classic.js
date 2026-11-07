@@ -54,7 +54,8 @@
     const lang = window.XP.lang();
     document.getElementById('c-brand-name').textContent = PROFILE.name[lang];
     document.getElementById('c-brand-role').textContent = PROFILE.role[lang];
-    document.getElementById('c-pdf').href = `/dossier?lang=${lang}`;
+    const dossierUrl = lang === 'en' ? '/dossier/en/' : '/dossier/';
+    document.getElementById('c-pdf').href = dossierUrl;
 
     document.getElementById('c-hero').innerHTML = `
       <svg class="c-seal" viewBox="0 0 100 100" aria-hidden="true">
@@ -66,7 +67,7 @@
       <h1 class="c-hero-title">${PROFILE.name[lang]} <mark>${PROFILE.role[lang]}</mark></h1>
       <p class="c-hero-tagline">${PROFILE.tagline[lang]}</p>
       <div class="c-hero-cta">
-        <a class="c-btn c-btn-accent" href="/dossier?lang=${lang}" target="_blank">📄 ${t('Скачать PDF', 'Download PDF')}</a>
+        <a class="c-btn c-btn-accent" href="${dossierUrl}" target="_blank">📄 ${t('Скачать PDF', 'Download PDF')}</a>
         <a class="c-btn" href="#c-contact-section">✉️ ${t('Связаться', 'Get in touch')}</a>
       </div>
       <div class="c-hero-stats">
@@ -225,7 +226,7 @@
 
   async function syncGithub() {
     try {
-      const res = await fetch('/api/projects');
+      const res = await fetch('/api/projects.json');
       if (!res.ok) throw new Error('bad response');
       const data = await res.json();
       liveProjects = data.projects;

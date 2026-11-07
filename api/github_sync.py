@@ -3,13 +3,11 @@ that aren't REST but are still safe to scrape unauthenticated: the commit search
 count and the profile's public contribution-calendar fragment).
 
 No database and no third-party HTTP client: stdlib urllib is enough for a handful of
-small JSON/HTML responses, and it keeps the serverless bundle tiny. Results are cached in
-a module-level dict for the lifetime of the function instance — on Vercel that's
-usually minutes, which is plenty to avoid hammering GitHub's unauthenticated rate
-limit (60 req/hour/IP for the REST API, 10 req/min for search) while still feeling
-"live" to a visitor. Set GITHUB_TOKEN (any fine-grained token with public read access)
-to lift that to 5000/hour — the per-repo language and code-size stats need it on
-Vercel, where many instances share a few IPs.
+small JSON/HTML responses. Results are cached in a module-level dict for the lifetime
+of the process, so a build or dev session doesn't repeat calls against GitHub's
+unauthenticated rate limit (60 req/hour/IP for the REST API, 10 req/min for search).
+Set GITHUB_TOKEN to lift it: the deploy workflow passes its built-in token, which
+the per-repo language and code-size stats need on GitHub Actions' shared IPs.
 """
 
 from __future__ import annotations
@@ -42,7 +40,10 @@ def _headers() -> dict[str, str]:
 
 
 def _get(url: str, parse: str = "json") -> Any | None:
-    req = urllib.request.Request(url, headers=_headers())
+    # Text responses are the contribution-calendar scrapes: plain github.com
+    # pages, not the REST API, so they don't get the API token.
+    headers = _headers() if parse == "json" else {"User-Agent": _headers()["User-Agent"]}
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             raw = resp.read()

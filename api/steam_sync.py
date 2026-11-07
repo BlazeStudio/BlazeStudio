@@ -18,8 +18,6 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-import log_sync
-
 API_KEY = os.environ.get("STEAM_API_KEY", "")
 STEAM_ID = os.environ.get("STEAM_ID64", "")
 TIMEOUT = 4.0
@@ -70,17 +68,13 @@ def _load_static_inventory(count: int = 12) -> dict | None:
             return None
         # The snapshot fixes *which* skins to show and carries the prices
         # scripts/refresh_cs_prices.py last recorded; a live Market price
-        # (cached for hours) replaces that whenever Steam's rate limit allows.
-        # Anything still unpriced gets asked for on demand by the item popup.
+        # replaces that whenever Steam's rate limit allows.
         deadline = time.time() + PRICE_BUDGET_SECONDS
         failures = 0
         for it in clean:
             name = _market_name(it.get("market_url"))
             if not name:
                 continue
-            _KNOWN_MARKET_NAMES.add(name)
-            if it["price_rub"] is not None:
-                _SNAPSHOT_PRICES[name] = it["price_rub"]
             it["price_source"] = "snapshot" if it["price_rub"] is not None else None
             if time.time() >= deadline or failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
                 continue
@@ -99,10 +93,7 @@ def _load_static_inventory(count: int = 12) -> dict | None:
             "prices_as_of": payload.get("prices_updated_at"),
         }
     except Exception as e:
-        try:
-            log_sync.record(f"steam/inventory: static snapshot load failed: {e}")
-        except Exception:
-            pass
+        print(f"steam/inventory: static snapshot load failed: {e}", flush=True)
         return None
 
 
@@ -308,11 +299,11 @@ _UGC_ID_RE = re.compile(r"images\.steamusercontent\.com/ugc/(\d+)/([0-9A-Fa-f]+)
 # get_cs_inventory() bounds its market-price lookups: a short per-request
 # timeout, a total wall-clock budget, and backing off after a few
 # consecutive failures — so a slow or already-throttled Steam can't stall
-# the whole request, and a batch of failures degrades to lower-res
+# the whole build, and a batch of failures degrades to lower-res
 # thumbnails instead of losing every screenshot that hasn't been upgraded
 # yet.
-SCREENSHOT_DETAIL_TIMEOUT = 2.5
-SCREENSHOT_DETAIL_BUDGET_SECONDS = 6.0
+SCREENSHOT_DETAIL_TIMEOUT = 4.0
+SCREENSHOT_DETAIL_BUDGET_SECONDS = 30.0
 SCREENSHOT_DETAIL_MAX_CONSECUTIVE_FAILURES = 3
 
 
@@ -394,8 +385,8 @@ _RARITY_RANK = {
 
 PRICE_CURRENCY = "5"  # RUB
 PRICE_CACHE_TTL = 6 * 3600  # prices move slowly, and every lookup spends Steam's tight rate limit
-PRICE_TIMEOUT = 1.5  # the market endpoint is aggressively rate-limited — fail fast rather than stall the page
-PRICE_BUDGET_SECONDS = 2.5  # total wall-clock time this request may spend pricing items — kept a couple seconds under a typical 10s serverless function limit, on top of the inventory fetch itself
+PRICE_TIMEOUT = 4.0
+PRICE_BUDGET_SECONDS = 20.0  # total wall-clock time one build may spend pricing items
 PRICE_MAX_CONSECUTIVE_FAILURES = 3  # stop hammering an endpoint that's already started rate-limiting us
 
 _PRICE_NUM_RE = re.compile(r"[\d][\d\s  ]*(?:[.,]\d+)?")
@@ -418,10 +409,6 @@ def _parse_price(price_str: str | None) -> float | None:
         return None
 
 
-# Only names we've actually shown get priced on demand — the endpoint
-# shouldn't turn this server into a free proxy for arbitrary Market lookups.
-_KNOWN_MARKET_NAMES: set[str] = set()
-_SNAPSHOT_PRICES: dict[str, float] = {}
 # priceoverview allows roughly 20 lookups a minute per IP and answers 429
 # beyond that; after a failure, leave that item alone for a while instead of
 # spending the rest of the budget (and the limit) retrying it.
@@ -433,35 +420,6 @@ def _market_name(market_url: str | None) -> str | None:
     if not market_url or "/market/listings/730/" not in market_url:
         return None
     return urllib.parse.unquote(market_url.rsplit("/", 1)[-1]) or None
-
-
-def _snapshot_market_names() -> set[str]:
-    try:
-        payload = json.loads(_STATIC_INV_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return set()
-    names = set()
-    for it in list(payload.get("items") or []) + list(payload.get("all_marketable") or []):
-        name = _market_name(it.get("market_url"))
-        if not name:
-            continue
-        names.add(name)
-        if it.get("price_rub") is not None:
-            _SNAPSHOT_PRICES[name] = it["price_rub"]
-    return names
-
-
-def get_item_price(market_hash_name: str) -> dict:
-    """One item's current lowest Market price in RUB, for the item popup."""
-    if market_hash_name not in _KNOWN_MARKET_NAMES:
-        _KNOWN_MARKET_NAMES.update(_snapshot_market_names())  # a cold instance may not have loaded the snapshot yet
-    if market_hash_name not in _KNOWN_MARKET_NAMES:
-        return {"price_rub": None, "source": None}
-    price = _get_market_price(market_hash_name)
-    if price is not None:
-        return {"price_rub": round(price, 2), "source": "live"}
-    snapshot = _SNAPSHOT_PRICES.get(market_hash_name)
-    return {"price_rub": snapshot, "source": "snapshot" if snapshot is not None else None}
 
 
 def _get_market_price(market_hash_name: str) -> float | None:
@@ -479,18 +437,16 @@ def _get_market_price(market_hash_name: str) -> float | None:
 
 def get_cs_inventory(count: int = 12) -> dict:
     """Public CS2 inventory (appid 730, context 2). Step-by-step progress
-    is written to log_sync so it only appears in the site terminal via
-    `tail` / `tail -f` (password-gated) — never in the Steam window UI."""
+    goes to stdout, which is the build log of the deploy workflow."""
     t0 = time.time()
 
     def log(msg: str) -> None:
-        """Visible only via terminal `tail` / `tail -f` (log_sync ring buffer)."""
         elapsed = f"{time.time() - t0:.2f}s"
-        log_sync.record(f"steam/inventory: [{elapsed}] {msg}")
+        print(f"steam/inventory: [{elapsed}] {msg}", flush=True)
 
     log(f"start get_cs_inventory(count={count})")
     if not STEAM_ID:
-        log("FAIL: STEAM_ID64 env is empty — set it in Vercel project settings")
+        log("FAIL: STEAM_ID64 env is empty — set it in the repo's Actions secrets")
         return {"synced": False, "items": [], "total": None}
 
     log(f"STEAM_ID64 present (…{STEAM_ID[-4:]})")
@@ -577,7 +533,6 @@ def get_cs_inventory(count: int = 12) -> dict:
         if not name or name in seen_names:
             continue
         seen_names.add(name)
-        _KNOWN_MARKET_NAMES.add(name)
         tags = d.get("tags", [])
         rarity = next((tag for tag in tags if tag.get("category") == "Rarity"), None)
         exterior = next((tag for tag in tags if tag.get("category") == "Exterior"), None)

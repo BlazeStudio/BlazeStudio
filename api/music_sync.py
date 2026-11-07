@@ -25,6 +25,7 @@ from data.music_meta import MUSIC_META
 
 MUSIC_DIR = Path(__file__).resolve().parent.parent / "static" / "music"
 SUPPORTED_EXT = {".mp3", ".m4a", ".flac", ".ogg", ".wav"}
+COVER_EXT = {"image/png": ".png", "image/webp": ".webp", "image/gif": ".gif"}  # anything else: .jpg
 CACHE_TTL = 600  # seconds — re-scan the directory occasionally rather than on every request
 
 _cache: tuple[float, list[dict[str, Any]]] | None = None
@@ -77,8 +78,11 @@ def _read_track(path: Path) -> dict[str, Any]:
             if tag_artist:
                 track["artist"] = tag_artist[0]
         audio = mutagen.File(str(path))
-        if audio is not None and _extract_cover_bytes(audio) is not None:
-            track["cover_url"] = f"/api/music/cover/{path.name}"
+        cover = _extract_cover_bytes(audio) if audio is not None else None
+        if cover:
+            # A real image extension: in the static build this is a plain file,
+            # served with whatever type its name suggests.
+            track["cover_url"] = f"/api/music/cover/{path.stem}{COVER_EXT.get(cover[1], '.jpg')}"
     except Exception:
         pass
     meta = MUSIC_META.get(path.name, {})
@@ -106,19 +110,17 @@ def get_tracks() -> dict:
 
 
 def get_cover(filename: str) -> tuple[bytes, str] | None:
-    """Looks up one track's embedded cover art by its static/music/ filename.
-    Rejects anything that isn't a plain filename inside MUSIC_DIR."""
-    if mutagen is None or not filename or "/" in filename or "\\" in filename:
+    """Looks up one track's embedded cover art by the filename in its cover_url:
+    the track's own name with an image extension. Matched against what's actually
+    in MUSIC_DIR, so nothing outside it can be reached."""
+    if mutagen is None or not MUSIC_DIR.exists():
         return None
-    path = MUSIC_DIR / filename
-    try:
-        resolved = path.resolve()
-        if not resolved.is_relative_to(MUSIC_DIR.resolve()) or not resolved.is_file():
-            return None
-    except OSError:
+    stem = Path(filename).stem
+    path = next((p for p in MUSIC_DIR.iterdir() if p.stem == stem and p.suffix.lower() in SUPPORTED_EXT), None)
+    if path is None:
         return None
     try:
-        audio = mutagen.File(str(resolved))
+        audio = mutagen.File(str(path))
     except Exception:
         return None
     if audio is None:

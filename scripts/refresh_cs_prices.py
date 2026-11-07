@@ -1,8 +1,8 @@
 """Records current Steam Market prices (RUB) into static/data/cs_inventory.json.
 
-The site asks the Market for live prices too, but Steam's priceoverview
+The hourly build asks the Market for live prices too, but Steam's priceoverview
 endpoint allows only ~20 lookups a minute per IP and is stricter still with
-datacenter IPs like Vercel's — so the snapshot carries a recent price for
+datacenter IPs like GitHub Actions' — so the snapshot carries a recent price for
 every shown skin as the fallback. Run this from a home connection now and
 then, and commit the result:
 
