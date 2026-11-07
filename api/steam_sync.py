@@ -422,6 +422,21 @@ def _market_name(market_url: str | None) -> str | None:
     return urllib.parse.unquote(market_url.rsplit("/", 1)[-1]) or None
 
 
+def _snapshot_prices() -> dict[str, float]:
+    """The last known price of each skin, by market name, as recorded in the
+    snapshot by scripts/refresh_cs_prices.py."""
+    try:
+        payload = json.loads(_STATIC_INV_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    prices = {}
+    for it in list(payload.get("items") or []) + list(payload.get("all_marketable") or []):
+        name = _market_name(it.get("market_url"))
+        if name and it.get("price_rub") is not None:
+            prices[name] = it["price_rub"]
+    return prices
+
+
 def _get_market_price(market_hash_name: str) -> float | None:
     key = f"steam:price:{market_hash_name}"
     fresh = key in _cache and time.time() - _cache[key][0] < PRICE_CACHE_TTL
@@ -573,25 +588,32 @@ def get_cs_inventory(count: int = 12) -> dict:
             "total": data.get("total_inventory_count"),
         }
 
+    # The Market often refuses datacenter IPs like the build's, so any skin it
+    # doesn't price here shows the last price recorded in the snapshot.
+    snapshot_prices = _snapshot_prices()
     deadline = time.time() + PRICE_BUDGET_SECONDS
     consecutive_failures = 0
     priced_ok = 0
     priced_fail = 0
     for it in items:
         mhn = it.pop("_mhn")
-        if time.time() >= deadline or consecutive_failures >= PRICE_MAX_CONSECUTIVE_FAILURES:
-            it["price_rub"] = None
-            continue
-        price = _get_market_price(mhn)
-        it["price_rub"] = price
+        price = None
+        if time.time() < deadline and consecutive_failures < PRICE_MAX_CONSECUTIVE_FAILURES:
+            price = _get_market_price(mhn)
+            if price is not None:
+                priced_ok += 1
+                consecutive_failures = 0
+            else:
+                priced_fail += 1
+                consecutive_failures += 1
         if price is not None:
-            priced_ok += 1
-            consecutive_failures = 0
+            it["price_rub"] = price
+            it["price_source"] = "live"
         else:
-            priced_fail += 1
-            consecutive_failures += 1
+            it["price_rub"] = snapshot_prices.get(mhn)
+            it["price_source"] = "snapshot" if mhn in snapshot_prices else None
 
-    log(f"pricing done: ok={priced_ok} fail={priced_fail} budget={PRICE_BUDGET_SECONDS}s")
+    log(f"pricing done: ok={priced_ok} fail={priced_fail} from_snapshot={sum(it['price_source'] == 'snapshot' for it in items)} budget={PRICE_BUDGET_SECONDS}s")
 
     # Knife / gloves first, then by market price, then rarity
     items.sort(
