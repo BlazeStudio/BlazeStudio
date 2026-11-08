@@ -627,7 +627,17 @@
   // by the hourly build). Until it answers, a project shows its snapshot from
   // projects.py if it has one, else no stars at all.
   const liveStars = {};
+  const liveDownloads = {};
   let liveStarsLoading = false;
+
+  function downloadsLabel(n) {
+    if (lang() === 'en') return n === 1 ? 'download' : 'downloads';
+    const d10 = n % 10;
+    const d100 = n % 100;
+    if (d10 === 1 && d100 !== 11) return 'скачивание';
+    if (d10 >= 2 && d10 <= 4 && (d100 < 12 || d100 > 14)) return 'скачивания';
+    return 'скачиваний';
+  }
 
   function loadLiveStars() {
     if (liveStarsLoading || Object.keys(liveStars).length) return;
@@ -637,12 +647,19 @@
       .then((data) => {
         ((data && data.projects) || []).forEach((p) => {
           if (p.live && p.live.synced && p.live.stars != null) liveStars[p.id] = p.live.stars;
+          if (p.live && p.live.downloads != null) liveDownloads[p.id] = p.live.downloads;
         });
         document.querySelectorAll('[data-stars-for]').forEach((el) => {
           const n = liveStars[el.dataset.starsFor];
           if (n == null) return;
           el.textContent = n;
           el.parentElement.hidden = false;
+        });
+        document.querySelectorAll('[data-downloads-for]').forEach((el) => {
+          const n = liveDownloads[el.dataset.downloadsFor];
+          if (n == null) return;
+          el.textContent = `${n} ${downloadsLabel(n)}`;
+          el.hidden = false;
         });
       })
       .catch(() => {})
@@ -656,6 +673,11 @@
     return `<span class="${cls}"${n == null ? ' hidden' : ''} title="${t('Звёзды на GitHub', 'GitHub stars')}">★ <span data-stars-for="${p.id}">${n == null ? '' : n}</span>${suffix || ''}</span>`;
   }
 
+  function downloadsHtml(p) {
+    const n = liveDownloads[p.id];
+    return `<span class="nd-featured-downloads" data-downloads-for="${p.id}" title="${t('Скачивания релизов на GitHub, вместе с обновлениями', 'GitHub release downloads, updates included')}"${n == null ? ' hidden' : ''}>${n == null ? '' : `${n} ${downloadsLabel(n)}`}</span>`;
+  }
+
   function stackHtml(p) {
     return `<div class="nd-card-stack">${p.stack.map((s) => `<span>${s}</span>`).join('')}</div>`;
   }
@@ -667,6 +689,7 @@
         <div class="nd-featured-head">
           <div class="nd-card-title">${p.name}</div>
           ${starsHtml(p, 'nd-featured-stars', ` ${t('на GitHub', 'on GitHub')}`)}
+          ${p.live_downloads ? downloadsHtml(p) : ''}
         </div>
         ${stackHtml(p)}
         <div class="nd-card-desc">${p.description[l]}</div>

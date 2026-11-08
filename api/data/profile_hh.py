@@ -34,12 +34,12 @@ PROFILE = {
     ],
     "about": {
         "ru": [
-            "Python-разработчик, 3 года коммерческого опыта в финтехе: backend, обработка данных и автоматизация процессов. Беру ручную рутину команды и превращаю её в инструмент: создал с нуля CLI, с которым релиз выходит за 20 минут вместо рабочего дня, и ускорил обработку данных на 73%.",
-            "Разворачиваю локальные LLM и строю на них RAG и AI-агентов для внутренних процессов. Быстро разбираюсь в предметной области, перевожу требования бизнеса в задачи и довожу их до продакшена.",
+            "Python-разработчик, 3+ года в финтехе. Делаю бэкенд платформы для НПФ и страховых: расчёты, ETL, отчётность. Люблю превращать ручную рутину в инструменты: CLI для релизов, локальные LLM, RAG-ассистенты по нормативке.",
+            "В одиночку запустил и поддерживаю open-source проект, которым уже пользуются больше 100 человек. Ищу интересные проекты.",
         ],
         "en": [
-            "Python developer with 3 years of commercial experience in fintech: backend, data processing and process automation. I take a team's manual routine and turn it into a tool: built a CLI from scratch that ships a release in 20 minutes instead of a full working day, and sped up data processing by 73%.",
-            "I deploy local LLMs and build RAG and AI agents on top of them for internal processes. I get up to speed on a domain quickly, turn business requirements into tasks and take them through to production.",
+            "Python developer, 3+ years in fintech. I build the backend of a platform for pension funds and insurers: calculations, ETL, reporting. I like turning manual routine into tools: a release CLI, local LLMs, RAG assistants over regulations.",
+            "On my own, I launched and maintain an open-source project that more than 100 people already use. Looking for interesting projects.",
         ],
     },
     "traits": [
@@ -121,6 +121,36 @@ PROFILE = {
     # start/end ("YYYY-MM", end None = still there) drive the total-experience
     # counter — see current_profile() in profile.py.
     "experience": [
+        {
+            "period": {"ru": "Август 2026 — настоящее время", "en": "Aug 2026 — Present"},
+            "start": "2026-08",
+            "end": None,
+            "company": {"ru": "HH-Auto (Open Source)", "en": "HH-Auto (Open Source)"},
+            "title": {"ru": "Lead Developer & Maintainer", "en": "Lead Developer & Maintainer"},
+            # Same text as the hh.ru résumé.
+            "summary": {
+                "ru": "В одиночку запустил и поддерживаю open-source приложение для соискателей на hh.ru: от идеи и кода до сборок, релизов, сайта и поддержки пользователей. В данный момент им пользуются больше 100 человек. Приложение помогает с поиском, сравнивает резюме с рынком, ведёт статистику и анализ откликов, подбирает подходящие вакансии и навыки, которые нужно подтянуть.",
+                "en": "On my own, I launched and maintain an open-source app for job seekers on hh.ru: from the idea and code to builds, releases, the website and user support. More than 100 people use it right now. The app helps with the job search, compares the résumé with the market, tracks and analyzes applications, and picks suitable vacancies and the skills worth brushing up.",
+            },
+            "highlight": {"ru": "", "en": ""},
+            "tasks": {
+                "ru": [
+                    "LLM: письма, ответы на вопросы ботов и фильтр вакансий по описанию своими словами. Подключается к OpenRouter, DeepSeek или локальной Ollama. Ответ сверяется с резюме: если модель приписала технологию, которой там нет, ответ переписывается, а если не помогло, такие фразы вырезаются",
+                    "Анализ резюме против открытых вакансий: каких навыков не хватает, сколько вакансий откроет каждый и сколько за него платят; воронка «запрос → приглашения и отказы»",
+                    "Поставка: сборки под Windows, macOS, Linux и Docker через GitHub Actions; автообновление со сверкой контрольной суммы и откатом при сбое",
+                    "Сайт проекта на Astro и Tailwind CSS: лендинг с интерактивным демо, страницы о безопасности и контактах, актуальная версия и ссылки на скачивание из GitHub API",
+                    "Документация для людей без опыта в IT: установка, первый запуск, гайд по локальной LLM; changelog к каждому релизу",
+                ],
+                "en": [
+                    "LLM: cover letters, answers to bots' questions and a vacancy filter driven by a plain-language description. Works with OpenRouter, DeepSeek or a local Ollama. Each answer is checked against the résumé: if the model claims a technology that isn't there, the answer is rewritten, and failing that, such sentences are cut",
+                    "Résumé analysis against open vacancies: which skills are missing, how many vacancies each would open and what it pays; a funnel from search query to invitations and rejections",
+                    "Delivery: builds for Windows, macOS, Linux and Docker via GitHub Actions; self-update with checksum verification and rollback on failure",
+                    "Project website on Astro and Tailwind CSS: a landing page with an interactive demo, safety and contacts pages, the current version and download links from the GitHub API",
+                    "Docs for people with no IT background: installation, first run, a local-LLM guide; a changelog for every release",
+                ],
+            },
+            "tags": ["Python", "Playwright", "OpenRouter / DeepSeek / Ollama", "CustomTkinter", "PyInstaller", "Docker", "GitHub Actions", "Astro", "Tailwind CSS"],
+        },
         {
             "period": {"ru": "Июнь 2024 — настоящее время", "en": "Jun 2024 — Present"},
             "start": "2024-06",

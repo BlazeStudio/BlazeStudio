@@ -223,10 +223,19 @@ def get_repo_stats() -> dict:
     }
 
 
+def _release_downloads(repo: str) -> int | None:
+    """Downloads of every file attached to the repo's releases, summed."""
+    releases = _cached(f"releases:{repo}", f"https://api.github.com/repos/{GITHUB_USER}/{repo}/releases?per_page=100", valid=lambda v: isinstance(v, list))
+    if not isinstance(releases, list):
+        return None
+    return sum(asset.get("download_count") or 0 for release in releases for asset in release.get("assets") or [])
+
+
 def merge_live_projects(projects: list[dict]) -> list[dict]:
     """Stars and last push for each project, all from the one repo listing that
     get_repo_stats() already caches — a single API call however many cards
-    there are, instead of one per repo."""
+    there are, instead of one per repo. Projects marked live_downloads cost
+    one more call each, for their release download count."""
     repos = _cached("repos", f"{API_BASE}/repos?per_page=100&type=owner")
     by_name = {r["name"].lower(): r for r in repos if r.get("name")} if isinstance(repos, list) else {}
     merged = []
@@ -237,5 +246,7 @@ def merge_live_projects(projects: list[dict]) -> list[dict]:
             if repo
             else {"stars": None, "pushed_at": None, "synced": False}
         )
+        if project.get("live_downloads"):
+            live["downloads"] = _release_downloads(project["repo"])
         merged.append({**project, "live": live})
     return merged

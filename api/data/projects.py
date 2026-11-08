@@ -9,33 +9,36 @@ PROJECTS = [
         "repo": "HH-Auto-Response",
         "name": "HH-Auto-Response",
         "category": "tools",
-        # Shown on its own above the grid, with a star count (live from GitHub
-        # when it answers, else this snapshot).
+        # Shown on its own above the grid, with its star count from GitHub.
         "featured": True,
-        "stars": 0,
+        # Also show the total downloads of its GitHub release files (every
+        # archive, updates included) next to the stars.
+        "live_downloads": True,
         "stack": ["Python", "Playwright", "CustomTkinter", "OpenRouter / DeepSeek / Ollama", "Docker", "GitHub Actions"],
         "description": {
-            "ru": "Десктоп-приложение, которое само откликается на вакансии hh.ru: проходит выдачу страница за страницей, пишет сопроводительное письмо под конкретную вакансию, заполняет анкеты работодателей по резюме и разбирает чаты с отказами. Живых рекрутеров, приглашения и всё про документы и деньги оставляет человеку.",
-            "en": "A desktop app that applies to hh.ru vacancies by itself: it walks the search results page by page, writes a cover letter for each vacancy, fills in employer questionnaires from the résumé and sorts out rejection chats. Live recruiters, invitations and anything about documents or money stay with the human.",
+            "ru": "Приложение для соискателей на hh.ru, которое я запустил и поддерживаю один. LLM пишет сопроводительное письмо под каждую вакансию и отвечает на вопросы работодателя по резюме, а приложение сравнивает резюме с рынком и ведёт статистику откликов. Живых рекрутеров, приглашения и всё про документы и деньги оставляет человеку.",
+            "en": "An app for job seekers on hh.ru that I launched and maintain on my own. An LLM writes a cover letter for each vacancy and answers employer questions from the résumé, while the app compares the résumé with the market and tracks application stats. Live recruiters, invitations and anything about documents or money stay with the human.",
         },
         "highlights": {
             "ru": [
-                "Все фильтры поиска hh плюс свои; настройки заполняются одной ссылкой с сайта",
-                "Нейросеть на выбор: OpenRouter, DeepSeek или локальная Ollama",
-                "Технологии, зарплату и сроки выхода берёт из резюме и настроек, а не придумывает",
-                "Сборки под Windows, macOS, Linux и Docker, обновляется само из релизов GitHub",
+                "Больше 100 пользователей за первый месяц; пишут мне напрямую с идеями и багами",
+                "Запустил и веду один: код, сборки, релизы, сайт, документация и ответы пользователям",
+                "Нейросеть пишет только по резюме и тексту, который пользователь написал о себе сам: опыт не выдумывает, чужих навыков не приписывает",
+                "Обновления каждые 2–3 дня; приложение ставит их само, со сверкой контрольной суммы и откатом",
+                "Сайт проекта на Astro и Tailwind CSS, без внешних CDN, чтобы открывался из России",
             ],
             "en": [
-                "Every hh search filter plus its own; settings fill in from a single hh link",
-                "LLM of your choice: OpenRouter, DeepSeek or a local Ollama",
-                "Skills, salary and start date come from the résumé and settings, never made up",
-                "Builds for Windows, macOS, Linux and Docker, self-updating from GitHub releases",
+                "100+ users in the first month; they message me directly with ideas and bugs",
+                "Launched and run it alone: code, builds, releases, website, docs and user support",
+                "The LLM writes only from the user's résumé and the text they wrote about themselves: no invented experience, no made-up skills",
+                "Updates every 2–3 days, installed by the app itself with checksum verification and rollback",
+                "Project website on Astro and Tailwind CSS with no external CDNs, so it opens from Russia",
             ],
         },
-        "role": {"ru": "Desktop-приложение, соло", "en": "Desktop app, solo"},
+        "role": {"ru": "Свой продукт, соло", "en": "Own product, solo"},
         "github": "https://github.com/BlazeStudio/HH-Auto-Response",
-        "homepage": "https://github.com/BlazeStudio/HH-Auto-Response/releases/latest",
-        "homepage_label": {"ru": "Скачать", "en": "Download"},
+        "homepage": "https://blazestudio.github.io/HH-Auto-Response/",
+        "homepage_label": {"ru": "Сайт проекта", "en": "Project site"},
     },
     {
         "id": "fresh-multitool",
