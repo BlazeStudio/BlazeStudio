@@ -2,7 +2,7 @@
 
 PROFILE = {
     "name": {"ru": "Васильев Антон", "en": "Anton Vasiliev"},
-    "role": {"ru": "Data / System Analyst", "en": "Data / System Analyst"},
+    "role": {"ru": "AI/LLM-инженер · Python Backend (AI)", "en": "AI/LLM Engineer · Python Backend (AI)"},
     "tagline": {
         "ru": "Партизан надевает корпортивное худи и выходит к людям",
         "en": "100 years of offers",
@@ -13,7 +13,7 @@ PROFILE = {
         "ru": "Открыт к предложениям — полная, частичная занятость, проектная работа",
         "en": "Open to offers — full-time, part-time, project work",
     },
-    "format": {"ru": "На месте / удалённо / гибрид", "en": "On-site / remote / hybrid"},
+    "format": {"ru": "Удалённо / гибрид / на месте", "en": "Remote / hybrid / on-site"},
     "contacts": {
         "email": "praim916@mail.ru",
         "telegram": "https://t.me/terminallover",
@@ -34,33 +34,46 @@ PROFILE = {
     ],
     "about": {
         "ru": [
-            "Python-разработчик / Дата аналитик, 3+ года в финтехе. Делаю бэкенд платформы для НПФ и страховых: расчёты, ETL, отчётность. Люблю превращать ручную рутину в инструменты: CLI для релизов, локальные LLM, RAG-ассистенты по нормативке.",
+            "AI/LLM-инженер с 3+ годами в финтехе. Строю прикладные LLM-системы в закрытом контуре: RAG по нормативке, локальный инференс (vLLM, Ollama), AI-агенты для разработки и разбора инцидентов.",
             "В одиночку запустил и поддерживаю open-source проект, которым уже пользуются больше 100 человек. Ищу интересные проекты.",
         ],
         "en": [
-            "Python developer / Data Analyst, 3+ years in fintech. I build the backend of a platform for pension funds and insurers: calculations, ETL, reporting. I like turning manual routine into tools: a release CLI, local LLMs, RAG assistants over regulations.",
+            "AI/LLM engineer with 3+ years in fintech. I build applied LLM systems inside closed environments: RAG over regulations, local inference (vLLM, Ollama), AI agents for development and incident triage.",
             "On my own, I launched and maintain an open-source project that more than 100 people already use. Looking for interesting projects.",
         ],
     },
     "traits": [
+        {"ru": "Строю RAG и AI-агентов", "en": "Building RAG and AI agents"},
         {"ru": "Не боюсь легаси", "en": "Not afraid of legacy code"},
         {"ru": "Самые красивые логи", "en": "The most beautiful logs"},
         {"ru": "Не кладу прод в пятницу", "en": "Don't take prod down on Fridays"},
         {"ru": "Люблю документацию и автотесты", "en": "Loves docs and autotests"},
-        {"ru": "Строю RAG и AI-агентов", "en": "Building RAG and AI agents"},
     ],
     "skills": {
+        "ai": {
+            "label": {"ru": "LLM и AI", "en": "LLM & AI"},
+            "items": [
+                {"name": "LLM", "level": 85},
+                {"name": "RAG", "level": 85},
+                {"name": "AI Agents / MCP", "level": 80},
+                {"name": "Ollama", "level": 80},
+                {"name": "vLLM", "level": 75},
+                {"name": "Embeddings", "level": 75},
+                {"name": "Machine Learning", "level": 65},
+                {"name": "scikit-learn", "level": 60},
+            ],
+        },
         "backend": {
             "label": {"ru": "Backend", "en": "Backend"},
             "items": [
                 {"name": "Python", "level": 95},
                 {"name": "FastAPI", "level": 85},
                 {"name": "Pydantic", "level": 85},
-                {"name": "Django", "level": 90},
-                {"name": "Django REST Framework", "level": 88},
-                {"name": "Flask", "level": 88},
                 {"name": "Asyncio", "level": 80},
                 {"name": "REST API", "level": 88},
+                {"name": "Django", "level": 85},
+                {"name": "Django REST Framework", "level": 82},
+                {"name": "Flask", "level": 82},
             ],
         },
         "data": {
@@ -72,9 +85,9 @@ PROFILE = {
                 {"name": "DuckDB", "level": 70},
                 {"name": "ETL", "level": 82},
                 {"name": "Query Optimization", "level": 80},
-                {"name": "pandas", "level": 80},
+                {"name": "pandas", "level": 82},
                 {"name": "NumPy", "level": 75},
-                {"name": "Polars", "level": 65},
+                {"name": "Polars", "level": 70},
                 {"name": "Parquet / PyArrow", "level": 70},
                 {"name": "Apache Airflow", "level": 60},
                 {"name": "Power BI", "level": 70},
@@ -86,25 +99,16 @@ PROFILE = {
             "label": {"ru": "Инфраструктура", "en": "Infrastructure"},
             "items": [
                 {"name": "Docker", "level": 85},
-                {"name": "Docker Compose", "level": 85},
                 {"name": "Kubernetes", "level": 75},
                 {"name": "Kafka", "level": 75},
                 {"name": "Celery", "level": 85},
-                {"name": "GitLab CI", "level": 78},
-                {"name": "CI/CD", "level": 78},
+                {"name": "GitLab CI", "level": 80},
+                {"name": "CI/CD", "level": 80},
                 {"name": "Prometheus", "level": 70},
-                {"name": "Ansible", "level": 70},
-                {"name": "Linux / Bash / SSH", "level": 82},
-            ],
-        },
-        "ai": {
-            "label": {"ru": "LLM и AI", "en": "LLM & AI"},
-            "items": [
-                {"name": "LLM", "level": 60},
-                {"name": "RAG", "level": 55},
-                {"name": "vLLM", "level": 55},
-                {"name": "Ollama", "level": 60},
-                {"name": "Machine Learning", "level": 55},
+                {"name": "Grafana", "level": 70},
+                {"name": "ELK / OpenTelemetry", "level": 65},
+                {"name": "Ansible", "level": 65},
+                {"name": "Linux / Bash", "level": 82},
             ],
         },
         "practice": {
@@ -112,7 +116,7 @@ PROFILE = {
             "items": [
                 {"name": "Git", "level": 92},
                 {"name": "Pytest", "level": 78},
-                {"name": "Integration Testing", "level": 75},
+                {"name": "DevOps", "level": 75},
                 {"name": "Agile", "level": 80},
                 {"name": "Jira", "level": 75},
             ],
@@ -126,7 +130,7 @@ PROFILE = {
             "start": "2024-06",
             "end": None,
             "company": {"ru": "RTL Consulting (ex. SAS Enterprise)", "en": "RTL Consulting (ex. SAS Enterprise)"},
-            "title": {"ru": "Middle Data / System Analyst", "en": "Middle Data / System Analyst"},
+            "title": {"ru": "Python-разработчик / ML-инженер (LLM)", "en": "Python Developer / ML Engineer (LLM)"},
             "summary": {
                 "ru": "Разрабатывал высоконагруженную расчётную платформу для НПФ, страховых компаний и банков: актуарные прогнозы денежных потоков, отчётность МСФО 17 и 836-П. Продукты ОПС, НПО и ПДС для 10+ крупных клиентов (СберНПФ, ВТБ, Газфонд ПН, Благосостояние, Ренессанс страхование).",
                 "en": "Built a high-load calculation platform for pension funds, insurers and banks: actuarial cash-flow projections, IFRS 17 and 836-P reporting. Delivered pension and long-term savings products (ОПС, НПО, ПДС) for 10+ major clients (SberNPF, VTB, Gazfond PN, Blagosostoyanie, Renaissance Insurance).",
@@ -138,23 +142,30 @@ PROFILE = {
             "tasks": {
                 "ru": [
                     {
-                        "category": "Анализ данных и отчётность",
-                        "items": [
-                            "Собирал и формализовывал требования от бизнес-заказчиков (пенсионные фонды и страховые), переводил их в аналитические задачи и технические спецификации для команды",
-                            "Разработал модуль аналитической отчётности с агрегацией ключевых метрик по портфелям клиентов: доходность, риски, распределение активов, денежные потоки. Визуализация позволяла бизнесу принимать решения на актуальных данных",
-                            "Переписал 15+ критичных SQL-запросов отчётности на оконные функции и индексы: сложные отчёты строятся в ~4 раза быстрее",
-                            "Проводил анализ и трансформацию исторических данных (до 15 лет) при подключении новых клиентов. Разработал скрипты на Pandas для валидации, очистки и конвертации данных без потери целостности",
-                            "Построил ETL-пайплайн на Polars и DuckDB до 2 млн записей за расчёт: время обработки сократилось на 73%, падений по памяти больше нет",
-                            "Настроил аналитическое хранилище на ClickHouse для тяжёлых агрегатов и отчётов: быстрые выборки по большим объёмам данных без нагрузки на OLTP-базу",
-                        ],
-                    },
-                    {
                         "category": "LLM и AI-автоматизация",
                         "items": [
                             "Развернул локальные LLM (Qwen, Llama) на vLLM и Ollama в закрытом контуре, чтобы данные клиентов не уходили во внешние API",
                             "RAG-ассистент по методологии и нормативке (836-П, МСФО 17) и документации проекта (~100 документов): ответ на типовой вопрос аналитика — секунды вместо поиска по документам и вопросов коллегам",
                             "Внедрил AI-ассистированную разработку в команде (Claude Code, Cursor, Codex): инструкции для агентов, 40+ навыков (ревью, сверка с эталоном, релиз), граф знаний кодовой базы и MCP-серверы. Сверка расчёта с эталоном сократилась с 2–3 дней до нескольких часов, вход нового разработчика — с месяца до недели",
                             "AI-агент разбора упавших расчётов: читает логи и статусы, сопоставляет с реестром ошибок и предлагает причину — первичный разбор инцидента быстрее в несколько раз",
+                        ],
+                    },
+                    {
+                        "category": "Data & Analytics",
+                        "items": [
+                            "Построил ETL-пайплайн на Polars и DuckDB до 2 млн записей за расчёт: время обработки −73%, падений по памяти больше нет",
+                            "Разработал модуль аналитической отчётности с агрегацией ключевых метрик по портфелям клиентов. Визуализация данных позволяла бизнес-заказчикам принимать решения на основе актуальных показателей (доходность, риски, распределение активов)",
+                            "Проводил анализ и трансформацию исторических данных (до 15 лет) при подключении новых клиентов. Разработал скрипты на Pandas для валидации, очистки и конвертации данных без потери целостности",
+                            "Переписал 15+ критичных SQL-запросов отчётности на оконные функции и индексы: сложные отчёты строятся в ~4 раза быстрее",
+                        ],
+                    },
+                    {
+                        "category": "Backend & Architecture",
+                        "items": [
+                            "Разработал асинхронную систему очередей задач на Celery + Redis для распределённой обработки тяжёлых расчётов. Увеличил пропускную способность системы в 3 раза за счёт горизонтального масштабирования воркеров",
+                            "Ввёл контроль состояния воркеров перед запуском расчёта: зависших и потерянных расчётов стало меньше на 90%",
+                            "Участвовал в проектировании сервис-ориентированной архитектуры: выделил актуарный модуль и модуль отчётности в отдельные микросервисы, настроил их синхронизацию через REST API и Kafka",
+                            "Интегрировал систему с внешним интерфейсом и смежными модулями, обеспечивая согласованность данных и обработку событий в реальном времени",
                         ],
                     },
                     {
@@ -174,33 +185,14 @@ PROFILE = {
                         ],
                     },
                     {
-                        "category": "Backend & Architecture",
-                        "items": [
-                            "Разработал асинхронную систему очередей задач на Celery + Redis для распределённой обработки тяжёлых расчётов. Увеличил пропускную способность системы в 3 раза за счёт горизонтального масштабирования воркеров",
-                            "Ввёл контроль состояния воркеров перед запуском расчёта: зависших и потерянных расчётов стало меньше на 90%",
-                            "Участвовал в проектировании сервис-ориентированной архитектуры: выделил актуарный модуль и модуль отчётности в отдельные микросервисы, настроил их синхронизацию через REST API и Kafka",
-                            "Интегрировал систему с внешним интерфейсом и смежными модулями, обеспечивая согласованность данных и обработку событий в реальном времени",
-                        ],
-                    },
-                    {
                         "category": "Business Analysis",
                         "items": [
+                            "Участвовал в сборе и формализации требований от бизнес-заказчиков (пенсионные фонды и страховые компании). Переводил бизнес-потребности в технические задачи для команды разработки",
                             "Проводил демонстрации реализованного функционала заказчикам, собирал обратную связь и корректировал приоритеты разработки",
                         ],
                     },
                 ],
                 "en": [
-                    {
-                        "category": "Data Analysis & Reporting",
-                        "items": [
-                            "Gathered and formalized requirements from business stakeholders (pension funds and insurers), turning them into analytical tasks and technical specifications for the team",
-                            "Built an analytics reporting module aggregating key metrics across client portfolios: returns, risk, asset allocation, cash flows. Its visualizations let the business decide on current data",
-                            "Rewrote 15+ critical reporting SQL queries with window functions and indexes: complex reports build ~4x faster",
-                            "Analyzed and transformed up to 15 years of historical data during client onboarding; wrote Pandas scripts for validation, cleanup and conversion with no loss of integrity",
-                            "Built a Polars + DuckDB ETL pipeline handling up to 2M records per calculation: processing time down 73%, no more out-of-memory crashes",
-                            "Set up a ClickHouse analytical store for heavy aggregates and reports: fast queries over large data volumes without loading the OLTP database",
-                        ],
-                    },
                     {
                         "category": "LLM & AI Automation",
                         "items": [
@@ -208,6 +200,24 @@ PROFILE = {
                             "RAG assistant over methodology, regulations (836-P, IFRS 17) and project docs (~100 documents): answers an analyst's typical question in seconds instead of digging through documents and asking colleagues",
                             "Rolled out AI-assisted development across the team (Claude Code, Cursor, Codex): agent instructions, 40+ skills (review, reconciliation against the reference, release), a codebase knowledge graph and MCP servers. Reconciling a calculation against the reference went from 2–3 days to a few hours, onboarding a new developer from a month to a week",
                             "AI agent for triaging failed calculations: reads logs and statuses, matches them against an error registry and suggests a cause — initial incident triage is several times faster",
+                        ],
+                    },
+                    {
+                        "category": "Data & Analytics",
+                        "items": [
+                            "Built a Polars + DuckDB ETL pipeline handling up to 2M records per calculation: processing time down 73%, no more out-of-memory crashes",
+                            "Built an analytics reporting module aggregating key metrics across client portfolios. Its visualizations let business stakeholders decide on current figures (returns, risk, asset allocation)",
+                            "Analyzed and transformed up to 15 years of historical data during client onboarding; wrote Pandas scripts for validation, cleanup and conversion with no loss of integrity",
+                            "Rewrote 15+ critical reporting SQL queries with window functions and indexes: complex reports build ~4x faster",
+                        ],
+                    },
+                    {
+                        "category": "Backend & Architecture",
+                        "items": [
+                            "Built an async task-queue system on Celery + Redis for distributed processing of heavy calculations — throughput up 3x via horizontal worker scaling",
+                            "Added worker health checks before each calculation run: hung and lost calculations down 90%",
+                            "Contributed to the service-oriented architecture: split the actuarial and reporting modules into separate microservices, synced via REST API and Kafka",
+                            "Integrated the system with the external UI and adjacent modules, ensuring data consistency and real-time event processing",
                         ],
                     },
                     {
@@ -227,17 +237,9 @@ PROFILE = {
                         ],
                     },
                     {
-                        "category": "Backend & Architecture",
-                        "items": [
-                            "Built an async task-queue system on Celery + Redis for distributed processing of heavy calculations — throughput up 3x via horizontal worker scaling",
-                            "Added worker health checks before each calculation run: hung and lost calculations down 90%",
-                            "Contributed to the service-oriented architecture: split the actuarial and reporting modules into separate microservices, synced via REST API and Kafka",
-                            "Integrated the system with the external UI and adjacent modules, ensuring data consistency and real-time event processing",
-                        ],
-                    },
-                    {
                         "category": "Business Analysis",
                         "items": [
+                            "Gathered and formalized requirements from business stakeholders (pension funds and insurers), turning business needs into technical tasks for the development team",
                             "Ran functionality demos for clients, collected feedback and adjusted development priorities",
                         ],
                     },
@@ -246,78 +248,58 @@ PROFILE = {
             "tags": ["Python", "FastAPI", "Pydantic", "Celery", "Redis", "PostgreSQL", "DuckDB", "Polars", "pandas", "Parquet/PyArrow", "Docker", "Kubernetes", "GitLab CI", "Bash", "Linux", "pytest", "vLLM", "Ollama", "RAG", "Power BI"],
         },
         {
-            "period": {"ru": "Август 2026 — Ноябрь 2026", "en": "Aug 2026 — Nov 2026"},
-            "start": "2026-08",
-            "end": "2026-11",
-            "company": {"ru": "HH-Auto (Open Source)", "en": "HH-Auto (Open Source)"},
-            "title": {"ru": "Lead Developer & Maintainer", "en": "Lead Developer & Maintainer"},
-            # Same text as the hh.ru résumé.
+            "period": {"ru": "Март 2023 — Июнь 2024", "en": "Mar 2023 — Jun 2024"},
+            "start": "2023-03",
+            "end": "2024-06",
+            "company": {"ru": "ARQA Technologies (Новосибирск)", "en": "ARQA Technologies (Novosibirsk)"},
+            "title": {"ru": "Python Developer / ML Engineer (Data / LLM)", "en": "Python Developer / ML Engineer (Data / LLM)"},
             "summary": {
-                "ru": "В одиночку запустил и поддерживаю open-source приложение для соискателей на hh.ru: от идеи и кода до сборок, релизов, сайта и поддержки пользователей. В данный момент им пользуются больше 100 человек. Приложение помогает с поиском, сравнивает резюме с рынком, ведёт статистику и анализ откликов, подбирает подходящие вакансии и навыки, которые нужно подтянуть.",
-                "en": "On my own, I launched and maintain an open-source app for job seekers on hh.ru: from the idea and code to builds, releases, the website and user support. More than 100 people use it right now. The app helps with the job search, compares the résumé with the market, tracks and analyzes applications, and picks suitable vacancies and the skills worth brushing up.",
+                "ru": "Работал в команде аналитической инфраструктуры продуктов QUIK и QORT (торговые и бэк-офисные системы для брокеров и банков). Готовил данные для внутренней отчётности и прогнозирования нагрузки, участвовал в создании прототипа LLM-ассистента по документации для поддержки и внедрения.",
+                "en": "Worked on the analytics infrastructure team for QUIK and QORT (trading and back-office systems for brokers and banks). Prepared data for internal reporting and load forecasting, and helped build a prototype LLM assistant over the documentation for support and implementation teams.",
             },
             "highlight": {"ru": "", "en": ""},
             "tasks": {
                 "ru": [
-                    "LLM: письма, ответы на вопросы ботов и фильтр вакансий по описанию своими словами. Подключается к OpenRouter, DeepSeek или локальной Ollama. Ответ сверяется с резюме: если модель приписала технологию, которой там нет, ответ переписывается, а если не помогло, такие фразы вырезаются",
-                    "Анализ резюме против открытых вакансий: каких навыков не хватает, сколько вакансий откроет каждый и сколько за него платят; воронка «запрос → приглашения и отказы»",
-                    "Поставка: сборки под Windows, macOS, Linux и Docker через GitHub Actions; автообновление со сверкой контрольной суммы и откатом при сбое",
-                    "Сайт проекта на Astro и Tailwind CSS: лендинг с интерактивным демо, страницы о безопасности и контактах, актуальная версия и ссылки на скачивание из GitHub API",
-                    "Документация для людей без опыта в IT: установка, первый запуск, гайд по локальной LLM; changelog к каждому релизу",
+                    "Писал пайплайн подготовки данных о клиентской нагрузке на pandas и SQL: очистка, валидация, обогащение. Датасеты для прогноза пиковых периодов стали собираться автоматически, а не вручную, примерно на 40% быстрее",
+                    "Сделал отчёт по использованию продуктов (подключения, активность, объёмы операций) с дашбордами в Power BI для внутренних заказчиков",
+                    "В составе команды из 2–3 человек собрал прототип RAG-ассистента по технической документации QUIK/QORT и базе знаний поддержки. На мне были подготовка и чанкинг документов, эмбеддинги, поиск релевантных фрагментов и оценка качества ответов на наборе типовых вопросов",
+                    "Настроил проверки качества входящих выгрузок и уведомления об аномалиях: пропуски, дубли, выбросы по объёмам",
                 ],
                 "en": [
-                    "LLM: cover letters, answers to bots' questions and a vacancy filter driven by a plain-language description. Works with OpenRouter, DeepSeek or a local Ollama. Each answer is checked against the résumé: if the model claims a technology that isn't there, the answer is rewritten, and failing that, such sentences are cut",
-                    "Résumé analysis against open vacancies: which skills are missing, how many vacancies each would open and what it pays; a funnel from search query to invitations and rejections",
-                    "Delivery: builds for Windows, macOS, Linux and Docker via GitHub Actions; self-update with checksum verification and rollback on failure",
-                    "Project website on Astro and Tailwind CSS: a landing page with an interactive demo, safety and contacts pages, the current version and download links from the GitHub API",
-                    "Docs for people with no IT background: installation, first run, a local-LLM guide; a changelog for every release",
+                    "Wrote a pandas + SQL pipeline preparing client-load data: cleanup, validation, enrichment. Datasets for forecasting peak periods are now built automatically instead of by hand, about 40% faster",
+                    "Built a product-usage report (connections, activity, transaction volumes) with Power BI dashboards for internal stakeholders",
+                    "In a team of 2–3, built a prototype RAG assistant over the QUIK/QORT technical documentation and the support knowledge base. I owned document preparation and chunking, embeddings, retrieval of relevant passages and answer-quality evaluation on a set of typical questions",
+                    "Set up quality checks on incoming data exports and anomaly alerts: gaps, duplicates, volume outliers",
                 ],
             },
-            "tags": ["Python", "Playwright", "OpenRouter / DeepSeek / Ollama", "CustomTkinter", "PyInstaller", "Docker", "GitHub Actions", "Astro", "Tailwind CSS"],
+            "tags": ["Python", "pandas", "NumPy", "SQL", "PostgreSQL", "scikit-learn", "RAG", "Embeddings", "Power BI", "Docker", "GitLab CI"],
         },
         {
-            "period": {"ru": "Сентябрь 2023 — Май 2024", "en": "Sep 2023 — May 2024"},
-            "start": "2023-09",
-            "end": "2024-05",
-            "company": {"ru": "Веб-студия «Фрилансер» (Краснодар)", "en": "Freelance web studio (Krasnodar)"},
-            "title": {"ru": "Fullstack Developer", "en": "Fullstack Developer"},
+            "period": {"ru": "Октябрь 2022 — Март 2023", "en": "Oct 2022 — Mar 2023"},
+            "start": "2022-10",
+            "end": "2023-03",
+            "company": {"ru": "Смартекссофт (Москва)", "en": "Smartexsoft (Moscow)"},
+            "title": {"ru": "Junior Python Developer", "en": "Junior Python Developer"},
             "summary": {
-                "ru": "",
-                "en": "",
+                "ru": "Разрабатывал внутренние и клиентские сервисы для банковских проектов: модуль скоринга, инструмент аналитика для работы с PostgreSQL, MVP клиентского портала.",
+                "en": "Built internal and client-facing services for banking projects: a scoring module, an analyst tool for working with PostgreSQL, a client portal MVP.",
             },
-            "highlight": {"ru": "Открытые проекты: Ritm Goroda, PostgreSQL Web GUI, Vostok Messenger", "en": "Public projects: Ritm Goroda, PostgreSQL Web GUI, Vostok Messenger"},
-            "tasks": {"ru": [
-                    {
-                        "category": "Django Fullstack Developer (февраль — май 2024)",
-                        "items": [
-                            "Разработал веб-сервис для поиска досуга в Москве с интеграцией Yandex Maps API: динамическое добавление событий на карту, графическая статистика посещений, оценок и закладок",
-                            "Реализовал админ-панель для управления событиями и модерации контента",
-                        ],
-                    },
-                    {
-                        "category": "Flask Fullstack Developer (сентябрь — декабрь 2023)",
-                        "items": [
-                            "Создал веб-инструмент для управления PostgreSQL — аналог pgAdmin/DBeaver с GUI для SQL-запросов и отдельной консолью. Поддерживал подключение к нескольким базам данных одновременно",
-                            "Разработал MVP социальной сети: регистрация, система друзей, жалобы администрации, обмен сообщениями в реальном времени (Ajax)",
-                        ],
-                    },
-            ], "en": [
-                    {
-                        "category": "Django Fullstack Developer (Feb – May 2024)",
-                        "items": [
-                            "Built a leisure-discovery web service for Moscow with the Yandex Maps API: dynamic event pins on the map, charts for visits, ratings and bookmarks",
-                            "Implemented an admin panel for managing events and moderating content",
-                        ],
-                    },
-                    {
-                        "category": "Flask Fullstack Developer (Sep – Dec 2023)",
-                        "items": [
-                            "Created a PostgreSQL management tool — a pgAdmin/DBeaver alternative with a GUI for SQL queries and a separate console, supporting several simultaneous database connections",
-                            "Built a social-network MVP: registration, friends, reports to admins, real-time messaging (Ajax)",
-                        ],
-                    },
-            ]},
-            "tags": ["Python", "Django", "Flask", "Psycopg", "PostgreSQL", "SQLite", "JavaScript", "HTML/CSS", "Ajax"],
+            "highlight": {"ru": "", "en": ""},
+            "tasks": {
+                "ru": [
+                    "Разработал модуль скоринга для оценки платёжеспособности клиентов: подготовка признаков, валидация входных данных и обработка ошибок",
+                    "Создал внутренний инструмент аналитика для работы с PostgreSQL — GUI для SQL-запросов и отдельная консоль; поддерживал подключение к нескольким базам данных одновременно",
+                    "Реализовал MVP клиентского портала: регистрация, личный кабинет, история операций, обмен сообщениями с поддержкой в реальном времени (Ajax)",
+                    "Автоматизировал сбор и анализ обратной связи клиентов: классификация обращений и жалоб, формирование сводок для поддержки",
+                ],
+                "en": [
+                    "Built a scoring module for assessing client creditworthiness: feature preparation, input validation and error handling",
+                    "Created an internal analyst tool for PostgreSQL — a GUI for SQL queries plus a separate console, supporting several simultaneous database connections",
+                    "Implemented a client portal MVP: registration, personal account, transaction history, real-time messaging with support (Ajax)",
+                    "Automated collection and analysis of client feedback: classifying requests and complaints, building summaries for support",
+                ],
+            },
+            "tags": ["Python", "Django", "Flask", "JavaScript", "HTML/CSS", "SQLite", "PostgreSQL", "Psycopg", "Docker", "Git"],
         },
     ],
     "education": {
@@ -326,7 +308,7 @@ PROFILE = {
             "ru": "Цифровые технологии управления транспортными процессами / Управление информационными процессами на транспорте",
             "en": "Digital technologies for transport process management / Information process management in transport",
         },
-        "year": "2027",
+        "year": "2026",
         "city": {"ru": "Москва", "en": "Moscow"},
     },
 }
